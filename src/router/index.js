@@ -4,7 +4,7 @@ const routes = [
     {
         path: '/',
         name: 'Home',
-        component: () => import('@/views/HomeView.vue'),
+        component: () => import('@/views/index.vue'),
         meta: { title: '首页' }
     },
     {
@@ -46,6 +46,14 @@ const routes = [
                 meta: { title: '维修指引' }
             }
         ]
+    },
+    // 正确的车间详情路由配置（作为一级路由）
+    {
+        path: '/workshop/:id',
+        name: 'Workshop',
+        component: () => import('@/views/WorkshopDetail.vue'),
+        meta: { title: '车间详情' },
+        props: true
     }
 ]
 
