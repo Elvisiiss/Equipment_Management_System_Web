@@ -211,7 +211,35 @@ const menuItems = [
         meta: { title: '微信信息管理' }
       }
     ]
+  },
+  {
+    path: '/asset', // 添加一级菜单路径
+    name: 'AssetManage',
+    meta: { title: '资产管理' },
+    children: [
+      {
+        path: '/asset/manage',
+        name: 'EquipmentManage',
+        meta: { title: '设备管理' }
+      },
+      {
+        path: '/asset/history',
+        name: 'EquipmentHistory',
+        meta: { title: '设备履历页' }
+      },
+      {
+        path: '/asset/online-equip',
+        name: 'OnlineEquipmentManagement',
+        meta: { title: '联机设备管理' }
+      },
+      {
+        path: '/asset/detail',
+        name: 'OnlineEquipmentDetail',
+        meta: { title: '联机设备详情' }
+      }
+    ]
   }
+
 ]
 
 const activeMenu = computed(() => {

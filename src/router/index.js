@@ -180,7 +180,38 @@ const routes = [
         name: 'WechatMessageManagement',
         component: () => import('@/views/system/WechatMessageManagement.vue'),
         meta: { title: '微信信息管理' }
+    },
+    {
+        path: '/asset',
+        name: 'AssetManage',
+        component:()=> import('@/views/asset/AssetManage.vue'),
+        meta: {title: '资产管理'}
+    },
+    {
+        path: '/asset/manage',
+        name: 'EquipmentManage',
+        component:()=> import('@/views/asset/EquipmentManage.vue'),
+        meta: {title: '设备管理'}
+    },
+    {
+        path: '/asset/history',
+        name: 'EquipmentHistory',
+        component:()=> import('@/views/asset/EquipmentHistory.vue'),
+        meta: {title: '设备履历页'}
+    },
+    {
+        path: '/asset/online-equip',
+        name: 'OnlineEquipmentManagement',
+        component:()=> import('@/views/asset/OnlineEquipmentManagement.vue'),
+        meta: {title: '联机设备管理'}
+    },
+    {
+        path: '/asset/detail',
+        name: 'OnlineEquipmentDetail',
+        component:()=> import('@/views/asset/OnlineEquipmentDetail.vue'),
+        meta: {title: '联机设备详情'}
     }
+
 ]
 
 const router = createRouter({
