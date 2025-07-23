@@ -1,10 +1,10 @@
+<template>
+历史数据
+</template>
+
 <script setup>
 
 </script>
-
-<template>
-
-</template>
 
 <style scoped>
 

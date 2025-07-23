@@ -82,7 +82,7 @@ import * as echarts from 'echarts';
 
 // 当前浏览层级
 const currentLevel = ref('workshop'); // workshop | productionLine | device | component
-const currentTitle = ref('车间运行状态总览');
+const currentTitle = ref('首页状态总览');
 
 // 面包屑导航
 const breadcrumb = ref([
@@ -158,7 +158,7 @@ onMounted(() => {
 const enterNextLevel = (item) => {
   if (currentLevel.value === 'workshop') {
     currentLevel.value = 'productionLine';
-    currentTitle.value = `${item.name} - 产线运行状态`;
+    currentTitle.value = `${item.name}运行状态`;
     currentItems.value = productionLines.value[item.id] || [];
     currentParentId.value = item.id;
     updateStats(item);
@@ -166,7 +166,7 @@ const enterNextLevel = (item) => {
   }
   else if (currentLevel.value === 'productionLine') {
     currentLevel.value = 'device';
-    currentTitle.value = `${item.name} - 设备运行状态`;
+    currentTitle.value = `${item.name}运行状态`;
     currentItems.value = devices.value[item.id] || [];
     currentParentId.value = item.id;
     updateStats(item);
@@ -174,7 +174,7 @@ const enterNextLevel = (item) => {
   }
   else if (currentLevel.value === 'device') {
     currentLevel.value = 'component';
-    currentTitle.value = `${item.name} - 备件状态`;
+    currentTitle.value = `${item.name}运行状态`;
     currentItems.value = components.value[item.id] || [];
     currentParentId.value = item.id;
     updateStats(item);
@@ -193,19 +193,19 @@ const navigateTo = (index) => {
 
   if (target.level === 'workshop') {
     currentLevel.value = 'workshop';
-    currentTitle.value = '车间运行状态总览';
+    currentTitle.value = '首页状态总览';
     currentItems.value = workshops.value;
     resetStats();
   }
   else if (target.level === 'productionLine') {
     currentLevel.value = 'productionLine';
-    currentTitle.value = `${target.name} - 产线运行状态`;
+    currentTitle.value = `${target.name}运行状态`;
     currentItems.value = productionLines.value[target.id] || [];
     updateStats(workshops.value.find(w => w.id === target.id) || {});
   }
   else if (target.level === 'device') {
     currentLevel.value = 'device';
-    currentTitle.value = `${target.name} - 设备运行状态`;
+    currentTitle.value = `${target.name}运行状态`;
     currentItems.value = devices.value[target.id] || [];
     updateStats(productionLines.value[currentParentId.value].find(p => p.id === target.id) || {});
   }

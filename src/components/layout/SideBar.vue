@@ -78,7 +78,7 @@ const menuItems = [
       {
         path: '/repair/manage',
         name: 'RepairManage',
-        meta: { title: '设备维修管理' }
+        meta: { title: '设备维修管理无纸化' }
       }
     ]
   },

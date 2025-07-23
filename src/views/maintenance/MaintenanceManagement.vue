@@ -1,10 +1,10 @@
+<template>
+保养管理
+</template>
+
 <script setup>
 
 </script>
-
-<template>
-
-</template>
 
 <style scoped>
 

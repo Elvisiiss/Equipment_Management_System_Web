@@ -192,13 +192,6 @@ const routes = [
                 meta: { title: '微信信息管理' }
             }
         ]
-    },
-    {
-        path: '/workshop/:id',
-        name: 'Workshop',
-        component: () => import('@/views/WorkshopDetail.vue'),
-        meta: { title: '车间详情' },
-        props: true
     }
 ]
 
