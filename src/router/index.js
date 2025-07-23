@@ -81,19 +81,19 @@ const routes = [
     },
     {
         path: '/equipment/online-management',
-        name: 'OnlineEquipmentManagement',
+        name: 'VirtualFactory',
         component: () => import('@/views/equipment/VirtualFactory.vue'),
         meta: { title: '虚拟工厂及设置' }
     },
     {
         path: '/equipment/online-detail',
-        name: 'OnlineEquipmentDetail',
+        name: 'UtilizationReport',
         component: () => import('@/views/equipment/UtilizationReport.vue'),
         meta: { title: '稼动率报表' }
     },
     {
         path: '/equipment/history',
-        name: 'EquipmentHistory',
+        name: 'DowntimeManagement',
         component: () => import('@/views/equipment/DowntimeManagement.vue'),
         meta: { title: '设备停机管理' }
     },

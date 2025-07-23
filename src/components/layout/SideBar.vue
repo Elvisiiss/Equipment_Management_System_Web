@@ -1,54 +1,68 @@
 <template>
   <div class="side-bar">
+    <div class="system-title">设备管理系统</div>
     <div class="menu-container">
       <el-scrollbar>
         <el-menu
             :default-active="activeMenu"
             router
-            :collapse="isCollapse"
+            :collapse="false"
             @select="handleMenuSelect"
+            :unique-opened="true"
+            class="custom-menu"
         >
           <!-- 遍历一级菜单 -->
           <template v-for="item in menuItems" :key="item.path">
-            <!-- 有子菜单的项 -->
-            <el-sub-menu v-if="item.children && item.children.length" :index="item.path">
+            <!-- 有子菜单的一级项 -->
+            <el-sub-menu
+                v-if="item.children && item.children.length"
+                :index="item.path"
+            >
               <template #title>
-                <span @click="handleParentClick(item)">{{ item.meta.title }}</span>
+                <div class="parent-menu-wrapper" @click.stop="handleParentMenuClick(item)">
+                  <span class="menu-title">{{ item.meta.title }}</span>
+                </div>
               </template>
               <!-- 二级菜单项 -->
               <el-menu-item
                   v-for="child in item.children"
                   :key="child.path"
                   :index="child.path"
+                  @click="handleChildMenuClick(child)"
               >
-                {{ child.meta.title }}
+                <span class="submenu-title">{{ child.meta.title }}</span>
               </el-menu-item>
             </el-sub-menu>
 
-            <!-- 没有子菜单的项 -->
-            <el-menu-item v-else :index="item.path">
-              {{ item.meta.title }}
+            <!-- 没有子菜单的一级项 -->
+            <el-menu-item
+                v-else
+                :index="item.path"
+                @click="handleChildMenuClick(item)"
+            >
+              <span class="menu-title">{{ item.meta.title }}</span>
             </el-menu-item>
           </template>
         </el-menu>
       </el-scrollbar>
     </div>
-    <!-- 已删除收起按钮 -->
+    <div class="admin-area">
+      <span>管理员</span>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTabsStore } from '@/store/tabs'
-import router from "@/router/index.js";
 
+// 路由实例
 const route = useRoute()
+const router = useRouter()
 const tabsStore = useTabsStore()
 
-const isCollapse = ref(false)
-
-// 更新后的菜单结构 - 为所有一级菜单添加路径
+// 菜单结构（与路由配置完全匹配）
 const menuItems = [
   {
     path: '/',
@@ -56,7 +70,7 @@ const menuItems = [
     meta: { title: '首页' }
   },
   {
-    path: '/inspection', // 添加一级菜单路径
+    path: '/inspection',
     name: 'InspectionManagement',
     meta: { title: '点巡检管理' },
     children: [
@@ -78,7 +92,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/repair', // 添加一级菜单路径
+    path: '/repair',
     name: 'RepairManagement',
     meta: { title: '维修管理' },
     children: [
@@ -90,7 +104,7 @@ const menuItems = [
       {
         path: '/repair/manage',
         name: 'RepairManage',
-        meta: { title: '设备维修管理无纸化' }
+        meta: { title: '设备维修管理' }
       }
     ]
   },
@@ -100,7 +114,7 @@ const menuItems = [
     meta: { title: '保养管理' }
   },
   {
-    path: '/equipment', // 添加一级菜单路径
+    path: '/equipment',
     name: 'EquipmentManagement',
     meta: { title: '设备实时监控管理' },
     children: [
@@ -137,7 +151,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/parts', // 添加一级菜单路径
+    path: '/parts',
     name: 'PartsManagement',
     meta: { title: '备件管理' },
     children: [
@@ -169,7 +183,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/mold', // 添加一级菜单路径
+    path: '/mold',
     name: 'MoldManagement',
     meta: { title: '模具管理' },
     children: [
@@ -186,7 +200,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/system', // 添加一级菜单路径
+    path: '/system',
     name: 'SystemManagement',
     meta: { title: '权限管理' },
     children: [
@@ -213,7 +227,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/asset', // 添加一级菜单路径
+    path: '/asset',
     name: 'AssetManage',
     meta: { title: '资产管理' },
     children: [
@@ -239,74 +253,159 @@ const menuItems = [
       }
     ]
   }
-
 ]
 
-const activeMenu = computed(() => {
-  const { path } = route
-  return path
-})
+// 当前激活的菜单
+const activeMenu = computed(() => route.path)
 
+// 处理有子菜单的一级菜单点击
+const handleParentMenuClick = (item) => {
+  // 跳转到一级菜单对应的页面
+  if (item.path && route.path!== item.path) {
+    router.push(item.path)
+  }
+
+  // 添加到标签页
+  if (item.path) {
+    const tabItem = {
+      path: item.path,
+      name: item.name,
+      meta: { title: item.meta.title }
+    }
+    tabsStore.addTab(tabItem)
+  }
+}
+
+// 处理二级菜单和无子菜单的一级菜单点击
+const handleChildMenuClick = (item) => {
+  // 跳转到对应页面
+  if (item.path && route.path!== item.path) {
+    router.push(item.path)
+  }
+
+  // 添加到标签页
+  const tabItem = {
+    path: item.path,
+    name: item.name,
+    meta: { title: item.meta.title }
+  }
+  tabsStore.addTab(tabItem)
+}
+
+// 处理菜单选择事件（兼容Element UI内部事件）
 const handleMenuSelect = (index) => {
   const routeItem = findRouteItem(index)
   if (routeItem) {
-    tabsStore.addTab(routeItem)
+    handleChildMenuClick(routeItem)
   }
 }
 
-// 处理一级菜单点击
-const handleParentClick = (item) => {
-  // 确保一级菜单有自己的路由页面
-  if (item.path) {
-    const routeItem = findRouteItem(item.path)
-    if (routeItem) {
-      tabsStore.addTab(routeItem)
-      // 新增路由跳转逻辑
-      if (route.path !== item.path) {
-        router.push(item.path)
-      }
-    }
-  }
-}
-
+// 递归查找路由项
 const findRouteItem = (path) => {
-  // 递归查找路由项
-  const findItem = (items) => {
+  const search = (items) => {
     for (const item of items) {
       if (item.path === path) return item
       if (item.children && item.children.length) {
-        const found = findItem(item.children)
+        const found = search(item.children)
         if (found) return found
       }
     }
     return null
   }
-  return findItem(menuItems)
+  return search(menuItems)
 }
-
 </script>
 
 <style scoped>
 .side-bar {
+  width: 220px;
+  background-color: #001529;
+  color: #fff;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  width: 15%;
-  min-width: 200px;
-  background-color: #fff;
-  border-right: 1px solid #e6e6e6;
-  height: 95vh;
-  overflow: hidden;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.system-title {
+  height: 60px;
+  line-height: 60px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  border-bottom: 1px solid #1890ff;
+  padding: 0 16px;
 }
 
 .menu-container {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
 }
 
-.el-menu {
+.admin-area {
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  border-top: 1px solid #1890ff;
+  font-size: 14px;
+}
+
+/* 菜单样式 */
+:deep(.custom-menu) {
+  background-color: #001529;
   border-right: none;
-  height: 100%;
 }
 
-/* 删除收起按钮相关样式 */
+:deep(.el-sub-menu__title),
+:deep(.el-menu-item) {
+  color: rgba(255, 255, 255, 0.85);
+  height: 50px;
+  line-height: 50px;
+  font-size: 14px;
+  padding-left: 24px !important;
+}
+
+/* 一级菜单点击区域样式 */
+.parent-menu-wrapper {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+:deep(.el-sub-menu__title:hover),
+:deep(.el-menu-item:hover) {
+  background-color: #1890ff !important;
+  color: #fff !important;
+}
+
+:deep(.el-menu-item.is-active),
+:deep(.el-sub-menu.is-active .el-sub-menu__title) {
+  background-color: #1890ff !important;
+  color: #fff !important;
+  border-left: 3px solid #fff;
+}
+
+:deep(.el-sub-menu .el-menu) {
+  background-color: #000c17;
+}
+
+:deep(.el-sub-menu .el-menu .el-menu-item) {
+  padding-left: 48px !important;
+}
+
+:deep(.el-sub-menu__icon-arrow) {
+  color: rgba(255, 255, 255, 0.6);
+  margin-right: 10px;
+}
+
+:deep(.el-sub-menu__title:hover .el-sub-menu__icon-arrow) {
+  color: #fff;
+}
+
+.menu-title, .submenu-title {
+  display: inline-block;
+  width: 100%;
+}
 </style>
