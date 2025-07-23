@@ -8,19 +8,32 @@
             :collapse="isCollapse"
             @select="handleMenuSelect"
         >
-          <SideBarItem
-              v-for="item in menuItems"
-              :key="item.path"
-              :item="item"
-          />
+          <!-- 遍历一级菜单 -->
+          <template v-for="item in menuItems" :key="item.path">
+            <!-- 有子菜单的项 -->
+            <el-sub-menu v-if="item.children && item.children.length" :index="item.path">
+              <template #title>
+                <span @click="handleParentClick(item)">{{ item.meta.title }}</span>
+              </template>
+              <!-- 二级菜单项 -->
+              <el-menu-item
+                  v-for="child in item.children"
+                  :key="child.path"
+                  :index="child.path"
+              >
+                {{ child.meta.title }}
+              </el-menu-item>
+            </el-sub-menu>
+
+            <!-- 没有子菜单的项 -->
+            <el-menu-item v-else :index="item.path">
+              {{ item.meta.title }}
+            </el-menu-item>
+          </template>
         </el-menu>
       </el-scrollbar>
     </div>
-    <div class="collapse-btn" @click="toggleCollapse">
-      <el-icon>
-        <component :is="isCollapse ? 'Expand' : 'Fold'" />
-      </el-icon>
-    </div>
+    <!-- 已删除收起按钮 -->
   </div>
 </template>
 
@@ -28,15 +41,14 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTabsStore } from '@/store/tabs'
-import SideBarItem from '@/components/ui/SideBarItem.vue'
-import { Fold, Expand } from '@element-plus/icons-vue'
+import router from "@/router/index.js";
 
 const route = useRoute()
 const tabsStore = useTabsStore()
 
 const isCollapse = ref(false)
 
-// 根据index.js路由配置同步的菜单结构
+// 更新后的菜单结构 - 为所有一级菜单添加路径
 const menuItems = [
   {
     path: '/',
@@ -44,7 +56,7 @@ const menuItems = [
     meta: { title: '首页' }
   },
   {
-    path: '/inspection',
+    path: '/inspection', // 添加一级菜单路径
     name: 'InspectionManagement',
     meta: { title: '点巡检管理' },
     children: [
@@ -66,7 +78,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/repair',
+    path: '/repair', // 添加一级菜单路径
     name: 'RepairManagement',
     meta: { title: '维修管理' },
     children: [
@@ -88,7 +100,7 @@ const menuItems = [
     meta: { title: '保养管理' }
   },
   {
-    path: '/equipment',
+    path: '/equipment', // 添加一级菜单路径
     name: 'EquipmentManagement',
     meta: { title: '设备实时监控管理' },
     children: [
@@ -125,7 +137,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/parts',
+    path: '/parts', // 添加一级菜单路径
     name: 'PartsManagement',
     meta: { title: '备件管理' },
     children: [
@@ -157,7 +169,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/mold',
+    path: '/mold', // 添加一级菜单路径
     name: 'MoldManagement',
     meta: { title: '模具管理' },
     children: [
@@ -174,7 +186,7 @@ const menuItems = [
     ]
   },
   {
-    path: '/system',
+    path: '/system', // 添加一级菜单路径
     name: 'SystemManagement',
     meta: { title: '权限管理' },
     children: [
@@ -214,8 +226,23 @@ const handleMenuSelect = (index) => {
   }
 }
 
+// 处理一级菜单点击
+const handleParentClick = (item) => {
+  // 确保一级菜单有自己的路由页面
+  if (item.path) {
+    const routeItem = findRouteItem(item.path)
+    if (routeItem) {
+      tabsStore.addTab(routeItem)
+      // 新增路由跳转逻辑
+      if (route.path !== item.path) {
+        router.push(item.path)
+      }
+    }
+  }
+}
+
 const findRouteItem = (path) => {
-  // 递归查找路由项的辅助函数
+  // 递归查找路由项
   const findItem = (items) => {
     for (const item of items) {
       if (item.path === path) return item
@@ -229,9 +256,6 @@ const findRouteItem = (path) => {
   return findItem(menuItems)
 }
 
-const toggleCollapse = () => {
-  isCollapse.value = !isCollapse.value
-}
 </script>
 
 <style scoped>
@@ -256,23 +280,5 @@ const toggleCollapse = () => {
   height: 100%;
 }
 
-.collapse-btn {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-top: 1px solid #e6e6e6;
-  cursor: pointer;
-  background-color: #f5f7fa;
-  transition: background-color 0.3s;
-}
-
-.collapse-btn:hover {
-  background-color: #e4e7ed;
-}
-
-.el-icon {
-  font-size: 18px;
-  color: #606266;
-}
+/* 删除收起按钮相关样式 */
 </style>
