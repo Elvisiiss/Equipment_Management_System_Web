@@ -448,6 +448,23 @@ const handleAccountLogin = async () => {
     // } else {
     //   error.value = response.msg || '登录失败';
     // }
+
+    // 假数据验证
+    if (accountForm.value.account === 'user' && accountForm.value.password === 'z423z423') {
+      // 模拟登录成功
+      const userData = {
+        user_name: '陈慧萍',
+        roles: ['全能管理员', '系统管理员'],
+        powers: [1,2,3,4,5,6,7,8,9,10],
+        token: 'a_moremoremore_token',
+        avatar_url: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+      };
+
+      authStore.setUser(userData);
+      router.push('/');
+    } else {
+      error.value = '账号或密码错误';
+    }
   } catch (err) {
     error.value = err.response?.data?.msg || '登录失败';
   } finally {

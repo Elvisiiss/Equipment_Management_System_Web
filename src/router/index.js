@@ -8,6 +8,12 @@ const routes = [
         meta: { title: '首页' }
     },
     {
+        path: '/login',
+        name: 'Login',
+        component: () => import('@/views/Auth/Login.vue'),
+        meta: { title: '登录' }
+    },
+    {
         path: '/inspection',
         name: 'InspectionManagement',
         component: () => import('@/views/inspection/InspectionManagement.vue'),

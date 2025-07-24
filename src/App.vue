@@ -1,4 +1,5 @@
 <template>
+  <router-view v-if="$route.path === '/login'" />
   <div class="app-container">
     <TopBar />
     <div class="main-container">

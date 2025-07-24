@@ -54,30 +54,45 @@
 
     <!-- 当前层级项目卡片 -->
     <div class="items-row">
-      <div
-          v-for="(item, index) in currentItems"
-          :key="index"
-          class="item-card"
-          @click="enterNextLevel(item)"
-      >
-        <h4>{{ item.name }}</h4>
-        <div class="item-charts">
-          <div class="small-chart">
-            <h5>开机率</h5>
-            <div class="echarts" :id="`开机率Chart${currentLevel}_${index}`"></div>
-          </div>
-          <div class="small-chart">
-            <h5>稼动率</h5>
-            <div class="echarts" :id="`稼动率Chart${currentLevel}_${index}`"></div>
+      <template v-if="currentLevel !== 'component'">
+        <div
+            v-for="(item, index) in currentItems"
+            :key="index"
+            class="item-card"
+            @click="enterNextLevel(item)"
+        >
+          <h4>{{ item.name }}</h4>
+          <div class="item-charts">
+            <div class="small-chart">
+              <h5>实时稼动率</h5>
+              <div class="echarts" :id="`实时稼动率Chart${currentLevel}_${index}`"></div>
+            </div>
+            <div class="small-chart">
+              <h5>状态分布</h5>
+              <div class="echarts" :id="`状态分布Chart${currentLevel}_${index}`"></div>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
+
+      <template v-else>
+        <div
+            v-for="(item, index) in currentItems"
+            :key="index"
+            class="item-card"
+        >
+          <h4>{{ item.name }}</h4>
+          <div class="component-status" :class="getStatusClass(item.status)">
+            {{ item.status }}
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import * as echarts from 'echarts';
 
 // 当前浏览层级
@@ -91,67 +106,134 @@ const breadcrumb = ref([
 
 // 统计数据
 const stats = ref({
-  total: 32,
-  normal: 17,
-  alarm: 2,
-  standby: 4,
-  offline: 9
-});
-
-// 模拟数据
-const workshops = ref([
-  { id: 'workshop1', name: '车间一', total: 6, normal: 3, alarm: 1, standby: 1, offline: 1 },
-  { id: 'workshop2', name: '车间二', total: 6, normal: 4, alarm: 0, standby: 1, offline: 1 },
-  { id: 'workshop3', name: '车间三', total: 6, normal: 2, alarm: 1, standby: 2, offline: 1 },
-  { id: 'workshop4', name: '车间四', total: 6, normal: 3, alarm: 0, standby: 1, offline: 2 },
-  { id: 'workshop5', name: '车间五', total: 6, normal: 3, alarm: 0, standby: 1, offline: 2 },
-  { id: 'workshop6', name: '车间六', total: 6, normal: 2, alarm: 0, standby: 1, offline: 3 }
-]);
-
-// 模拟产线数据
-const productionLines = ref({
-  workshop1: [
-    { id: 'line1-1', name: '产线1-1', total: 5, normal: 3, alarm: 1, standby: 1, offline: 0 },
-    { id: 'line1-2', name: '产线1-2', total: 5, normal: 2, alarm: 0, standby: 1, offline: 2 },
-    { id: 'line1-3', name: '产线1-3', total: 5, normal: 3, alarm: 0, standby: 1, offline: 1 },
-    { id: 'line1-4', name: '产线1-4', total: 5, normal: 2, alarm: 1, standby: 1, offline: 1 },
-    { id: 'line1-5', name: '产线1-5', total: 5, normal: 4, alarm: 0, standby: 0, offline: 1 },
-    { id: 'line1-6', name: '产线1-6', total: 5, normal: 3, alarm: 0, standby: 1, offline: 1 }
-  ],
-  // 其他车间的产线数据类似...
-});
-
-// 模拟设备数据
-const devices = ref({
-  'line1-1': [
-    { id: 'device1-1-1', name: '设备1-1-1', total: 4, normal: 2, alarm: 1, standby: 1, offline: 0 },
-    { id: 'device1-1-2', name: '设备1-1-2', total: 4, normal: 3, alarm: 0, standby: 1, offline: 0 },
-    { id: 'device1-1-3', name: '设备1-1-3', total: 4, normal: 2, alarm: 0, standby: 1, offline: 1 },
-    { id: 'device1-1-4', name: '设备1-1-4', total: 4, normal: 4, alarm: 0, standby: 0, offline: 0 },
-    { id: 'device1-1-5', name: '设备1-1-5', total: 4, normal: 3, alarm: 0, standby: 1, offline: 0 }
-  ],
-  // 其他产线的设备数据类似...
-});
-
-// 模拟备件数据
-const components = ref({
-  'device1-1-1': [
-    { id: 'component1-1-1-1', name: '备件1-1-1-1', status: '正常' },
-    { id: 'component1-1-1-2', name: '备件1-1-1-2', status: '正常' },
-    { id: 'component1-1-1-3', name: '备件1-1-1-3', status: '报警' },
-    { id: 'component1-1-1-4', name: '备件1-1-1-4', status: '正常' }
-  ],
-  // 其他设备的备件数据类似...
+  total: 0,
+  normal: 0,
+  alarm: 0,
+  standby: 0,
+  offline: 0
 });
 
 // 当前显示的项目
 const currentItems = ref([]);
 const currentParentId = ref(null);
 
+// 生成随机数据
+const generateRandomData = () => {
+  const data = {
+    workshops: [],
+    productionLines: {},
+    devices: {},
+    components: {}
+  };
+
+  // 生成车间数据 (1-6个车间)
+  const workshopCount = Math.floor(Math.random() * 6) + 1;
+  for (let i = 1; i <= workshopCount; i++) {
+    const workshop = {
+      id: `workshop${i}`,
+      name: `车间${i}`,
+      total: Math.floor(Math.random() * 20) + 5,
+      normal: 0,
+      alarm: 0,
+      standby: 0,
+      offline: 0,
+      son: []
+    };
+
+    // 生成产线数据 (每个车间2-5条产线)
+    const lineCount = Math.floor(Math.random() * 4) + 2;
+    data.productionLines[workshop.id] = [];
+    for (let j = 1; j <= lineCount; j++) {
+      const line = {
+        id: `line${i}-${j}`,
+        name: `产线${i}-${j}`,
+        total: Math.floor(Math.random() * 15) + 3,
+        normal: 0,
+        alarm: 0,
+        standby: 0,
+        offline: 0,
+        son: []
+      };
+
+      // 生成设备数据 (每条产线3-8台设备)
+      const deviceCount = Math.floor(Math.random() * 6) + 3;
+      data.devices[line.id] = [];
+      for (let k = 1; k <= deviceCount; k++) {
+        const device = {
+          id: `device${i}-${j}-${k}`,
+          name: `设备${i}-${j}-${k}`,
+          total: Math.floor(Math.random() * 10) + 2,
+          normal: 0,
+          alarm: 0,
+          standby: 0,
+          offline: 0,
+          son: []
+        };
+
+        // 生成备件数据 (每台设备2-6个备件)
+        const componentCount = Math.floor(Math.random() * 5) + 2;
+        data.components[device.id] = [];
+        for (let m = 1; m <= componentCount; m++) {
+          const statuses = ['正常', '报警', '待机', '离线'];
+          const status = statuses[Math.floor(Math.random() * statuses.length)];
+
+          const component = {
+            id: `component${i}-${j}-${k}-${m}`,
+            name: `备件${i}-${j}-${k}-${m}`,
+            status: status
+          };
+          data.components[device.id].push(component);
+          device.son.push(component);
+        }
+
+        // 计算设备状态
+        device.normal = Math.floor(Math.random() * (device.total - 1)) + 1;
+        device.alarm = Math.floor(Math.random() * (device.total - device.normal));
+        device.standby = Math.floor(Math.random() * (device.total - device.normal - device.alarm));
+        device.offline = device.total - device.normal - device.alarm - device.standby;
+
+        data.devices[line.id].push(device);
+        line.son.push(device);
+      }
+
+      // 计算产线状态
+      line.normal = data.devices[line.id].reduce((sum, device) => sum + device.normal, 0);
+      line.alarm = data.devices[line.id].reduce((sum, device) => sum + device.alarm, 0);
+      line.standby = data.devices[line.id].reduce((sum, device) => sum + device.standby, 0);
+      line.offline = data.devices[line.id].reduce((sum, device) => sum + device.offline, 0);
+
+      data.productionLines[workshop.id].push(line);
+      workshop.son.push(line);
+    }
+
+    // 计算车间状态
+    workshop.normal = data.productionLines[workshop.id].reduce((sum, line) => sum + line.normal, 0);
+    workshop.alarm = data.productionLines[workshop.id].reduce((sum, line) => sum + line.alarm, 0);
+    workshop.standby = data.productionLines[workshop.id].reduce((sum, line) => sum + line.standby, 0);
+    workshop.offline = data.productionLines[workshop.id].reduce((sum, line) => sum + line.offline, 0);
+
+    data.workshops.push(workshop);
+  }
+
+  // 计算全局状态
+  stats.value.total = data.workshops.reduce((sum, workshop) => sum + workshop.total, 0);
+  stats.value.normal = data.workshops.reduce((sum, workshop) => sum + workshop.normal, 0);
+  stats.value.alarm = data.workshops.reduce((sum, workshop) => sum + workshop.alarm, 0);
+  stats.value.standby = data.workshops.reduce((sum, workshop) => sum + workshop.standby, 0);
+  stats.value.offline = data.workshops.reduce((sum, workshop) => sum + workshop.offline, 0);
+
+  return data;
+};
+
+// 初始化数据
+const dataStore = ref(generateRandomData());
+
 // 初始化显示车间
 onMounted(() => {
-  currentItems.value = workshops.value;
-  initCharts();
+  currentItems.value = dataStore.value.workshops;
+  nextTick(() => {
+    initCharts();
+  });
 });
 
 // 进入下一级
@@ -159,7 +241,7 @@ const enterNextLevel = (item) => {
   if (currentLevel.value === 'workshop') {
     currentLevel.value = 'productionLine';
     currentTitle.value = `${item.name}运行状态`;
-    currentItems.value = productionLines.value[item.id] || [];
+    currentItems.value = dataStore.value.productionLines[item.id] || [];
     currentParentId.value = item.id;
     updateStats(item);
     breadcrumb.value.push({ name: item.name, level: 'productionLine', id: item.id });
@@ -167,7 +249,7 @@ const enterNextLevel = (item) => {
   else if (currentLevel.value === 'productionLine') {
     currentLevel.value = 'device';
     currentTitle.value = `${item.name}运行状态`;
-    currentItems.value = devices.value[item.id] || [];
+    currentItems.value = dataStore.value.devices[item.id] || [];
     currentParentId.value = item.id;
     updateStats(item);
     breadcrumb.value.push({ name: item.name, level: 'device', id: item.id });
@@ -175,13 +257,18 @@ const enterNextLevel = (item) => {
   else if (currentLevel.value === 'device') {
     currentLevel.value = 'component';
     currentTitle.value = `${item.name}运行状态`;
-    currentItems.value = components.value[item.id] || [];
+    currentItems.value = dataStore.value.components[item.id] || [];
     currentParentId.value = item.id;
-    updateStats(item);
     breadcrumb.value.push({ name: item.name, level: 'component', id: item.id });
+
+    // 清空统计卡片数据
+    stats.value = { total: 0, normal: 0, alarm: 0, standby: 0, offline: 0 };
+    return;
   }
 
-  initCharts();
+  nextTick(() => {
+    initCharts();
+  });
 };
 
 // 导航到面包屑的某一级
@@ -194,23 +281,50 @@ const navigateTo = (index) => {
   if (target.level === 'workshop') {
     currentLevel.value = 'workshop';
     currentTitle.value = '首页状态总览';
-    currentItems.value = workshops.value;
+    currentItems.value = dataStore.value.workshops;
     resetStats();
   }
   else if (target.level === 'productionLine') {
     currentLevel.value = 'productionLine';
     currentTitle.value = `${target.name}运行状态`;
-    currentItems.value = productionLines.value[target.id] || [];
-    updateStats(workshops.value.find(w => w.id === target.id) || {});
+
+    // 找到对应的车间
+    const workshop = dataStore.value.workshops.find(w => w.id === target.id);
+    if (workshop) {
+      currentItems.value = workshop.son || [];
+      updateStats(workshop);
+    }
   }
   else if (target.level === 'device') {
     currentLevel.value = 'device';
     currentTitle.value = `${target.name}运行状态`;
-    currentItems.value = devices.value[target.id] || [];
-    updateStats(productionLines.value[currentParentId.value].find(p => p.id === target.id) || {});
+
+    // 找到对应的产线
+    const workshopId = breadcrumb.value[1]?.id;
+    if (workshopId) {
+      const productionLine = dataStore.value.productionLines[workshopId]?.find(p => p.id === target.id);
+      if (productionLine) {
+        currentItems.value = productionLine.son || [];
+        updateStats(productionLine);
+      }
+    }
+  }
+  else if (target.level === 'component') {
+    currentLevel.value = 'component';
+    currentTitle.value = `${target.name}运行状态`;
+
+    // 找到对应的设备
+    const deviceId = target.id;
+    if (deviceId) {
+      currentItems.value = dataStore.value.components[deviceId] || [];
+      stats.value = { total: 0, normal: 0, alarm: 0, standby: 0, offline: 0 };
+      return;
+    }
   }
 
-  initCharts();
+  nextTick(() => {
+    initCharts();
+  });
 };
 
 // 更新统计数据
@@ -227,22 +341,31 @@ const updateStats = (item) => {
 // 重置统计数据
 const resetStats = () => {
   stats.value = {
-    total: 32,
-    normal: 17,
-    alarm: 2,
-    standby: 4,
-    offline: 9
+    total: dataStore.value.workshops.reduce((sum, w) => sum + w.total, 0),
+    normal: dataStore.value.workshops.reduce((sum, w) => sum + w.normal, 0),
+    alarm: dataStore.value.workshops.reduce((sum, w) => sum + w.alarm, 0),
+    standby: dataStore.value.workshops.reduce((sum, w) => sum + w.standby, 0),
+    offline: dataStore.value.workshops.reduce((sum, w) => sum + w.offline, 0)
   };
+};
+
+// 获取状态对应的样式类
+const getStatusClass = (status) => {
+  switch (status) {
+    case '正常': return 'status-normal';
+    case '报警': return 'status-alarm';
+    case '待机': return 'status-standby';
+    case '离线': return 'status-offline';
+    default: return '';
+  }
 };
 
 // 初始化图表
 const initCharts = () => {
-  // 初始化大环形图
-  initRingChart('稼动率Chart', '稼动率', [
-    { value: stats.value.normal, name: '稼动率' },
-    { value: stats.value.total - stats.value.normal, name: '停机率' }
-  ]);
+  // 初始化大环形图 - 实时稼动率（单环进度图）
+  initProgressChart('稼动率Chart', stats.value);
 
+  // 初始化大环形图 - 状态分布
   initRingChart('状态分布Chart', '状态分布', [
     { value: stats.value.normal, name: '正常运行' },
     { value: stats.value.alarm, name: '报警' },
@@ -252,23 +375,103 @@ const initCharts = () => {
 
   // 初始化小环形图
   currentItems.value.forEach((item, index) => {
-    const total = item.total || 1;
-    const normal = item.normal || 0;
+    // 实时稼动率（单环进度图）
+    initProgressChart(`实时稼动率Chart${currentLevel.value}_${index}`, item, true);
 
-    initRingChart(`开机率Chart${currentLevel.value}_${index}`, '开机率', [
-      { value: normal, name: '开机' },
-      { value: total - normal, name: '关机' }
-    ]);
-
-    initRingChart(`稼动率Chart${currentLevel.value}_${index}`, '稼动率', [
-      { value: normal, name: '稼动' },
-      { value: total - normal, name: '停机' }
-    ]);
+    // 状态分布
+    initRingChart(`状态分布Chart${currentLevel.value}_${index}`, '状态分布', [
+      { value: item.normal || 0, name: '正常运行' },
+      { value: item.alarm || 0, name: '报警' },
+      { value: item.standby || 0, name: '待机' },
+      { value: item.offline || 0, name: '离线' }
+    ], true);
   });
 };
 
-// 初始化环形图的通用函数
-const initRingChart = (domId, title, data) => {
+// 初始化环形进度图（实时稼动率）
+const initProgressChart = (domId, data, isSmall = false) => {
+  const element = document.getElementById(domId);
+  if (!element) return;
+
+  // 先销毁已有的图表实例
+  const existingChart = echarts.getInstanceByDom(element);
+  if (existingChart) {
+    existingChart.dispose();
+  }
+
+  const total = data.total || 1;
+  const normal = data.normal || 0;
+  const utilization = Math.round((normal / total) * 100);
+
+  // 根据稼动率确定颜色
+  let color;
+  if (utilization >= 95) {
+    color = '#2aa198'; // 绿色
+  } else if (utilization >= 80) {
+    color = '#f39c12'; // 黄色
+  } else {
+    color = '#dc322f'; // 红色
+  }
+
+  const myChart = echarts.init(element);
+  const option = {
+    tooltip: {
+      formatter: `稼动率: ${utilization}%`
+    },
+    series: [
+      {
+        name: '稼动率',
+        type: 'gauge',
+        radius: isSmall ? '70%' : '90%',
+        startAngle: 225,
+        endAngle: -45,
+        min: 0,
+        max: 100,
+        splitNumber: 0,
+        axisLine: {
+          lineStyle: {
+            width: isSmall ? 6 : 15,
+            color: [[1, '#eee']]
+          }
+        },
+        pointer: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
+        splitLine: {
+          show: false
+        },
+        axisLabel: {
+          show: false
+        },
+        detail: {
+          valueAnimation: true,
+          fontSize: isSmall ? 12 : 20,
+          fontWeight: 'bold',
+          formatter: `{value}%`,
+          color: '#333',
+          offsetCenter: [0, 0]
+        },
+        data: [
+          {
+            value: utilization,
+            name: '稼动率',
+            itemStyle: {
+              color: color
+            }
+          }
+        ]
+      }
+    ]
+  };
+
+  myChart.setOption(option);
+};
+
+// 初始化环形图的通用函数（状态分布）
+const initRingChart = (domId, title, data, isSmall = false) => {
   const element = document.getElementById(domId);
   if (!element) return;
 
@@ -284,27 +487,32 @@ const initRingChart = (domId, title, data) => {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)'
     },
+    legend: {
+      show: false
+    },
     series: [
       {
         name: title,
         type: 'pie',
-        radius: ['50%', '70%'],
+        radius: isSmall ? ['60%', '70%'] : ['50%', '70%'],
         avoidLabelOverlap: false,
         label: {
-          show: false,
-          position: 'center'
+          show: false
         },
         emphasis: {
           label: {
-            show: true,
-            fontSize: 16,
-            fontWeight: 'bold'
+            show: false
           }
         },
         labelLine: {
           show: false
         },
-        data: data
+        data: [
+          { value: data[0].value, name: data[0].name, itemStyle: { color: '#2aa198' } },
+          { value: data[1].value, name: data[1].name, itemStyle: { color: '#dc322f' } },
+          { value: data[2].value, name: data[2].name, itemStyle: { color: '#f39c12' } },
+          { value: data[3].value, name: data[3].name, itemStyle: { color: '#859900' } }
+        ]
       }
     ]
   };
@@ -313,7 +521,11 @@ const initRingChart = (domId, title, data) => {
 
 // 监听currentItems变化重新渲染图表
 watch(currentItems, () => {
-  initCharts();
+  if (currentLevel.value !== 'component') {
+    nextTick(() => {
+      initCharts();
+    });
+  }
 }, { deep: true });
 </script>
 
@@ -425,6 +637,18 @@ watch(currentItems, () => {
   width: 60px;
   height: 60px;
 }
+
+.component-status {
+  margin-top: 15px;
+  padding: 8px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.status-normal { background-color: #e6f7ff; color: #2aa198; }
+.status-alarm { background-color: #fff2f0; color: #dc322f; }
+.status-standby { background-color: #fffbe6; color: #f39c12; }
+.status-offline { background-color: #f9f9f9; color: #859900; }
 
 @media (max-width: 768px) {
   .status-cards {
