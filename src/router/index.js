@@ -99,7 +99,7 @@ const routes = [
     },
     {
         path: '/equipment/history',
-        name: 'DowntimeManagement',
+        name: 'DowntimeManagement ',
         component: () => import('@/views/equipment/DowntimeManagement.vue'),
         meta: { title: '设备停机管理' }
     },
