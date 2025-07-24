@@ -262,6 +262,7 @@ import ModelDialog from './components/ModelDialog.vue'
 import EquipmentDialog from './components/EquipmentDialog.vue'
 import OnlineSettingsDialog from './components/OnlineSettingsDialog.vue'
 import DocumentViewer from './components/DocumentViewer.vue'
+import {ElMessage} from "element-plus";
 
 export default {
   components: {
