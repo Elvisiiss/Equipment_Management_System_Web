@@ -209,7 +209,7 @@ onUnmounted(() => {
 .tab-manager-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 40px; /* 设置固定高度 */
 }
 
 .context-menu {
@@ -237,11 +237,10 @@ onUnmounted(() => {
 
 :deep(.el-tabs__header) {
   margin: 0;
+  height: 40px; /* 设置固定高度 */
 }
 
 :deep(.el-tabs__content) {
-  padding: 20px;
-  height: calc(100% - 40px);
-  overflow: auto;
+  display: none; /* 隐藏内容区域，因为我们在App.vue中已经有router-view了 */
 }
 </style>
