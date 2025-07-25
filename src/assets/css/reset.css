@@ -1,0 +1,14 @@
+/* 重置浏览器默认样式 */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* 防止页面整体滚动 */
+}
+
+/* 清除所有元素的默认内外边距（可选，根据需要调整） */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* 确保padding不会增加元素总宽度 */
+}

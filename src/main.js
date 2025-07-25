@@ -7,6 +7,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import {useAuthStore} from "@/stores/auth.js";
+import './assets/css/reset.css' // 导入全局重置样式
 
 const app = createApp(App)
 const pinia = createPinia()
