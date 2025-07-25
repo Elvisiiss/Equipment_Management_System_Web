@@ -1,40 +1,5 @@
 <template>
   <el-container class="app-container">
-    <!-- 顶部导航栏 -->
-    <el-header class="app-header">
-      <div class="header-left">
-        <el-icon class="logo-icon"><Management /></el-icon>
-        <h1 class="system-title">用户权限管理系统</h1>
-      </div>
-
-      <div class="header-right">
-        <el-button
-            type="primary"
-            size="small"
-            @click="showPermissionDialog = true"
-            class="permission-btn"
-        >
-          <el-icon><Lock /></el-icon>
-          角色权限管理
-        </el-button>
-
-        <el-dropdown>
-          <el-button type="text" class="user-info-btn">
-            <el-avatar class="user-avatar" :src="currentUser.avatar"></el-avatar>
-            <span class="user-name">{{ currentUser.name }}</span>
-            <el-icon class="icon-arrow"><ArrowDown /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item>个人中心</el-dropdown-item>
-              <el-dropdown-item>修改密码</el-dropdown-item>
-              <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
-    </el-header>
-
     <el-container>
       <!-- 侧边栏导航 -->
       <el-aside width="200px" class="app-aside">
@@ -524,24 +489,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
-  Management, User, UserFilled, Document, Lock,
-  Plus, ArrowDown, Search
+  User, UserFilled, Document,
+  Plus,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 // 全局状态
 const activeMenu = ref('user-management');
-const showPermissionDialog = ref(false);
-
-// 当前登录用户
-const currentUser = ref({
-  id: 1,
-  name: '系统管理员',
-  username: 'admin',
-  avatar: 'https://picsum.photos/id/1005/200/200'
-});
 
 // 假数据 - 用户
 const users = ref([
@@ -872,11 +828,6 @@ const resetPasswordRules = ref({
 const resetPasswordFormRef = ref(null);
 const userIdToReset = ref(null);
 
-// 权限管理悬浮框相关状态
-const selectedRoleForPermissionOverview = ref('');
-const currentRoleInOverview = ref(null);
-const currentRolePermissionIds = ref([]);
-
 // 计算属性 - 筛选用户
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
@@ -1143,32 +1094,6 @@ const handleLogCurrentChange = (val) => {
   logCurrentPage.value = val;
 };
 
-// 方法 - 权限管理悬浮框
-const handleRoleChangeForPermissionOverview = (roleId) => {
-  if (!roleId) {
-    currentRoleInOverview.value = null;
-    currentRolePermissionIds.value = [];
-    return;
-  }
-
-  const role = roles.value.find(r => r.id === Number(roleId));
-  if (role) {
-    currentRoleInOverview.value = { ...role };
-    currentRolePermissionIds.value = [...role.permissions];
-  }
-};
-
-const savePermissionOverviewChanges = () => {
-  if (!currentRoleInOverview.value) return;
-
-  const index = roles.value.findIndex(r => r.id === currentRoleInOverview.value.id);
-  if (index !== -1) {
-    roles.value[index].permissions = [...currentRolePermissionIds.value];
-    addUserLog('changePermission', `修改角色 ${roles.value[index].name} 的权限`);
-    ElMessage.success('权限配置保存成功');
-  }
-};
-
 // 辅助方法
 const getRoleName = (roleId) => {
   const role = roles.value.find(r => r.id === roleId);
@@ -1208,86 +1133,12 @@ const addUserLog = (operation, details) => {
     timestamp: new Date().toLocaleString()
   });
 };
-
-const handleLogout = () => {
-  ElMessageBox.confirm(
-      '确定要退出登录吗？',
-      '退出确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-  ).then(() => {
-    addUserLog('logout', '用户退出系统');
-    ElMessage.success('已退出登录');
-    // 实际应用中这里会跳转到登录页
-  }).catch(() => {
-    // 取消退出
-  });
-};
 </script>
 
 <style scoped>
 .app-container {
   height: 100vh;
   overflow: hidden;
-}
-
-.app-header {
-  background-color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-  z-index: 10;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo-icon {
-  font-size: 24px;
-  color: #409eff;
-}
-
-.system-title {
-  font-size: 18px;
-  margin: 0;
-  color: #333;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.permission-btn {
-  margin-right: 10px;
-}
-
-.user-info-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-}
-
-.user-name {
-  color: #333;
-}
-
-.icon-arrow {
-  font-size: 16px;
 }
 
 .app-aside {
