@@ -1,28 +1,28 @@
 <template>
   <div class="oee-app">
 <!--    <div class="app-header">-->
-<!--      <h1>设备OEE趋势报表系统</h1>-->
-<!--      <p>全面监控设备综合效率，优化生产绩效</p>-->
-<!--    </div>-->
+    <!--      <h1>设备OEE趋势报表系统</h1>-->
+    <!--      <p>全面监控设备综合效率，优化生产绩效</p>-->
+    <!--    </div>-->
 
-<!--    <div class="stat-cards">-->
-<!--      <div class="stat-card card-availability">-->
-<!--        <h3>时间稼动率</h3>-->
-<!--        <div class="value">86.4%</div>-->
-<!--      </div>-->
-<!--      <div class="stat-card card-performance">-->
-<!--        <h3>性能稼动率</h3>-->
-<!--        <div class="value">78.2%</div>-->
-<!--      </div>-->
-<!--      <div class="stat-card card-quality">-->
-<!--        <h3>良率</h3>-->
-<!--        <div class="value">94.7%</div>-->
-<!--      </div>-->
-<!--      <div class="stat-card card-oee">-->
-<!--        <h3>设备综合效率 (OEE)</h3>-->
-<!--        <div class="value">82.5%</div>-->
-<!--      </div>-->
-<!--    </div>-->
+    <!--    <div class="stat-cards">-->
+    <!--      <div class="stat-card card-availability">-->
+    <!--        <h3>时间稼动率</h3>-->
+    <!--        <div class="value">86.4%</div>-->
+    <!--      </div>-->
+    <!--      <div class="stat-card card-performance">-->
+    <!--        <h3>性能稼动率</h3>-->
+    <!--        <div class="value">78.2%</div>-->
+    <!--      </div>-->
+    <!--      <div class="stat-card card-quality">-->
+    <!--        <h3>良率</h3>-->
+    <!--        <div class="value">94.7%</div>-->
+    <!--      </div>-->
+    <!--      <div class="stat-card card-oee">-->
+    <!--        <h3>设备综合效率 (OEE)</h3>-->
+    <!--        <div class="value">82.5%</div>-->
+    <!--      </div>-->
+    <!--    </div>-->
 
     <div class="dashboard">
       <div class="control-panel">
@@ -44,69 +44,95 @@
           <label>时间范围</label>
           <div class="time-range">
             <!-- 日维度选择器 -->
-            <div class="time-range-item" v-if="timeType === 'day'">
-              <div class="time-range-label">开始日期</div>
-              <el-date-picker
-                  v-model="startDate"
-                  type="date"
-                  placeholder="选择开始日期"
-                  :disabled-date="dayEndDateDisabled"
-                  @change="handleDayStartChange"
-              />
-            </div>
-            <div class="time-range-item" v-if="timeType === 'day'">
-              <div class="time-range-label">结束日期</div>
-              <el-date-picker
-                  v-model="endDate"
-                  type="date"
-                  placeholder="选择结束日期"
-                  :disabled-date="dayStartDateDisabled"
-                  @change="handleDayEndChange"
-              />
+            <div v-if="timeType === 'day'">
+              <el-row>
+                <el-col :span="24"> <!-- span=24 占满一行 -->
+                  <div class="time-range-label">开始日期</div>
+                  <el-date-picker
+                      v-model="startDate"
+                      type="date"
+                      placeholder="选择开始日期"
+                      :disabled-date="dayEndDateDisabled"
+                      @change="handleDayStartChange"
+                  />
+                </el-col>
+              </el-row>
+              <el-row style="margin-top: 8px;"> <!-- 加间距，可选 -->
+                <el-col :span="24">
+                  <div class="time-range-label">结束日期</div>
+                  <el-date-picker
+                      v-model="endDate"
+                      type="date"
+                      placeholder="选择结束日期"
+                      :disabled-date="dayStartDateDisabled"
+                      @change="handleDayEndChange"
+                  />
+                </el-col>
+              </el-row>
             </div>
 
             <!-- 月维度选择器 -->
-            <div class="time-range-item" v-if="timeType === 'month'">
-              <div class="time-range-label">开始月份</div>
-              <el-date-picker
-                  v-model="startMonth"
-                  type="month"
-                  placeholder="选择开始月份"
-                  :disabled-date="monthEndDateDisabled"
-                  @change="handleMonthStartChange"
-              />
-            </div>
-            <div class="time-range-item" v-if="timeType === 'month'">
-              <div class="time-range-label">结束月份</div>
-              <el-date-picker
-                  v-model="endMonth"
-                  type="month"
-                  placeholder="选择结束月份"
-                  :disabled-date="monthStartDateDisabled"
-                  @change="handleMonthEndChange"
-              />
+            <div v-if="timeType === 'month'">
+              <el-row>
+                <el-col :span="24">
+                  <div class="time-range-item">
+                    <div class="time-range-label">开始月份</div>
+                    <el-date-picker
+                        v-model="startMonth"
+                        type="month"
+                        placeholder="选择开始月份"
+                        :disabled-date="monthEndDateDisabled"
+                        @change="handleMonthStartChange"
+                    />
+                  </div>
+                </el-col>
+              </el-row>
+              <el-row style="margin-top: 8px;">
+                <el-col :span="24">
+                  <div class="time-range-item">
+                    <div class="time-range-label">结束月份</div>
+                    <el-date-picker
+                        v-model="endMonth"
+                        type="month"
+                        placeholder="选择结束月份"
+                        :disabled-date="monthStartDateDisabled"
+                        @change="handleMonthEndChange"
+                    />
+                  </div>
+                </el-col>
+              </el-row>
             </div>
 
             <!-- 年维度选择器 -->
-            <div class="time-range-item" v-if="timeType === 'year'">
-              <div class="time-range-label">开始年份</div>
-              <el-date-picker
-                  v-model="startYear"
-                  type="year"
-                  placeholder="选择开始年份"
-                  :disabled-date="yearEndDateDisabled"
-                  @change="handleYearStartChange"
-              />
-            </div>
-            <div class="time-range-item" v-if="timeType === 'year'">
-              <div class="time-range-label">结束年份</div>
-              <el-date-picker
-                  v-model="endYear"
-                  type="year"
-                  placeholder="选择结束年份"
-                  :disabled-date="yearStartDateDisabled"
-                  @change="handleYearEndChange"
-              />
+            <div v-if="timeType === 'year'">
+              <el-row>
+                <el-col :span="24">
+                  <div class="time-range-item">
+                    <div class="time-range-label">开始年份</div>
+                    <el-date-picker
+                        v-model="startYear"
+                        type="year"
+                        placeholder="选择开始年份"
+                        :disabled-date="yearEndDateDisabled"
+                        @change="handleYearStartChange"
+                    />
+                  </div>
+                </el-col>
+              </el-row>
+              <el-row style="margin-top: 8px;">
+                <el-col :span="24">
+                  <div class="time-range-item">
+                    <div class="time-range-label">结束年份</div>
+                    <el-date-picker
+                        v-model="endYear"
+                        type="year"
+                        placeholder="选择结束年份"
+                        :disabled-date="yearStartDateDisabled"
+                        @change="handleYearEndChange"
+                    />
+                  </div>
+                </el-col>
+              </el-row>
             </div>
           </div>
         </div>
