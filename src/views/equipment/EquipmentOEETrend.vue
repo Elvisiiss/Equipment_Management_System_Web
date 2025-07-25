@@ -71,6 +71,47 @@
               </el-row>
             </div>
 
+            <!-- 周维度选择器 -->
+            <div v-if="timeType === 'week'">
+              <el-row>
+                <el-col :span="24">
+                  <div class="time-range-label">起始周</div>
+                  <el-select
+                      v-model="startWeek"
+                      placeholder="选择起始周"
+                      @change="handleWeekStartChange"
+                  >
+                    <el-option
+                        v-for="week in fixedWeekOptions"
+                        :key="week.value"
+                        :label="week.label"
+                        :value="week.value"
+                        :disabled="endWeek && week.value > endWeek"
+                    />
+                  </el-select>
+                </el-col>
+              </el-row>
+              <el-row style="margin-top: 8px;">
+                <el-col :span="24">
+                  <div class="time-range-label">结束周</div>
+                  <el-select
+                      v-model="endWeek"
+                      placeholder="选择结束周"
+                      @change="handleWeekEndChange"
+                  >
+                    <el-option
+                        v-for="week in fixedWeekOptions"
+                        :key="week.value"
+                        :label="week.label"
+                        :value="week.value"
+                        :disabled="startWeek && week.value < startWeek"
+                    />
+                  </el-select>
+                </el-col>
+              </el-row>
+            </div>
+
+
             <!-- 月维度选择器 -->
             <div v-if="timeType === 'month'">
               <el-row>
@@ -235,13 +276,18 @@ import {
 // 时间维度
 const timeType = ref('day');
 
+
 // 时间范围变量
 const startDate = ref(null);
 const endDate = ref(null);
+const startWeek = ref(null)
+const endWeek = ref(null)
 const startMonth = ref(null);
 const endMonth = ref(null);
 const startYear = ref(null);
 const endYear = ref(null);
+
+
 
 // 其他查询条件
 const shift = ref('all');
