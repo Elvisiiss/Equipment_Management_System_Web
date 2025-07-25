@@ -1,1274 +1,478 @@
 <template>
-  <el-container class="app-container">
+  <div class="factory-management">
     <el-container>
-      <!-- 侧边栏导航 -->
-      <el-aside width="200px" class="app-aside">
-        <el-menu
-            default-active="user-management"
-            class="menu-sidebar"
-            @select="handleMenuSelect"
-        >
-          <el-menu-item index="user-management">
-            <el-icon><User /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="role-list">
-            <el-icon><UserFilled /></el-icon>
-            <span>角色列表</span>
-          </el-menu-item>
-          <el-menu-item index="user-log">
-            <el-icon><Document /></el-icon>
-            <span>用户日志</span>
-          </el-menu-item>
-        </el-menu>
-      </el-aside>
-
-      <!-- 主内容区 -->
-      <el-main class="app-main">
-        <!-- 用户管理页面 -->
-        <div v-if="activeMenu === 'user-management'" class="content-wrapper">
-          <div class="content-header">
-            <h2>用户管理</h2>
-            <el-button type="primary" @click="showAddUserDialog = true">
-              <el-icon><Plus /></el-icon>
-              新增用户
-            </el-button>
+      <!-- 顶部标题栏 -->
+      <el-header class="header">
+        <div class="title-container">
+          <h1><i class="el-icon-factory"></i> 车间设备人员管理系统</h1>
+          <div class="action-buttons">
+            <el-button type="primary" icon="el-icon-refresh">刷新数据</el-button>
+            <el-button type="success" icon="el-icon-download">导出报表</el-button>
           </div>
-
-          <div class="search-bar">
-            <el-input
-                v-model="userSearchQuery"
-                placeholder="搜索用户"
-                prefix-icon="Search"
-                class="search-input"
-            ></el-input>
-            <el-select
-                v-model="userRoleFilter"
-                placeholder="选择角色"
-                class="role-filter"
-                clearable
-            >
-              <el-option
-                  v-for="role in roles"
-                  :key="role.id"
-                  :label="role.name"
-                  :value="role.id"
-              ></el-option>
-            </el-select>
-            <el-select
-                v-model="userStatusFilter"
-                placeholder="用户状态"
-                class="status-filter"
-                clearable
-            >
-              <el-option label="启用" value="1"></el-option>
-              <el-option label="禁用" value="0"></el-option>
-            </el-select>
-          </div>
-
-          <el-table
-              :data="filteredUsers"
-              border
-              style="width: 100%; margin-top: 16px;"
-              :row-class-name="tableRowClassName"
-          >
-            <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="name" label="姓名"></el-table-column>
-            <el-table-column prop="username" label="用户名"></el-table-column>
-            <el-table-column prop="email" label="邮箱"></el-table-column>
-            <el-table-column label="角色">
-              <template #default="scope">
-                <el-tag
-                    v-for="roleId in scope.row.roleIds"
-                    :key="roleId"
-                    :type="getRoleType(roleId)"
-                >
-                  {{ getRoleName(roleId) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="状态">
-              <template #default="scope">
-                <el-switch
-                    v-model="scope.row.status"
-                    active-value="1"
-                    inactive-value="0"
-                    @change="handleUserStatusChange(scope.row)"
-                ></el-switch>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="200">
-              <template #default="scope">
-                <el-button
-                    size="small"
-                    @click="handleEditUser(scope.row)"
-                >
-                  编辑
-                </el-button>
-                <el-button
-                    size="small"
-                    type="warning"
-                    @click="handleResetPassword(scope.row)"
-                >
-                  重置密码
-                </el-button>
-                <el-button
-                    size="small"
-                    type="danger"
-                    @click="handleDeleteUser(scope.row.id)"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <el-pagination
-              @size-change="handleUserSizeChange"
-              @current-change="handleUserCurrentChange"
-              :current-page="userCurrentPage"
-              :page-sizes="[10, 20, 50]"
-              :page-size="userPageSize"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="filteredUsers.length"
-              class="pagination"
-          ></el-pagination>
         </div>
+      </el-header>
 
-        <!-- 角色列表页面 -->
-        <div v-if="activeMenu === 'role-list'" class="content-wrapper">
-          <div class="content-header">
-            <h2>角色列表</h2>
-            <el-button type="primary" @click="showAddRoleDialog = true">
-              <el-icon><Plus /></el-icon>
-              新增角色
-            </el-button>
-          </div>
-
-          <div class="search-bar">
-            <el-input
-                v-model="roleSearchQuery"
-                placeholder="搜索角色"
-                prefix-icon="Search"
-                class="search-input"
-            ></el-input>
-          </div>
-
-          <el-table
-              :data="filteredRoles"
-              border
-              style="width: 100%; margin-top: 16px;"
-          >
-            <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="name" label="角色名称"></el-table-column>
-            <el-table-column prop="description" label="角色描述"></el-table-column>
-            <el-table-column label="权限数量">
-              <template #default="scope">
-                {{ scope.row.permissions.length }}
-              </template>
-            </el-table-column>
-            <el-table-column label="用户数量">
-              <template #default="scope">
-                {{ getUserCountByRole(scope.row.id) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="200">
-              <template #default="scope">
-                <el-button
-                    size="small"
-                    @click="handleEditRole(scope.row)"
-                >
-                  编辑
-                </el-button>
-                <el-button
-                    size="small"
-                    type="primary"
-                    @click="handleRolePermissions(scope.row)"
-                >
-                  权限配置
-                </el-button>
-                <el-button
-                    size="small"
-                    type="danger"
-                    @click="handleDeleteRole(scope.row.id)"
-                    :disabled="scope.row.id === 1"
-                >
-                删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <el-pagination
-              @size-change="handleRoleSizeChange"
-              @current-change="handleRoleCurrentChange"
-              :current-page="roleCurrentPage"
-              :page-sizes="[10, 20, 50]"
-              :page-size="rolePageSize"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="filteredRoles.length"
-              class="pagination"
-          ></el-pagination>
-        </div>
-
-        <!-- 用户日志页面 -->
-        <div v-if="activeMenu === 'user-log'" class="content-wrapper">
-          <div class="content-header">
-            <h2>用户日志</h2>
-          </div>
-
-          <div class="search-bar">
-            <el-input
-                v-model="logSearchQuery"
-                placeholder="搜索用户或操作"
-                prefix-icon="Search"
-                class="search-input"
-            ></el-input>
-            <el-select
-                v-model="logOperationFilter"
-                placeholder="操作类型"
-                class="operation-filter"
-                clearable
+      <el-container>
+        <!-- 左侧车间/产线/设备树 -->
+        <el-aside width="280px" class="sidebar">
+          <div class="tree-container">
+            <el-tree
+                :data="factoryStructure"
+                node-key="id"
+                :props="treeProps"
+                :default-expanded-keys="[1]"
+                :highlight-current="true"
+                @node-click="handleNodeClick"
+                class="factory-tree"
             >
-              <el-option
-                  v-for="op in operationTypes"
-                  :key="op.value"
-                  :label="op.label"
-                  :value="op.value"
-              ></el-option>
-            </el-select>
-            <el-date-picker
-                v-model="logDateRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                class="date-filter"
-            ></el-date-picker>
-          </div>
-
-          <el-table
-              :data="filteredLogs"
-              border
-              style="width: 100%; margin-top: 16px;"
-          >
-            <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="username" label="用户"></el-table-column>
-            <el-table-column prop="operation" label="操作"></el-table-column>
-            <el-table-column prop="ip" label="IP地址"></el-table-column>
-            <el-table-column prop="details" label="操作详情" width="300"></el-table-column>
-            <el-table-column prop="timestamp" label="操作时间">
-              <template #default="scope">
-                {{ formatDate(scope.row.timestamp) }}
+              <template #default="{ node, data }">
+                <span class="tree-node">
+                  <i :class="data.icon" class="node-icon"></i>
+                  <span>{{ node.label }}</span>
+                  <span v-if="data.type === 'line'" class="device-count">
+                    ({{ getDeviceCount(data.id) }}台设备)
+                  </span>
+                </span>
               </template>
-            </el-table-column>
-          </el-table>
+            </el-tree>
+          </div>
+        </el-aside>
 
-          <el-pagination
-              @size-change="handleLogSizeChange"
-              @current-change="handleLogCurrentChange"
-              :current-page="logCurrentPage"
-              :page-sizes="[10, 20, 50]"
-              :page-size="logPageSize"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="filteredLogs.length"
-              class="pagination"
-          ></el-pagination>
-        </div>
-      </el-main>
-    </el-container>
+        <!-- 主内容区域 -->
+        <el-main class="main-content">
+          <div v-if="selectedDevice" class="device-details">
+            <!-- 设备基本信息 -->
+            <div class="device-info">
+              <h2><i class="el-icon-cpu"></i> 设备详情：{{ selectedDevice.name }}</h2>
+              <el-descriptions :column="2" border>
+                <el-descriptions-item label="设备ID">{{ selectedDevice.id }}</el-descriptions-item>
+                <el-descriptions-item label="设备状态">
+                  <el-tag :type="selectedDevice.status === '运行中' ? 'success' : 'danger'">
+                    {{ selectedDevice.status }}
+                  </el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="所属产线">{{ selectedDevice.lineName }}</el-descriptions-item>
+                <el-descriptions-item label="所属车间">{{ selectedDevice.workshopName }}</el-descriptions-item>
+                <el-descriptions-item label="安装日期">2023-06-15</el-descriptions-item>
+                <el-descriptions-item label="维护周期">每月一次</el-descriptions-item>
+              </el-descriptions>
+            </div>
 
-    <!-- 新增/编辑用户对话框 -->
-    <el-dialog
-        title="用户信息"
-        v-model="showAddUserDialog"
-        width="500px"
-    >
-      <el-form
-          :model="formUser"
-          :rules="userRules"
-          ref="userFormRef"
-          label-width="100px"
-      >
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="formUser.name"></el-input>
-        </el-form-item>
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="formUser.username" :disabled="formUser.id !== undefined"></el-input>
-        </el-form-item>
-        <el-form-item
-            label="密码"
-            prop="password"
-            v-if="formUser.id === undefined"
-        >
-          <el-input v-model="formUser.password" type="password"></el-input>
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="formUser.email"></el-input>
-        </el-form-item>
-        <el-form-item label="角色" prop="roleIds">
-          <el-select
-              v-model="formUser.roleIds"
-              multiple
-              placeholder="请选择角色"
-          >
-            <el-option
-                v-for="role in roles"
-                :key="role.id"
-                :label="role.name"
-                :value="role.id"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-switch
-              v-model="formUser.status"
-              active-value="1"
-              inactive-value="0"
-          ></el-switch>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddUserDialog = false">取消</el-button>
-        <el-button
-            type="primary"
-            @click="submitUserForm"
-        >
-          确认
-        </el-button>
-      </template>
-    </el-dialog>
+            <!-- 关联人员管理 -->
+            <div class="personnel-management">
+              <div class="section-header">
+                <h3><i class="el-icon-user"></i> 设备关联人员管理</h3>
+                <el-button type="primary" icon="el-icon-plus" @click="openPersonnelDialog">添加人员</el-button>
+              </div>
 
-    <!-- 重置密码对话框 -->
-    <el-dialog
-        title="重置密码"
-        v-model="showResetPasswordDialog"
-        width="300px"
-    >
-      <el-form
-          :model="resetPasswordForm"
-          :rules="resetPasswordRules"
-          ref="resetPasswordFormRef"
-          label-width="80px"
-      >
-        <el-form-item label="新密码" prop="newPassword">
-          <el-input v-model="resetPasswordForm.newPassword" type="password"></el-input>
-        </el-form-item>
-        <el-form-item label="确认密码" prop="confirmPassword">
-          <el-input v-model="resetPasswordForm.confirmPassword" type="password"></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showResetPasswordDialog = false">取消</el-button>
-        <el-button
-            type="primary"
-            @click="submitResetPassword"
-        >
-          确认重置
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 新增/编辑角色对话框 -->
-    <el-dialog
-        title="角色信息"
-        v-model="showAddRoleDialog"
-        width="500px"
-    >
-      <el-form
-          :model="formRole"
-          :rules="roleRules"
-          ref="roleFormRef"
-          label-width="100px"
-      >
-        <el-form-item label="角色名称" prop="name">
-          <el-input v-model="formRole.name"></el-input>
-        </el-form-item>
-        <el-form-item label="角色描述" prop="description">
-          <el-input
-              v-model="formRole.description"
-              type="textarea"
-              :rows="3"
-          ></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddRoleDialog = false">取消</el-button>
-        <el-button
-            type="primary"
-            @click="submitRoleForm"
-        >
-          确认
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 角色权限配置对话框 -->
-    <el-dialog
-        title="角色权限配置"
-        v-model="showRolePermissionsDialog"
-        width="600px"
-    >
-      <div class="permission-title">
-        当前角色: {{ currentRoleForPermissions?.name || '' }}
-      </div>
-
-      <el-tree
-          :data="permissionTree"
-          show-checkbox
-          node-key="id"
-          :default-checked-keys="currentRolePermissions"
-          @check="handlePermissionCheck"
-          class="permission-tree"
-      ></el-tree>
-
-      <template #footer>
-        <el-button @click="showRolePermissionsDialog = false">取消</el-button>
-        <el-button
-            type="primary"
-            @click="saveRolePermissions"
-        >
-          保存配置
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 右上角角色权限管理悬浮框 -->
-    <el-drawer
-        title="角色权限总览"
-        v-model="showPermissionDialog"
-        direction="right"
-        :width="500"
-    >
-      <div class="permission-overview">
-        <el-select
-            v-model="selectedRoleForPermissionOverview"
-            placeholder="选择角色"
-            class="role-selector"
-            @change="handleRoleChangeForPermissionOverview"
-        >
-          <el-option
-              v-for="role in roles"
-              :key="role.id"
-              :label="role.name"
-              :value="role.id"
-          ></el-option>
-        </el-select>
-
-        <div v-if="currentRoleInOverview" class="role-permission-details">
-          <h3>{{ currentRoleInOverview.name }} 权限详情</h3>
-          <div class="permission-groups">
-            <div v-for="group in permissionGroups" :key="group.id" class="permission-group">
-              <div class="group-title">{{ group.name }}</div>
-              <el-checkbox-group
-                  v-model="currentRolePermissionIds"
-                  class="permission-checkboxes"
-              >
-                <el-checkbox
-                    v-for="perm in group.permissions"
-                    :key="perm.id"
-                    :label="perm.id"
-                >
-                  {{ perm.name }}
-                </el-checkbox>
-              </el-checkbox-group>
+              <!-- 人员列表 -->
+              <el-table :data="assignedPersonnel" stripe style="width: 100%">
+                <el-table-column prop="name" label="姓名" width="150" />
+                <el-table-column prop="position" label="职位" />
+                <el-table-column prop="department" label="部门" />
+                <el-table-column prop="skills" label="技能">
+                  <template #default="{ row }">
+                    <el-tag v-for="skill in row.skills" :key="skill" size="small" class="skill-tag">
+                      {{ skill }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="120">
+                  <template #default="{ row }">
+                    <el-button
+                        type="danger"
+                        icon="el-icon-delete"
+                        size="small"
+                        circle
+                        @click="removePersonnel(row.id)"
+                    ></el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
             </div>
           </div>
 
-          <el-button
-              type="primary"
-              @click="savePermissionOverviewChanges"
-              class="save-permissions-btn"
-          >
-            保存权限变更
-          </el-button>
+          <!-- 未选择设备时的提示 -->
+          <div v-else class="empty-state">
+            <el-empty description="请从左侧选择一台设备进行管理">
+              <i class="el-icon-s-management empty-icon"></i>
+            </el-empty>
+          </div>
+        </el-main>
+      </el-container>
+
+      <!-- 底部状态栏 -->
+      <el-footer class="footer">
+        <div class="status-info">
+          <span><i class="el-icon-info"></i> 系统状态：运行正常</span>
+          <span>当前在线用户：3</span>
+          <span>最后更新时间：{{ currentTime }}</span>
         </div>
+      </el-footer>
+    </el-container>
+
+    <!-- 添加人员对话框 -->
+    <el-dialog v-model="personnelDialogVisible" title="添加设备管理人员" width="600px">
+      <div class="dialog-content">
+        <el-transfer
+            v-model="selectedPersonnel"
+            :data="availablePersonnel"
+            :titles="['可用人员', '已选人员']"
+            :props="{ key: 'id', label: 'name' }"
+        />
       </div>
-    </el-drawer>
-  </el-container>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="personnelDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="savePersonnel">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import {
-  User, UserFilled, Document,
-  Plus,
-} from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import {ref, computed, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
 
-// 全局状态
-const activeMenu = ref('user-management');
+// 模拟数据 - 车间
+const workshops = ref([
+  {id: 1, name: '一车间', icon: 'el-icon-office-building'},
+  {id: 2, name: '二车间', icon: 'el-icon-office-building'},
+  {id: 3, name: '三车间', icon: 'el-icon-office-building'},
+  {id: 4, name: '四车间', icon: 'el-icon-office-building'},
+  {id: 5, name: '五车间', icon: 'el-icon-office-building'},
+  {id: 6, name: '六车间', icon: 'el-icon-office-building'}
+])
 
-// 假数据 - 用户
-const users = ref([
-  {
-    id: 1,
-    name: '张三',
-    username: 'zhangsan',
-    email: 'zhangsan@example.com',
-    roleIds: [1],
-    status: '1',
-    createdAt: '2023-01-15'
-  },
-  {
-    id: 2,
-    name: '李四',
-    username: 'lisi',
-    email: 'lisi@example.com',
-    roleIds: [2],
-    status: '1',
-    createdAt: '2023-02-20'
-  },
-  {
-    id: 3,
-    name: '王五',
-    username: 'wangwu',
-    email: 'wangwu@example.com',
-    roleIds: [3],
-    status: '0',
-    createdAt: '2023-03-10'
-  },
-  {
-    id: 4,
-    name: '赵六',
-    username: 'zhaoliu',
-    email: 'zhaoliu@example.com',
-    roleIds: [2, 3],
-    status: '1',
-    createdAt: '2023-04-05'
-  },
-  {
-    id: 5,
-    name: '钱七',
-    username: 'qianqi',
-    email: 'qianqi@example.com',
-    roleIds: [3],
-    status: '1',
-    createdAt: '2023-05-18'
-  }
-]);
+// 模拟数据 - 产线
+const lines = ref([
+  {id: 101, workshopId: 1, name: '产线A', icon: 'el-icon-s-operation'},
+  {id: 102, workshopId: 1, name: '产线B', icon: 'el-icon-s-operation'},
+  {id: 103, workshopId: 1, name: '产线C', icon: 'el-icon-s-operation'},
+  {id: 104, workshopId: 2, name: '产线D', icon: 'el-icon-s-operation'},
+  {id: 105, workshopId: 2, name: '产线E', icon: 'el-icon-s-operation'},
+  {id: 106, workshopId: 3, name: '产线F', icon: 'el-icon-s-operation'}
+])
 
-// 假数据 - 角色
-const roles = ref([
-  {
-    id: 1,
-    name: '超级管理员',
-    description: '系统最高权限，可访问和操作所有功能',
-    permissions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-  },
-  {
-    id: 2,
-    name: '部门管理员',
-    description: '管理部门内用户和数据',
-    permissions: [1, 2, 3, 5, 6, 7, 9, 10]
-  },
-  {
-    id: 3,
-    name: '普通用户',
-    description: '只能访问和操作授权范围内的功能',
-    permissions: [1, 5, 9]
-  }
-]);
+// 模拟数据 - 设备
+const devices = ref([
+  {id: 1001, lineId: 101, name: 'CNC机床-01', status: '运行中', personIds: [1, 3]},
+  {id: 1002, lineId: 101, name: '注塑机-02', status: '待机', personIds: [2]},
+  {id: 1003, lineId: 101, name: '装配机器人-03', status: '运行中', personIds: [1]},
+  {id: 1004, lineId: 102, name: '激光切割机-04', status: '维护中', personIds: [4]},
+  {id: 1005, lineId: 102, name: '3D打印机-05', status: '运行中', personIds: [5]},
+  {id: 1006, lineId: 103, name: '检测设备-06', status: '运行中', personIds: [3]}
+])
 
-// 假数据 - 权限
-const permissions = ref([
-  { id: 1, name: '查看用户', groupId: 1 },
-  { id: 2, name: '新增用户', groupId: 1 },
-  { id: 3, name: '编辑用户', groupId: 1 },
-  { id: 4, name: '删除用户', groupId: 1 },
-  { id: 5, name: '查看角色', groupId: 2 },
-  { id: 6, name: '新增角色', groupId: 2 },
-  { id: 7, name: '编辑角色', groupId: 2 },
-  { id: 8, name: '删除角色', groupId: 2 },
-  { id: 9, name: '查看日志', groupId: 3 },
-  { id: 10, name: '导出日志', groupId: 3 },
-  { id: 11, name: '管理系统设置', groupId: 4 },
-  { id: 12, name: '管理权限', groupId: 4 }
-]);
+// 模拟数据 - 人员
+const personnel = ref([
+  {id: 1, name: '张三', position: '设备工程师', department: '技术部', skills: ['CNC', 'PLC']},
+  {id: 2, name: '李四', position: '操作员', department: '生产部', skills: ['注塑']},
+  {id: 3, name: '王五', position: '技术员', department: '维护部', skills: ['装配', '检测']},
+  {id: 4, name: '赵六', position: '工程师', department: '技术部', skills: ['激光切割']},
+  {id: 5, name: '钱七', position: '高级工程师', department: '研发部', skills: ['3D打印']},
+  {id: 6, name: '孙八', position: '操作员', department: '生产部', skills: ['装配']},
+  {id: 7, name: '周九', position: '技术员', department: '维护部', skills: ['检测']},
+  {id: 8, name: '吴十', position: '设备工程师', department: '技术部', skills: ['PLC', 'CNC']}
+])
 
-// 权限分组
-const permissionGroups = ref([
-  {
-    id: 1,
-    name: '用户管理',
-    permissions: permissions.value.filter(p => p.groupId === 1)
-  },
-  {
-    id: 2,
-    name: '角色管理',
-    permissions: permissions.value.filter(p => p.groupId === 2)
-  },
-  {
-    id: 3,
-    name: '日志管理',
-    permissions: permissions.value.filter(p => p.groupId === 3)
-  },
-  {
-    id: 4,
-    name: '系统设置',
-    permissions: permissions.value.filter(p => p.groupId === 4)
-  }
-]);
+// 当前选中的设备
+const selectedDevice = ref(null)
 
-// 权限树形结构数据
-const permissionTree = ref([
-  {
-    id: 1,
-    label: '用户管理',
-    children: [
-      { id: 1, label: '查看用户' },
-      { id: 2, label: '新增用户' },
-      { id: 3, label: '编辑用户' },
-      { id: 4, label: '删除用户' }
-    ]
-  },
-  {
-    id: 2,
-    label: '角色管理',
-    children: [
-      { id: 5, label: '查看角色' },
-      { id: 6, label: '新增角色' },
-      { id: 7, label: '编辑角色' },
-      { id: 8, label: '删除角色' }
-    ]
-  },
-  {
-    id: 3,
-    label: '日志管理',
-    children: [
-      { id: 9, label: '查看日志' },
-      { id: 10, label: '导出日志' }
-    ]
-  },
-  {
-    id: 4,
-    label: '系统设置',
-    children: [
-      { id: 11, label: '管理系统设置' },
-      { id: 12, label: '管理权限' }
-    ]
-  }
-]);
+// 工厂结构树数据
+const factoryStructure = computed(() => {
+  return workshops.value.map(workshop => {
+    const workshopLines = lines.value
+        .filter(line => line.workshopId === workshop.id)
+        .map(line => {
+          const lineDevices = devices.value
+              .filter(device => device.lineId === line.id)
+              .map(device => ({
+                id: device.id,
+                name: device.name,
+                type: 'device',
+                icon: 'el-icon-cpu'
+              }))
 
-// 假数据 - 用户日志
-const userLogs = ref([
-  {
-    id: 1,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'login',
-    ip: '192.168.1.1',
-    details: '用户登录系统',
-    timestamp: '2023-06-01 08:30:45'
-  },
-  {
-    id: 2,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'createUser',
-    ip: '192.168.1.1',
-    details: '创建新用户: qianqi',
-    timestamp: '2023-06-01 09:15:22'
-  },
-  {
-    id: 3,
-    userId: 2,
-    username: 'lisi',
-    operation: 'login',
-    ip: '192.168.1.2',
-    details: '用户登录系统',
-    timestamp: '2023-06-01 10:05:18'
-  },
-  {
-    id: 4,
-    userId: 2,
-    username: 'lisi',
-    operation: 'editRole',
-    ip: '192.168.1.2',
-    details: '编辑角色: 普通用户',
-    timestamp: '2023-06-01 10:30:45'
-  },
-  {
-    id: 5,
-    userId: 3,
-    username: 'wangwu',
-    operation: 'login',
-    ip: '192.168.1.3',
-    details: '用户登录系统',
-    timestamp: '2023-06-01 11:20:33'
-  },
-  {
-    id: 6,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'deleteUser',
-    ip: '192.168.1.1',
-    details: '删除用户: zhaoliu',
-    timestamp: '2023-06-01 14:10:25'
-  },
-  {
-    id: 7,
-    userId: 2,
-    username: 'lisi',
-    operation: 'logout',
-    ip: '192.168.1.2',
-    details: '用户退出系统',
-    timestamp: '2023-06-01 16:45:12'
-  },
-  {
-    id: 8,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'changePermission',
-    ip: '192.168.1.1',
-    details: '修改角色权限: 部门管理员',
-    timestamp: '2023-06-01 17:20:05'
-  }
-]);
+          return {
+            id: line.id,
+            name: line.name,
+            type: 'line',
+            icon: line.icon,
+            children: lineDevices
+          }
+        })
 
-// 操作类型
-const operationTypes = ref([
-  { label: '登录', value: 'login' },
-  { label: '退出', value: 'logout' },
-  { label: '创建用户', value: 'createUser' },
-  { label: '编辑用户', value: 'editUser' },
-  { label: '删除用户', value: 'deleteUser' },
-  { label: '创建角色', value: 'createRole' },
-  { label: '编辑角色', value: 'editRole' },
-  { label: '删除角色', value: 'deleteRole' },
-  { label: '修改权限', value: 'changePermission' }
-]);
-
-// 用户管理相关状态
-const userSearchQuery = ref('');
-const userRoleFilter = ref('');
-const userStatusFilter = ref('');
-const userCurrentPage = ref(1);
-const userPageSize = ref(10);
-const showAddUserDialog = ref(false);
-const formUser = ref({
-  id: undefined,
-  name: '',
-  username: '',
-  password: '',
-  email: '',
-  roleIds: [],
-  status: '1'
-});
-const userRules = ref({
-  name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' }
-  ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: ['blur', 'change'] }
-  ],
-  roleIds: [{ required: true, message: '请选择至少一个角色', trigger: 'change' }]
-});
-const userFormRef = ref(null);
-
-// 角色管理相关状态
-const roleSearchQuery = ref('');
-const roleCurrentPage = ref(1);
-const rolePageSize = ref(10);
-const showAddRoleDialog = ref(false);
-const formRole = ref({
-  id: undefined,
-  name: '',
-  description: ''
-});
-const roleRules = ref({
-  name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入角色描述', trigger: 'blur' }]
-});
-const roleFormRef = ref(null);
-const showRolePermissionsDialog = ref(false);
-const currentRoleForPermissions = ref(null);
-const currentRolePermissions = ref([]);
-const selectedPermissions = ref([]);
-
-// 日志管理相关状态
-const logSearchQuery = ref('');
-const logOperationFilter = ref('');
-const logDateRange = ref([]);
-const logCurrentPage = ref(1);
-const logPageSize = ref(10);
-
-// 重置密码相关状态
-const showResetPasswordDialog = ref(false);
-const resetPasswordForm = ref({
-  newPassword: '',
-  confirmPassword: ''
-});
-const resetPasswordRules = ref({
-  newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
-    {
-      validator: (rule, value, callback) => {
-        if (value !== resetPasswordForm.value.newPassword) {
-          callback(new Error('两次输入的密码不一致'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur'
+    return {
+      id: workshop.id,
+      name: workshop.name,
+      type: 'workshop',
+      icon: workshop.icon,
+      children: workshopLines
     }
-  ]
-});
-const resetPasswordFormRef = ref(null);
-const userIdToReset = ref(null);
+  })
+})
 
-// 计算属性 - 筛选用户
-const filteredUsers = computed(() => {
-  return users.value.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.username.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase());
-    const matchesRole = !userRoleFilter.value || user.roleIds.includes(Number(userRoleFilter.value));
-    const matchesStatus = !userStatusFilter.value || user.status === userStatusFilter.value;
+// 树形结构配置
+const treeProps = {
+  label: 'name',
+  children: 'children'
+}
 
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-});
+// 获取产线下的设备数量
+const getDeviceCount = (lineId) => {
+  return devices.value.filter(device => device.lineId === lineId).length
+}
 
-// 计算属性 - 筛选角色
-const filteredRoles = computed(() => {
-  return roles.value.filter(role => {
-    return role.name.toLowerCase().includes(roleSearchQuery.value.toLowerCase()) ||
-        role.description.toLowerCase().includes(roleSearchQuery.value.toLowerCase());
-  });
-});
+// 树节点点击事件
+const handleNodeClick = (data) => {
+  if (data.type === 'device') {
+    const device = devices.value.find(d => d.id === data.id)
+    if (device) {
+      const line = lines.value.find(l => l.id === device.lineId)
+      const workshop = workshops.value.find(w => w.id === line.workshopId)
 
-// 计算属性 - 筛选日志
-const filteredLogs = computed(() => {
-  return userLogs.value.filter(log => {
-    const matchesSearch = log.username.toLowerCase().includes(logSearchQuery.value.toLowerCase()) ||
-        log.operation.toLowerCase().includes(logSearchQuery.value.toLowerCase()) ||
-        log.details.toLowerCase().includes(logSearchQuery.value.toLowerCase());
-    const matchesOperation = !logOperationFilter.value || log.operation === logOperationFilter.value;
-    const matchesDateRange = !logDateRange.value.length ||
-        (new Date(log.timestamp) >= new Date(logDateRange.value[0]) &&
-            new Date(log.timestamp) <= new Date(logDateRange.value[1]));
+      selectedDevice.value = {
+        ...device,
+        lineName: line.name,
+        workshopName: workshop.name
+      }
+    }
+  }
+}
 
-    return matchesSearch && matchesOperation && matchesDateRange;
-  });
-});
+// 获取已分配的人员
+const assignedPersonnel = computed(() => {
+  if (!selectedDevice.value) return []
 
-// 生命周期钩子
+  const assignedIds = selectedDevice.value.personIds || []
+  return personnel.value.filter(person => assignedIds.includes(person.id))
+})
+
+// 人员管理对话框相关
+const personnelDialogVisible = ref(false)
+const selectedPersonnel = ref([])
+
+// 获取可用人员
+const availablePersonnel = computed(() => {
+  return personnel.value.map(person => ({
+    key: person.id,
+    label: `${person.name} (${person.position})`,
+    ...person
+  }))
+})
+
+// 打开人员对话框
+const openPersonnelDialog = () => {
+  selectedPersonnel.value = [...selectedDevice.value.personIds]
+  personnelDialogVisible.value = true
+}
+
+// 保存人员分配
+const savePersonnel = () => {
+  if (selectedDevice.value) {
+    selectedDevice.value.personIds = [...selectedPersonnel.value]
+    const deviceIndex = devices.value.findIndex(d => d.id === selectedDevice.value.id)
+    if (deviceIndex !== -1) {
+      devices.value[deviceIndex].personIds = [...selectedPersonnel.value]
+    }
+    ElMessage.success('人员分配已更新')
+  }
+  personnelDialogVisible.value = false
+}
+
+// 移除人员
+const removePersonnel = (personId) => {
+  if (selectedDevice.value) {
+    selectedDevice.value.personIds = selectedDevice.value.personIds.filter(id => id !== personId)
+    const deviceIndex = devices.value.findIndex(d => d.id === selectedDevice.value.id)
+    if (deviceIndex !== -1) {
+      devices.value[deviceIndex].personIds = selectedDevice.value.personIds
+    }
+    ElMessage.success('人员已移除')
+  }
+}
+
+// 当前时间
+const currentTime = ref('')
 onMounted(() => {
-  // 初始化操作
-});
-
-// 方法 - 菜单切换
-const handleMenuSelect = (index) => {
-  activeMenu.value = index;
-  // 重置各页面分页
-  if (index === 'user-management') {
-    userCurrentPage.value = 1;
-  } else if (index === 'role-list') {
-    roleCurrentPage.value = 1;
-  } else if (index === 'user-log') {
-    logCurrentPage.value = 1;
-  }
-};
-
-// 方法 - 用户管理
-const handleUserSizeChange = (val) => {
-  userPageSize.value = val;
-  userCurrentPage.value = 1;
-};
-
-const handleUserCurrentChange = (val) => {
-  userCurrentPage.value = val;
-};
-
-const handleEditUser = (user) => {
-  formUser.value = { ...user };
-  showAddUserDialog.value = true;
-};
-
-const submitUserForm = async () => {
-  try {
-    await userFormRef.value.validate();
-
-    if (formUser.value.id) {
-      // 编辑现有用户
-      const index = users.value.findIndex(u => u.id === formUser.value.id);
-      if (index !== -1) {
-        users.value[index] = { ...formUser.value };
-        addUserLog('editUser', `编辑用户: ${formUser.value.username}`);
-        ElMessage.success('用户编辑成功');
-      }
-    } else {
-      // 创建新用户
-      const newId = Math.max(...users.value.map(u => u.id), 0) + 1;
-      const newUser = {
-        ...formUser.value,
-        id: newId,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      users.value.push(newUser);
-      addUserLog('createUser', `创建新用户: ${newUser.username}`);
-      ElMessage.success('用户创建成功');
-    }
-
-    showAddUserDialog.value = false;
-    userFormRef.value.resetFields();
-  } catch (error) {
-    console.error('表单验证失败', error);
-  }
-};
-
-const handleUserStatusChange = (user) => {
-  const statusText = user.status === '1' ? '启用' : '禁用';
-  addUserLog('changeUserStatus', `将用户 ${user.username} ${statusText}`);
-  ElMessage.success(`用户已${statusText}`);
-};
-
-const handleResetPassword = (user) => {
-  userIdToReset.value = user.id;
-  resetPasswordForm.value = {
-    newPassword: '',
-    confirmPassword: ''
-  };
-  showResetPasswordDialog.value = true;
-};
-
-const submitResetPassword = async () => {
-  try {
-    await resetPasswordFormRef.value.validate();
-
-    // 模拟重置密码
-    const user = users.value.find(u => u.id === userIdToReset.value);
-    if (user) {
-      addUserLog('resetPassword', `重置用户 ${user.username} 的密码`);
-      ElMessage.success('密码重置成功');
-    }
-
-    showResetPasswordDialog.value = false;
-    resetPasswordFormRef.value.resetFields();
-  } catch (error) {
-    console.error('密码验证失败', error);
-  }
-};
-
-const handleDeleteUser = (userId) => {
-  const user = users.value.find(u => u.id === userId);
-  if (!user) return;
-
-  ElMessageBox.confirm(
-      `确定要删除用户 ${user.username} 吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-  ).then(() => {
-    users.value = users.value.filter(u => u.id !== userId);
-    addUserLog('deleteUser', `删除用户: ${user.username}`);
-    ElMessage.success('用户删除成功');
-  }).catch(() => {
-    // 取消删除
-  });
-};
-
-// 方法 - 角色管理
-const handleRoleSizeChange = (val) => {
-  rolePageSize.value = val;
-  roleCurrentPage.value = 1;
-};
-
-const handleRoleCurrentChange = (val) => {
-  roleCurrentPage.value = val;
-};
-
-const handleEditRole = (role) => {
-  formRole.value = { ...role };
-  showAddRoleDialog.value = true;
-};
-
-const submitRoleForm = async () => {
-  try {
-    await roleFormRef.value.validate();
-
-    if (formRole.value.id) {
-      // 编辑现有角色
-      const index = roles.value.findIndex(r => r.id === formRole.value.id);
-      if (index !== -1) {
-        // 保留原有权限
-        formRole.value.permissions = roles.value[index].permissions;
-        roles.value[index] = { ...formRole.value };
-        addUserLog('editRole', `编辑角色: ${formRole.value.name}`);
-        ElMessage.success('角色编辑成功');
-      }
-    } else {
-      // 创建新角色
-      const newId = Math.max(...roles.value.map(r => r.id), 0) + 1;
-      const newRole = {
-        ...formRole.value,
-        id: newId,
-        permissions: [] // 新角色默认无权限
-      };
-      roles.value.push(newRole);
-      addUserLog('createRole', `创建新角色: ${newRole.name}`);
-      ElMessage.success('角色创建成功');
-    }
-
-    showAddRoleDialog.value = false;
-    roleFormRef.value.resetFields();
-  } catch (error) {
-    console.error('表单验证失败', error);
-  }
-};
-
-const handleRolePermissions = (role) => {
-  currentRoleForPermissions.value = { ...role };
-  currentRolePermissions.value = [...role.permissions];
-  selectedPermissions.value = [...role.permissions];
-  showRolePermissionsDialog.value = true;
-};
-
-const handlePermissionCheck = (data, checked, indeterminate) => {
-  selectedPermissions.value = [...checked.checkedKeys];
-};
-
-const saveRolePermissions = () => {
-  if (!currentRoleForPermissions.value) return;
-
-  const index = roles.value.findIndex(r => r.id === currentRoleForPermissions.value.id);
-  if (index !== -1) {
-    roles.value[index].permissions = [...selectedPermissions.value];
-    addUserLog('changePermission', `修改角色 ${roles.value[index].name} 的权限`);
-    ElMessage.success('权限配置保存成功');
-  }
-
-  showRolePermissionsDialog.value = false;
-};
-
-const handleDeleteRole = (roleId) => {
-  const role = roles.value.find(r => r.id === roleId);
-  if (!role) return;
-
-  // 检查是否有用户使用该角色
-  const hasUsers = users.value.some(u => u.roleIds.includes(roleId));
-  if (hasUsers) {
-    ElMessage.warning('该角色已被用户使用，不能删除');
-    return;
-  }
-
-  ElMessageBox.confirm(
-      `确定要删除角色 ${role.name} 吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-  ).then(() => {
-    roles.value = roles.value.filter(r => r.id !== roleId);
-    addUserLog('deleteRole', `删除角色: ${role.name}`);
-    ElMessage.success('角色删除成功');
-  }).catch(() => {
-    // 取消删除
-  });
-};
-
-// 方法 - 用户日志
-const handleLogSizeChange = (val) => {
-  logPageSize.value = val;
-  logCurrentPage.value = 1;
-};
-
-const handleLogCurrentChange = (val) => {
-  logCurrentPage.value = val;
-};
-
-// 辅助方法
-const getRoleName = (roleId) => {
-  const role = roles.value.find(r => r.id === roleId);
-  return role ? role.name : '';
-};
-
-const getRoleType = (roleId) => {
-  switch (roleId) {
-    case 1: return 'success';
-    case 2: return 'primary';
-    case 3: return 'info';
-    default: return 'default';
-  }
-};
-
-const getUserCountByRole = (roleId) => {
-  return users.value.filter(u => u.roleIds.includes(roleId)).length;
-};
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString();
-};
-
-const tableRowClassName = ({ row }) => {
-  return row.status === '0' ? 'row-disabled' : '';
-};
-
-const addUserLog = (operation, details) => {
-  const newLogId = Math.max(...userLogs.value.map(log => log.id), 0) + 1;
-  userLogs.value.unshift({
-    id: newLogId,
-    userId: currentUser.value.id,
-    username: currentUser.value.username,
-    operation,
-    ip: '127.0.0.1', // 模拟本地IP
-    details,
-    timestamp: new Date().toLocaleString()
-  });
-};
+  const now = new Date()
+  currentTime.value = now.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
+})
 </script>
 
 <style scoped>
-.app-container {
+.factory-management {
   height: 100vh;
-  overflow: hidden;
-}
-
-.app-aside {
-  background-color: #f5f7fa;
-  border-right: 1px solid #e4e7ed;
-}
-
-.menu-sidebar {
-  height: 100%;
-  border-right: none;
-}
-
-.app-main {
-  padding: 20px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f7fa;
 }
 
-.content-wrapper {
-  background-color: #fff;
-  border-radius: 4px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.header {
+  background: linear-gradient(135deg, #1e88e5, #0d47a1);
+  color: white;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
-.content-header {
+.title-container {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
 
-.content-header h2 {
+.title-container h1 {
   margin: 0;
-  font-size: 18px;
-  color: #333;
-}
-
-.search-bar {
+  font-size: 1.5rem;
+  font-weight: 500;
   display: flex;
-  gap: 10px;
   align-items: center;
 }
 
-.search-input {
-  width: 300px;
+.title-container h1 i {
+  margin-right: 10px;
+  font-size: 1.8rem;
 }
 
-.role-filter, .status-filter, .operation-filter {
-  width: 180px;
+.sidebar {
+  background-color: #fff;
+  border-right: 1px solid #e6e6e6;
+  height: calc(100vh - 120px);
+  overflow: auto;
 }
 
-.date-filter {
-  width: 300px;
+.tree-container {
+  padding: 15px;
 }
 
-.pagination {
-  margin-top: 20px;
-  text-align: right;
+.factory-tree {
+  background: transparent;
 }
 
-.permission-tree {
-  max-height: 400px;
-  overflow-y: auto;
-  margin-top: 10px;
-}
-
-.permission-title {
-  margin-bottom: 15px;
-  font-weight: bold;
-  color: #666;
-}
-
-.permission-overview {
-  padding: 10px;
-}
-
-.role-selector {
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.role-permission-details {
-  margin-top: 10px;
-}
-
-.permission-groups {
-  margin-top: 15px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.permission-group {
-  margin-bottom: 15px;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  padding: 10px;
-}
-
-.group-title {
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #409eff;
-}
-
-.permission-checkboxes {
-  padding-left: 15px;
-}
-
-.save-permissions-btn {
-  margin-top: 20px;
+.tree-node {
+  display: flex;
+  align-items: center;
   width: 100%;
 }
 
-::v-deep .row-disabled {
-  background-color: #f5f5f5;
-  color: #999;
+.node-icon {
+  margin-right: 8px;
+  font-size: 16px;
 }
 
-::v-deep .el-tree-node__content {
-  height: 36px;
+.device-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: #909399;
 }
 
-::v-deep .el-tree-node {
+.main-content {
+  padding: 20px;
+  background-color: #f8fafc;
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.device-details {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.device-info h2 {
+  margin-top: 0;
+  color: #1e88e5;
+  display: flex;
+  align-items: center;
+}
+
+.device-info h2 i {
+  margin-right: 10px;
+}
+
+.personnel-management {
+  margin-top: 30px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.section-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.section-header h3 i {
+  margin-right: 8px;
+  color: #1e88e5;
+}
+
+.skill-tag {
+  margin-right: 5px;
   margin-bottom: 5px;
 }
 
-::v-deep .el-dialog__body {
-  max-height: 500px;
-  overflow-y: auto;
+.empty-state {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.empty-icon {
+  font-size: 100px;
+  color: #c0c4cc;
+  margin-bottom: 20px;
+}
+
+.footer {
+  background-color: #e3f2fd;
+  color: #546e7a;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.status-info {
+  display: flex;
+  gap: 30px;
+}
+
+.status-info span i {
+  margin-right: 5px;
+}
+
+.dialog-content {
+  padding: 10px;
+}
+
+:deep(.el-transfer-panel) {
+  width: 220px;
+}
+
+:deep(.el-tree-node__content) {
+  height: 40px;
 }
 </style>
-
