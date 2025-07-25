@@ -1,182 +1,337 @@
 <template>
-  <div class="virtual-factory-container">
-    <!-- 顶部标题与筛选（模拟截图的“全部、C4车间”等） -->
-    <div class="factory-header">
-      <div class="filter-group">
+  <div class="virtual-factory">
+    <div class="header">
+      <h1>虚拟工厂管理系统</h1>
+      <div class="workshop-tabs">
         <button
-            class="filter-btn"
-            :class="{ active: filter === 'all' }"
-            @click="filter = 'all'"
+            v-for="workshop in workshops"
+            :key="workshop.id"
+            :class="{ active: activeWorkshop === workshop.id || (workshop.id === 'all' && activeWorkshop === 'all') }"
+            @click="switchWorkshop(workshop.id)"
         >
-          全部
-        </button>
-        <button
-            class="filter-btn"
-            :class="{ active: filter === 'c4' }"
-            @click="filter = 'c4'"
-        >
-          C4车间
-        </button>
-        <button
-            class="filter-btn"
-            :class="{ active: filter === 'c4_01_11' }"
-            @click="filter = 'c4_01_11'"
-        >
-          C4段别01-11
+          {{ workshop.name }}
         </button>
       </div>
-      <div class="update-time">数据刷新时间：{{ updateTime }}</div>
+      <div class="control-buttons">
+        <button @click="toggleEditMode" :class="{ active: isEditMode }">
+          {{ isEditMode ? '退出设置' : '设置布局' }}
+        </button>
+        <button v-if="isEditMode" @click="saveLayout" class="save-btn">保存布局</button>
+        <button v-if="isEditMode" @click="resetLayout" class="reset-btn">重置布局</button>
+      </div>
     </div>
 
-    <!-- 设备网格容器（严格模拟截图布局） -->
-    <div class="factory-grid">
-      <!-- 手动模拟截图里的设备排列，共5行左右，根据实际数量调整 -->
+    <div class="factory-floor" ref="factoryFloor">
       <div
-          v-for="(device, index) in filteredDevices"
+          v-for="device in filteredDevices"
           :key="device.id"
           class="device-card"
-          :style="{ backgroundColor: device.color }"
+          :class="{ 'draggable': isEditMode, 'workshop-highlight': activeWorkshop === 'all' || device.workshop === activeWorkshop }"
+          :style="{
+          left: device.position.x + 'px',
+          top: device.position.y + 'px',
+          'background-color': getWorkshopColor(device.workshop)
+        }"
+          @mousedown="startDrag(device, $event)"
       >
-        {{ device.name }}
+        <div class="device-info">
+          <h3>{{ device.name }}</h3>
+          <p>车间: {{ getWorkshopName(device.workshop) }}</p>
+          <p>状态: {{ device.status }}</p>
+        </div>
       </div>
-      <!-- 补全空占位，让布局和截图一致（如果有空白位置） -->
-      <div class="device-card empty" v-for="i in emptySlots" :key="'empty-'+i"></div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue';
+<script>
+import { ref, computed, onMounted } from 'vue'
 
-// 模拟设备数据（严格对应截图里的设备ID、颜色、位置）
-const devices = ref([
-  { id: 1, name: 'C4-51-01', color: 'green' },
-  { id: 2, name: 'C4-51-02', color: 'gray' },
-  { id: 3, name: 'C4-51-03', color: 'green' },
-  { id: 4, name: 'C4-51-07', color: 'gray' },
-  { id: 5, name: 'C4-51-05', color: 'green' },
-  { id: 6, name: 'C4-51-08', color: 'green' },
-  { id: 7, name: 'C4-51-10', color: 'green' },
-  { id: 8, name: 'C4-51-09', color: 'green' },
-  { id: 9, name: 'C4-51-11', color: 'gray' },
-  { id: 10, name: 'C4-51-12', color: 'green' },
-  { id: 11, name: 'C4-51-13', color: 'green' },
-  { id: 12, name: 'C4-51-17', color: 'gray' },
-  { id: 13, name: 'C4-51-19', color: 'yellow' },
-  { id: 14, name: 'C4-51-20', color: 'gray' },
-  { id: 15, name: 'C4-51-21', color: 'yellow' },
-  { id: 16, name: 'C4-51-22', color: 'red' },
-  { id: 17, name: 'C4-51-23', color: 'yellow' },
-  { id: 18, name: 'C4-51-24', color: 'yellow' },
-  { id: 19, name: 'C4-51-14', color: 'gray' },
-  { id: 20, name: 'C4-51-15', color: 'gray' },
-  { id: 21, name: 'C4-51-29', color: 'green' },
-  { id: 22, name: 'C4-51-18', color: 'gray' },
-  { id: 23, name: 'C4-51-30', color: 'green' },
-  { id: 24, name: 'C4-51-25', color: 'green' },
-  { id: 25, name: 'C4-51-26', color: 'green' },
-  { id: 26, name: 'C4-51-27', color: 'green' },
-  { id: 27, name: 'C4-51-28', color: 'green' },
-  { id: 28, name: 'C4-51-32', color: 'gray' },
-  { id: 29, name: 'C4-51-31', color: 'green' },
-  { id: 30, name: 'C4-51-16', color: 'yellow' },
-  { id: 31, name: 'C4-51-04', color: 'green' },
-  //... 继续补充截图里的所有设备
-]);
+export default {
+  setup() {
+    // 车间数据
+    const workshops = ref([
+      { id: 'all', name: '全部车间' },
+      { id: 'workshop1', name: '车间一' },
+      { id: 'workshop2', name: '车间二' },
+      { id: 'workshop3', name: '车间三' }
+    ])
 
-// 筛选条件
-const filter = ref('all'); // all / c4 / c4_01_11
+    // 设备数据
+    const devices = ref([
+      { id: 'device1', name: '数控机床', workshop: 'workshop1', status: '运行中',
+        position: { x: 100, y: 150 }, defaultPosition: { x: 100, y: 150 } },
+      { id: 'device2', name: '激光切割机', workshop: 'workshop1', status: '待机',
+        position: { x: 300, y: 150 }, defaultPosition: { x: 300, y: 150 } },
+      { id: 'device3', name: '3D打印机', workshop: 'workshop2', status: '运行中',
+        position: { x: 100, y: 350 }, defaultPosition: { x: 100, y: 350 } },
+      { id: 'device4', name: '注塑机', workshop: 'workshop2', status: '维修中',
+        position: { x: 300, y: 350 }, defaultPosition: { x: 300, y: 350 } },
+      { id: 'device5', name: '装配机器人', workshop: 'workshop3', status: '运行中',
+        position: { x: 100, y: 550 }, defaultPosition: { x: 100, y: 550 } },
+      { id: 'device6', name: '包装机', workshop: 'workshop3', status: '待机',
+        position: { x: 300, y: 550 }, defaultPosition: { x: 300, y: 550 } }
+    ])
 
-// 模拟数据刷新时间
-const updateTime = ref('2025-07-22 15:02:14');
+    // 当前激活的车间
+    const activeWorkshop = ref('all')
 
-// 筛选后的设备（简单示例，可根据实际规则过滤）
-const filteredDevices = computed(() => {
-  if (filter.value === 'all') return devices.value;
-  // 这里假设 C4 车间和段别逻辑，实际根据接口或数据字段区分
-  return devices.value.filter(dev =>
-          dev.name.startsWith('C4-51-')
-      // 可扩展更复杂的筛选逻辑，比如段别判断
-  );
-});
+    // 编辑模式状态
+    const isEditMode = ref(false)
 
-// 空白占位数量（让布局和截图完全一致，数清楚每行空几个）
-const emptySlots = ref(/* 数截图里的空白卡片数量，比如 5 */ 5);
+    // 拖动相关变量
+    const isDragging = ref(false)
+    const draggedDevice = ref(null)
+    const dragStartX = ref(0)
+    const dragStartY = ref(0)
+    const deviceStartX = ref(0)
+    const deviceStartY = ref(0)
+    const factoryFloor = ref(null)
+
+    // 过滤显示当前车间的设备
+    const filteredDevices = computed(() => {
+      if (activeWorkshop.value === 'all') {
+        return devices.value
+      }
+      return devices.value.filter(device => device.workshop === activeWorkshop.value)
+    })
+
+    // 切换车间
+    const switchWorkshop = (workshopId) => {
+      activeWorkshop.value = workshopId
+    }
+
+    // 获取车间名称
+    const getWorkshopName = (workshopId) => {
+      const workshop = workshops.value.find(w => w.id === workshopId)
+      return workshop ? workshop.name : '未知车间'
+    }
+
+    // 获取车间颜色
+    const getWorkshopColor = (workshopId) => {
+      const colors = {
+        workshop1: '#ffcccc',
+        workshop2: '#ccffcc',
+        workshop3: '#ccccff',
+      }
+      return colors[workshopId] || '#dddddd'
+    }
+
+    // 切换编辑模式
+    const toggleEditMode = () => {
+      isEditMode.value = !isEditMode.value
+      isDragging.value = false
+      draggedDevice.value = null
+    }
+
+    // 开始拖动
+    const startDrag = (device, event) => {
+      if (!isEditMode.value) return
+
+      isDragging.value = true
+      draggedDevice.value = device
+      dragStartX.value = event.clientX
+      dragStartY.value = event.clientY
+      deviceStartX.value = device.position.x
+      deviceStartY.value = device.position.y
+
+      document.addEventListener('mousemove', dragDevice)
+      document.addEventListener('mouseup', stopDrag)
+
+      event.preventDefault()
+    }
+
+    // 拖动设备
+    const dragDevice = (event) => {
+      if (!isDragging.value || !draggedDevice.value) return
+
+      const dx = event.clientX - dragStartX.value
+      const dy = event.clientY - dragStartY.value
+
+      draggedDevice.value.position.x = deviceStartX.value + dx
+      draggedDevice.value.position.y = deviceStartY.value + dy
+    }
+
+    // 停止拖动
+    const stopDrag = () => {
+      isDragging.value = false
+      document.removeEventListener('mousemove', dragDevice)
+      document.removeEventListener('mouseup', stopDrag)
+    }
+
+    // 保存布局
+    const saveLayout = () => {
+      // 在实际应用中，这里可以发送API请求保存到服务器
+      console.log('布局已保存:', devices.value)
+      alert('布局保存成功！')
+    }
+
+    // 重置布局
+    const resetLayout = () => {
+      if (confirm('确定要重置所有设备位置吗？')) {
+        devices.value.forEach(device => {
+          device.position.x = device.defaultPosition.x
+          device.position.y = device.defaultPosition.y
+        })
+      }
+    }
+
+    // 初始化时从本地存储加载布局
+    onMounted(() => {
+      const savedLayout = localStorage.getItem('factoryLayout')
+      if (savedLayout) {
+        try {
+          const parsedLayout = JSON.parse(savedLayout)
+          devices.value = parsedLayout
+        } catch (e) {
+          console.error('加载布局失败:', e)
+        }
+      }
+    })
+
+    return {
+      workshops,
+      devices,
+      activeWorkshop,
+      isEditMode,
+      filteredDevices,
+      factoryFloor,
+      switchWorkshop,
+      getWorkshopName,
+      getWorkshopColor,
+      toggleEditMode,
+      startDrag,
+      saveLayout,
+      resetLayout
+    }
+  }
+}
 </script>
 
 <style scoped>
-.virtual-factory-container {
-  width: 90%;
-  margin: 20px auto;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.factory-header {
+.virtual-factory {
+  font-family: Arial, sans-serif;
+  height: 100vh;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  flex-direction: column;
 }
 
-.filter-group {
+.header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 15px;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.workshop-tabs {
   display: flex;
-  gap: 8px;
+  justify-content: center;
+  margin: 15px 0;
 }
 
-.filter-btn {
-  padding: 6px 12px;
-  border: 1px solid #ccc;
+.workshop-tabs button {
+  padding: 8px 15px;
+  margin: 0 5px;
+  border: none;
   border-radius: 4px;
-  background: #fff;
+  background-color: #34495e;
+  color: white;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-.filter-btn.active {
-  background: #007bff;
-  color: #fff;
-  border-color: #007bff;
+.workshop-tabs button:hover {
+  background-color: #3d566e;
 }
 
-.update-time {
-  color: #666;
-  font-size: 14px;
+.workshop-tabs button.active {
+  background-color: #1abc9c;
 }
 
-.factory-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(60px, 1fr)); /* 模拟截图的多列布局 */
-  gap: 10px;
-  background-color: #fff;
-  border: 1px solid #dee2e6;
+.control-buttons {
+  margin-top: 10px;
+}
+
+.control-buttons button {
+  padding: 8px 15px;
+  margin: 0 5px;
+  border: none;
   border-radius: 4px;
-  padding: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.control-buttons button.active {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.control-buttons .save-btn {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.control-buttons .reset-btn {
+  background-color: #f39c12;
+  color: white;
+}
+
+.factory-floor {
+  flex: 1;
+  position: relative;
+  background-color: #f5f5f5;
+  overflow: auto;
+  background-image:
+      linear-gradient(#ddd 1px, transparent 1px),
+      linear-gradient(90deg, #ddd 1px, transparent 1px);
+  background-size: 50px 50px;
 }
 
 .device-card {
-  width: 60px;
-  height: 60px;
-  border-radius: 4px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  position: absolute;
+  width: 180px;
+  height: 120px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  cursor: default;
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 1;
+}
+
+.device-card.draggable {
+  cursor: move;
+}
+
+.device-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.device-card.workshop-highlight {
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.5);
+}
+
+.device-info {
+  padding: 10px;
   color: #333;
+}
+
+.device-info h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-info p {
+  margin: 3px 0;
   font-size: 12px;
-  font-weight: bold;
-  border: 1px solid #ccc;
 }
-
-/* 空白卡片样式（如果有） */
-.device-card.empty {
-  background: #fff;
-  border: dashed 1px #ccc;
-}
-
-/* 颜色模拟截图里的状态 */
-.green { background-color: green!important; }
-.gray { background-color: gray!important; }
-.yellow { background-color: yellow!important; }
-.red { background-color: red!important; }
 </style>
