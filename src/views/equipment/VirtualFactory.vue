@@ -1,7 +1,7 @@
 <template>
   <div class="virtual-factory">
     <div class="header">
-      <h1>虚拟工厂管理系统</h1>
+<!--      <h1>虚拟工厂管理系统</h1>-->
       <div class="workshop-tabs">
         <button
             v-for="workshop in workshops"
@@ -30,16 +30,13 @@
           :style="{
           left: device.position.x + 'px',
           top: device.position.y + 'px',
-          'background-color': getWorkshopColor(device.workshop)
+          'border-color': getWorkshopColor(device.workshop)
         }"
           @mousedown="startDrag(device, $event)"
           @click="showDeviceDetails(device)"
       >
-        <div class="device-info">
-          <h3>{{ device.name }}</h3>
-          <p>车间: {{ getWorkshopName(device.workshop) }}</p>
-          <p>状态: <span :class="'status-' + device.status">{{ getStatusText(device.status) }}</span></p>
-        </div>
+        <div class="device-id">{{ device.id }}</div>
+        <div class="device-status" :class="'status-' + device.status"></div>
       </div>
     </div>
 
@@ -114,7 +111,7 @@ export default {
     // 设备数据
     const devices = ref([
       {
-        id: 'device1',
+        id: 'C4-51-01',
         name: '数控机床',
         workshop: 'workshop1',
         status: 'running',
@@ -128,7 +125,7 @@ export default {
         image: 'https://via.placeholder.com/300x200?text=数控机床'
       },
       {
-        id: 'device2',
+        id: 'C4-51-02',
         name: '激光切割机',
         workshop: 'workshop1',
         status: 'idle',
@@ -142,7 +139,7 @@ export default {
         image: 'https://via.placeholder.com/300x200?text=激光切割机'
       },
       {
-        id: 'device3',
+        id: 'C4-51-03',
         name: '3D打印机',
         workshop: 'workshop2',
         status: 'running',
@@ -156,7 +153,7 @@ export default {
         image: 'https://via.placeholder.com/300x200?text=3D打印机'
       },
       {
-        id: 'device4',
+        id: 'C4-51-07',
         name: '注塑机',
         workshop: 'workshop2',
         status: 'maintenance',
@@ -170,7 +167,7 @@ export default {
         image: 'https://via.placeholder.com/300x200?text=注塑机'
       },
       {
-        id: 'device5',
+        id: 'C4-51-05',
         name: '装配机器人',
         workshop: 'workshop3',
         status: 'running',
@@ -184,7 +181,7 @@ export default {
         image: 'https://via.placeholder.com/300x200?text=装配机器人'
       },
       {
-        id: 'device6',
+        id: 'C4-51-08',
         name: '包装机',
         workshop: 'workshop3',
         status: 'idle',
@@ -239,11 +236,11 @@ export default {
     // 获取车间颜色
     const getWorkshopColor = (workshopId) => {
       const colors = {
-        workshop1: '#ffcccc',
-        workshop2: '#ccffcc',
-        workshop3: '#ccccff',
+        workshop1: '#ff6666',
+        workshop2: '#66ff66',
+        workshop3: '#6666ff',
       }
-      return colors[workshopId] || '#dddddd'
+      return colors[workshopId] || '#666666'
     }
 
     // 获取状态文本
@@ -387,30 +384,49 @@ export default {
 .header {
   background-color: #2c3e50;
   color: white;
-  padding: 15px;
-  text-align: center;
+  padding: 15px 20px;
 }
 
 .header h1 {
-  margin: 0;
+  margin: 0 0 15px 0;
   font-size: 24px;
+  text-align: center;
+}
+
+.header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
 }
 
 .workshop-tabs {
   display: flex;
-  justify-content: center;
-  margin: 15px 0;
+  flex: 1;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.workshop-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.workshop-tabs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
 }
 
 .workshop-tabs button {
-  padding: 8px 15px;
-  margin: 0 5px;
+  padding: 8px 12px;
+  min-width: 80px;
   border: none;
   border-radius: 4px;
   background-color: #34495e;
   color: white;
   cursor: pointer;
   transition: background-color 0.3s;
+  white-space: nowrap;
 }
 
 .workshop-tabs button:hover {
@@ -422,16 +438,18 @@ export default {
 }
 
 .control-buttons {
-  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .control-buttons button {
-  padding: 8px 15px;
-  margin: 0 5px;
+  padding: 8px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
+  white-space: nowrap;
 }
 
 .control-buttons button.active {
@@ -449,6 +467,24 @@ export default {
   color: white;
 }
 
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .header-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .workshop-tabs {
+    width: 100%;
+  }
+
+  .control-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+
 .factory-floor {
   flex: 1;
   position: relative;
@@ -462,10 +498,17 @@ export default {
 
 .device-card {
   position: absolute;
-  width: 180px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
+  border: 3px solid;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   cursor: default;
   transition: transform 0.2s, box-shadow 0.2s;
   z-index: 1;
@@ -477,7 +520,7 @@ export default {
 
 .device-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   z-index: 2;
 }
 
@@ -485,39 +528,31 @@ export default {
   box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.5);
 }
 
-.device-info {
-  padding: 10px;
+.device-id {
+  font-size: 14px;
+  font-weight: bold;
   color: #333;
 }
 
-.device-info h3 {
-  margin: 0 0 5px 0;
-  font-size: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.device-info p {
-  margin: 3px 0;
-  font-size: 12px;
+.device-status {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-top: 5px;
 }
 
 /* 状态样式 */
 .status-running {
-  color: #2ecc71;
-  font-weight: bold;
+  background-color: #2ecc71;
 }
 .status-idle {
-  color: #3498db;
+  background-color: #3498db;
 }
 .status-maintenance {
-  color: #f39c12;
-  font-weight: bold;
+  background-color: #f39c12;
 }
 .status-fault {
-  color: #e74c3c;
-  font-weight: bold;
+  background-color: #e74c3c;
 }
 
 /* 弹窗样式 */
