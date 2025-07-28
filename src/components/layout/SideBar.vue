@@ -124,6 +124,11 @@ const menuItems = [
         meta: { title: '设备监控室' }
       },
       {
+        path: '/equipment/status-statistics',
+        name: ' EquipmentStatusStatistics',
+        meta: { title: '设备状态统计' }
+      },
+      {
         path: '/equipment/status-history',
         name: 'EquipmentStatusHistory',
         meta: { title: '设备状态履历图' }

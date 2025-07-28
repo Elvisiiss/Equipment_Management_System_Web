@@ -74,6 +74,12 @@ const routes = [
         meta: { title: '设备监控室' }
     },
     {
+        path: '/equipment/status-statistics',
+        name: ' EquipmentStatusStatistics',
+        component:()=>import('@/views/equipment/EquipmentStatusStatistics.vue'),
+        meta: { title: '设备状态统计' }
+    },
+    {
         path: '/equipment/status-history',
         name: 'EquipmentStatusHistory',
         component: () => import('@/views/equipment/EquipmentStatusHistory.vue'),
