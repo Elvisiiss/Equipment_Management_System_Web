@@ -7,11 +7,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     function setUser(userData) {
         user.value = {
-            user_name: userData.user_name,
+            user_name: userData.userName,
             roles: userData.roles,
             powers: userData.powers,
             token: userData.token,
-            avatar_url: userData.avatar_url
+            avatar_url: userData.avatarUrl
         }
         isAuthenticated.value = true
         localStorage.setItem('user', JSON.stringify(user.value))

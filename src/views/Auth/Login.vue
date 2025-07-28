@@ -37,47 +37,12 @@
     <div class="form-panel">
       <div class="form-container">
         <div class="form-header">
-          <h2>{{ isRootLogin ? 'ROOT用户登录' : '登录账户' }}</h2>
-          <p>{{ isRootLogin ? '请输入ROOT用户凭据' : '欢迎回来，请输入您的凭据' }}</p>
-        </div>
-
-        <!-- 登录方式切换 -->
-        <div class="auth-tabs" v-if="!isRootLogin">
-          <div class="tab-slider" :style="{ transform: `translateX(${activeTab === 'account' ? '0%' : '100%'})` }"></div>
-          <button
-              type="button"
-              @click="activeTab = 'account'"
-              :class="['tab-button', { active: activeTab === 'account' }]"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            密码登录
-          </button>
-          <button
-              type="button"
-              @click="activeTab = 'code'"
-              :class="['tab-button', { active: activeTab === 'code' }]"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-            验证码登录
-          </button>
-        </div>
-        <div v-else class="auth-tabs">
-          <div class="tab-slider" style="display: none;"></div>
-          <button type="button" class="tab-button active">
-            ROOT用户登录
-          </button>
+          <h2>登录账户</h2>
+          <p>欢迎回来，请输入您的凭据</p>
         </div>
 
         <!-- 账号密码登录 -->
-        <form v-if="!isRootLogin && activeTab === 'account'" @submit.prevent="handleAccountLogin" class="login-form">
+        <form @submit.prevent="handleAccountLogin" class="login-form">
           <div class="form-field">
             <label class="field-label">
               用户名/邮箱
@@ -128,7 +93,7 @@
             </div>
           </div>
 
-          <!-- 添加记住我选框 -->
+          <!-- 记住我选框 -->
           <div class="remember-me">
             <input
                 type="checkbox"
@@ -147,168 +112,6 @@
           </button>
         </form>
 
-        <!-- 验证码登录 -->
-        <form v-else-if="!isRootLogin && activeTab === 'code'" @submit.prevent="handleCodeLogin" class="login-form">
-          <div class="form-field">
-            <label class="field-label">邮箱地址</label>
-            <div class="input-group">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-              </svg>
-              <input
-                  v-model="codeForm.email"
-                  type="email"
-                  class="form-input"
-                  placeholder="请输入邮箱地址"
-                  required
-              >
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label class="field-label">验证码</label>
-            <div class="input-group verification-group">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="16 18 22 12 16 6"/>
-                <polyline points="8 6 2 12 8 18"/>
-              </svg>
-              <input
-                  v-model="codeForm.code"
-                  type="text"
-                  class="form-input"
-                  placeholder="请输入验证码"
-                  required
-              >
-              <button
-                  type="button"
-                  @click="sendLoginCode"
-                  :disabled="codeButtonDisabled"
-                  class="code-button"
-              >
-                {{ codeButtonText }}
-              </button>
-            </div>
-          </div>
-
-          <!-- 添加记住我选框 -->
-          <div class="remember-me">
-            <input
-                type="checkbox"
-                id="rememberCode"
-                v-model="codeForm.remember"
-                class="remember-checkbox"
-            >
-            <label for="rememberCode">记住我</label>
-          </div>
-
-          <button type="submit" class="submit-button" :disabled="loading">
-            <svg v-if="loading" class="loading-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-            </svg>
-            <span>{{ loading ? '登录中...' : '立即登录' }}</span>
-          </button>
-        </form>
-
-        <!-- ROOT用户登录表单 -->
-        <form v-if="isRootLogin" @submit.prevent="handleRootLogin" class="login-form">
-          <div class="form-field">
-            <label class="field-label">
-              用户名
-            </label>
-            <div class="input-group">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-              <input
-                  v-model="rootForm.username"
-                  type="text"
-                  class="form-input"
-                  placeholder="请输入ROOT用户名"
-                  required
-              >
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label class="field-label">密码</label>
-            <div class="input-group">
-              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-              <input
-                  v-model="rootForm.password"
-                  :type="showPassword ? 'text' : 'password'"
-                  class="form-input"
-                  placeholder="请输入ROOT密码"
-                  required
-              >
-              <button
-                  type="button"
-                  @click="togglePasswordVisibility"
-                  class="password-toggle"
-              >
-                <svg v-if="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- 添加记住我选框 -->
-          <div class="remember-me">
-            <input
-                type="checkbox"
-                id="rememberCode"
-                v-model="rootForm.remember"
-                class="remember-checkbox"
-            >
-            <label for="rememberCode">记住我</label>
-          </div>
-
-          <button type="submit" class="submit-button" :disabled="loading">
-            <svg v-if="loading" class="loading-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-            </svg>
-            <span>{{ loading ? '登录中...' : '立即登录' }}</span>
-          </button>
-        </form>
-
-        <!-- 底部链接 -->
-        <div class="form-footer" v-if="!isRootLogin">
-          <router-link to="/register" class="footer-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-              <circle cx="8.5" cy="7" r="4"/>
-              <line x1="20" y1="8" x2="20" y2="14"/>
-              <line x1="23" y1="11" x2="17" y2="11"/>
-            </svg>
-            注册新账户
-          </router-link>
-          <router-link to="/forgot-password" class="footer-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            找回密码
-          </router-link>
-        </div>
-
-        <!-- 底部链接 -->
-        <div class="form-footer" v-if="isRootLogin && !error">
-          <el-text class="footer-link">
-            ㅤ
-          </el-text>
-        </div>
-
         <!-- 错误提示 -->
         <div v-if="error" class="error-alert">
           <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -319,11 +122,6 @@
           <span>{{ error }}</span>
         </div>
       </div>
-
-      <!-- ROOT用户切换按钮 -->
-      <button @click="toggleRootLogin" class="root-toggle-button">
-        {{ isRootLogin ? '返回标准登录' : 'ROOT用户登录' }}
-      </button>
     </div>
   </div>
 </template>
@@ -331,13 +129,11 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-// import api from '../../api/auth.js';
 import { useAuthStore } from '@/stores/auth.js'
+import AuthAPI from '@/api/AuthAPI.js'
 
 const router = useRouter();
-const activeTab = ref('account');
 const authStore = useAuthStore()
-const isRootLogin = ref(false);
 
 const accountForm = ref({
   account: '',
@@ -345,26 +141,9 @@ const accountForm = ref({
   remember: false
 });
 
-const codeForm = ref({
-  email: '',
-  code: '',
-  remember: false
-});
-
-const rootForm = ref({
-  username: '',
-  password: '',
-  remember: false
-});
-
 const loading = ref(false);
 const error = ref('');
 const showPassword = ref(false);
-
-// 验证码相关状态
-const codeButtonDisabled = ref(false);
-const codeButtonText = ref('获取验证码');
-let countdown = 60;
 
 // 特性列表
 const features = computed(() => [
@@ -382,52 +161,8 @@ const features = computed(() => [
   }
 ]);
 
-const toggleRootLogin = () => {
-  isRootLogin.value = !isRootLogin.value;
-  error.value = '';
-  if (!isRootLogin.value) {
-    // 重置表单
-    rootForm.value = {
-      username: '',
-      password: ''
-    };
-  }
-};
-
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value;
-};
-
-const startCountdown = () => {
-  codeButtonDisabled.value = true;
-  const timer = setInterval(() => {
-    countdown--;
-    codeButtonText.value = `${countdown}秒后重试`;
-    if (countdown <= 0) {
-      clearInterval(timer);
-      codeButtonText.value = '获取验证码';
-      codeButtonDisabled.value = false;
-      countdown = 60;
-    }
-  }, 1000);
-};
-
-const sendLoginCode = async () => {
-  try {
-    if (!codeForm.value.email) {
-      error.value = '请先输入邮箱';
-      return;
-    }
-
-    const response = await api.sendLoginCode(codeForm.value.email);
-    if (response.code === 'success') {
-      startCountdown();
-    } else {
-      error.value = response.msg || '发送验证码失败';
-    }
-  } catch (err) {
-    error.value = err.response?.data?.msg || '发送验证码失败';
-  }
 };
 
 const handleAccountLogin = async () => {
@@ -435,87 +170,34 @@ const handleAccountLogin = async () => {
     loading.value = true;
     error.value = '';
 
-    // 调用API登录///////////////////////////////
-    // const response = await api.loginWithUsername(
-    //     accountForm.value.account,
-    //     accountForm.value.password,
-    //     accountForm.value.remember // 添加remember参数
-    // );
+    // 调用API登录
+    const responseBefore = await AuthAPI.loginWithUsername(
+        accountForm.value.account,
+        accountForm.value.password,
+        accountForm.value.remember
+    );
+    const response = responseBefore.data
 
-    // if (response.code === 'success') {
-    //   authStore.setUser(response)
-    //   router.push('/data-screen');
-    // } else {
-    //   error.value = response.msg || '登录失败';
-    // }
-
-    // 假数据验证
-    if (accountForm.value.account === 'user' && accountForm.value.password === 'z423z423') {
-      // 模拟登录成功
+    console.log(response.code)
+    // 处理API响应
+    if (response.code === 'success') {
+      // 将API数据转换为本地存储格式
       const userData = {
-        user_name: '晨绘屏',
-        roles: ['全能管理员', '系统管理员'],
-        powers: [1,2,3,4,5,6,7,8,9,10],
-        token: 'a_moremoremore_token',
-        avatar_url: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+        userName: response.userName,
+        roles: response.roles,
+        powers: response.powers,
+        token: response.token,
+        avatarUrl: response.avatarUrl
       };
 
       authStore.setUser(userData);
-      router.push('/');
-    } else {
-      error.value = '账号或密码错误';
-    }
-  } catch (err) {
-    error.value = err.response?.data?.msg || '登录失败';
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleCodeLogin = async () => {
-  try {
-    loading.value = true;
-    error.value = '';
-
-    // 调用API登录
-    const response = await api.loginWithCode(
-        codeForm.value.email,
-        codeForm.value.code,
-        codeForm.value.remember // 添加remember参数
-    );
-
-    if (response.code === 'success') {
-      authStore.setUser(response)
-      router.push('/data-screen');
+      await router.push('/');
     } else {
       error.value = response.msg || '登录失败';
     }
   } catch (err) {
-    error.value = err.response?.data?.msg || '登录失败';
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleRootLogin = async () => {
-  try {
-    loading.value = true;
-    error.value = '';
-
-    const response = await api.loginWithRoot(
-        rootForm.value.username,
-        rootForm.value.password,
-        rootForm.value.remember
-    );
-
-    if (response.code === 'success') {
-      authStore.setUser(response)
-      router.push('/root');
-    } else {
-      error.value = response.msg || 'ROOT登录失败';
-    }
-  } catch (err) {
-    error.value = err.response?.data?.msg || 'ROOT登录失败';
+    error.value = '登录失败，请检查网络连接';
+    console.error(err);
   } finally {
     loading.value = false;
   }
@@ -731,56 +413,6 @@ input[type="password"] {
   font-weight: 400;
 }
 
-/* 选项卡切换 */
-.auth-tabs {
-  position: relative;
-  display: flex;
-  background: #f7fafc;
-  border-radius: 12px;
-  padding: 4px;
-  margin-bottom: 32px;
-}
-
-.tab-slider {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: calc(50% - 4px);
-  height: calc(100% - 8px);
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.tab-button {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #718096;
-  cursor: pointer;
-  transition: color 0.3s ease;
-  position: relative;
-  z-index: 1;
-}
-
-.tab-button svg {
-  width: 16px;
-  height: 16px;
-}
-
-.tab-button.active {
-  color: #667eea;
-}
-
 /* 表单样式 */
 .login-form {
   display: flex;
@@ -800,46 +432,6 @@ input[type="password"] {
   font-weight: 600;
   color: #2d3748;
   margin-bottom: 4px;
-}
-
-.select-group {
-  position: relative;
-}
-
-.form-select {
-  width: 100%;
-  padding: 16px 48px 16px 20px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #2d3748;
-  background: white;
-  cursor: pointer;
-  appearance: none;
-  transition: all 0.3s ease;
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.select-arrow {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: #a0aec0;
-  pointer-events: none;
-  transition: transform 0.3s ease;
-}
-
-.form-select:focus + .select-arrow {
-  transform: translateY(-50%) rotate(180deg);
 }
 
 .input-group {
@@ -907,36 +499,6 @@ input[type="password"] {
   height: 100%;
 }
 
-.verification-group .form-input {
-  padding-right: 120px;
-}
-
-.code-button {
-  position: absolute;
-  right: 8px;
-  padding: 8px 16px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.code-button:hover:not(:disabled) {
-  background: #5a67d8;
-  transform: translateY(-1px);
-}
-
-.code-button:disabled {
-  background: #cbd5e0;
-  cursor: not-allowed;
-  transform: none;
-}
-
 .submit-button {
   width: 100%;
   padding: 16px 24px;
@@ -979,37 +541,6 @@ input[type="password"] {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* 底部链接 */
-.form-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.footer-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #718096;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.footer-link:hover {
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.05);
-}
-
-.footer-link svg {
-  width: 16px;
-  height: 16px;
 }
 
 /* 错误提示 */
@@ -1063,77 +594,11 @@ input[type="password"] {
   .form-header h2 {
     font-size: 1.75rem;
   }
-
-  .tab-button {
-    font-size: 0.85rem;
-    padding: 12px 16px;
-  }
-
-  .tab-button svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .form-footer {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .footer-link {
-    justify-content: center;
-  }
 }
 
 @media (max-width: 480px) {
   .form-container {
     max-width: 100%;
-  }
-
-  .verification-group .form-input {
-    padding-right: 100px;
-  }
-
-  .code-button {
-    font-size: 0.8rem;
-    padding: 6px 12px;
-  }
-}
-
-
-.root-toggle-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  padding: 10px 16px;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 100;
-}
-
-.root-toggle-button:hover {
-  background: #5a67d8;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-}
-
-@media (max-width: 1024px) {
-  .root-toggle-button {
-    bottom: 15px;
-    right: 15px;
-  }
-}
-
-@media (max-width: 640px) {
-  .root-toggle-button {
-    padding: 8px 12px;
-    font-size: 0.8rem;
   }
 }
 
