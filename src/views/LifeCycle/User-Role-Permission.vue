@@ -491,7 +491,7 @@ import {
   Plus,
 } from '@element-plus/icons-vue';
 import {ElMessage, ElMessageBox} from 'element-plus';
-import AuthAPI from '@/api/AuthAPI.js';
+import AuthAPI from '@/api/LifeCycle/User-Role-Permission.js';
 
 // 全局状态
 const activeMenu = ref('user-management');
