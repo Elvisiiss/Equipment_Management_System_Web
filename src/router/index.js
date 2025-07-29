@@ -226,7 +226,7 @@ const routes = [
     {
         path: '/LifeCycle/workshop',
         name: 'workshop',
-        meta: { title: '车间' },
+        meta: { title: '车间管理' },
         component:()=> import('@/views/LifeCycle/workshop.vue'),
     },
     {

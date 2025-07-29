@@ -1,10 +1,10 @@
+<template>
+车间管理
+</template>
+
 <script setup>
 
 </script>
-
-<template>
-车间
-</template>
 
 <style scoped>
 
