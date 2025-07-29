@@ -51,7 +51,7 @@
               <el-option
                   v-for="role in roles"
                   :key="role.id"
-                  :label="role.name"
+                  :label="role.roleName"
                   :value="role.id"
               ></el-option>
             </el-select>
@@ -73,8 +73,7 @@
               :row-class-name="tableRowClassName"
           >
             <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="name" label="姓名"></el-table-column>
-            <el-table-column prop="username" label="用户名"></el-table-column>
+            <el-table-column prop="userName" label="用户名"></el-table-column>
             <el-table-column prop="email" label="邮箱"></el-table-column>
             <el-table-column label="角色">
               <template #default="scope">
@@ -160,7 +159,7 @@
               style="width: 100%; margin-top: 16px;"
           >
             <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="name" label="角色名称"></el-table-column>
+            <el-table-column prop="roleName" label="角色名称"></el-table-column>
             <el-table-column prop="description" label="角色描述"></el-table-column>
             <el-table-column label="权限数量">
               <template #default="scope">
@@ -290,11 +289,8 @@
           ref="userFormRef"
           label-width="100px"
       >
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="formUser.name"></el-input>
-        </el-form-item>
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="formUser.username" :disabled="formUser.id !== undefined"></el-input>
+        <el-form-item label="用户名" prop="userName">
+          <el-input v-model="formUser.userName" :disabled="formUser.id !== undefined"></el-input>
         </el-form-item>
         <el-form-item
             label="密码"
@@ -315,7 +311,7 @@
             <el-option
                 v-for="role in roles"
                 :key="role.id"
-                :label="role.name"
+                :label="role.roleName"
                 :value="role.id"
             ></el-option>
           </el-select>
@@ -381,8 +377,8 @@
           ref="roleFormRef"
           label-width="100px"
       >
-        <el-form-item label="角色名称" prop="name">
-          <el-input v-model="formRole.name"></el-input>
+        <el-form-item label="角色名称" prop="roleName">
+          <el-input v-model="formRole.roleName"></el-input>
         </el-form-item>
         <el-form-item label="角色描述" prop="description">
           <el-input
@@ -410,7 +406,7 @@
         width="600px"
     >
       <div class="permission-title">
-        当前角色: {{ currentRoleForPermissions?.name || '' }}
+        当前角色: {{ currentRoleForPermissions?.roleName || '' }}
       </div>
 
       <el-tree
@@ -450,13 +446,13 @@
           <el-option
               v-for="role in roles"
               :key="role.id"
-              :label="role.name"
+              :label="role.roleName"
               :value="role.id"
           ></el-option>
         </el-select>
 
         <div v-if="currentRoleInOverview" class="role-permission-details">
-          <h3>{{ currentRoleInOverview.name }} 权限详情</h3>
+          <h3>{{ currentRoleInOverview.roleName }} 权限详情</h3>
           <div class="permission-groups">
             <div v-for="group in permissionGroups" :key="group.id" class="permission-group">
               <div class="group-title">{{ group.name }}</div>
@@ -495,118 +491,114 @@ import {
   Plus,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import AuthAPI from '@/api/AuthAPI.js';
 
 // 全局状态
 const activeMenu = ref('user-management');
 
-// 假数据 - 用户
-const users = ref([
-  {
-    id: 1,
-    name: '张三',
-    username: 'zhangsan',
-    email: 'zhangsan@example.com',
-    roleIds: [1],
-    status: '1',
-    createdAt: '2023-01-15'
-  },
-  {
-    id: 2,
-    name: '李四',
-    username: 'lisi',
-    email: 'lisi@example.com',
-    roleIds: [2],
-    status: '1',
-    createdAt: '2023-02-20'
-  },
-  {
-    id: 3,
-    name: '王五',
-    username: 'wangwu',
-    email: 'wangwu@example.com',
-    roleIds: [3],
-    status: '0',
-    createdAt: '2023-03-10'
-  },
-  {
-    id: 4,
-    name: '赵六',
-    username: 'zhaoliu',
-    email: 'zhaoliu@example.com',
-    roleIds: [2, 3],
-    status: '1',
-    createdAt: '2023-04-05'
-  },
-  {
-    id: 5,
-    name: '钱七',
-    username: 'qianqi',
-    email: 'qianqi@example.com',
-    roleIds: [3],
-    status: '1',
-    createdAt: '2023-05-18'
-  }
-]);
+// 用户数据
+const users = ref([]);
+const loadingUsers = ref(false);
 
-// 假数据 - 角色
-const roles = ref([
-  {
-    id: 1,
-    name: '超级管理员',
-    description: '系统最高权限，可访问和操作所有功能',
-    permissions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-  },
-  {
-    id: 2,
-    name: '部门管理员',
-    description: '管理部门内用户和数据',
-    permissions: [1, 2, 3, 5, 6, 7, 9, 10]
-  },
-  {
-    id: 3,
-    name: '普通用户',
-    description: '只能访问和操作授权范围内的功能',
-    permissions: [1, 5, 9]
-  }
-]);
+// 角色数据
+const roles = ref([]);
+const loadingRoles = ref(false);
 
-// 假数据 - 权限
-const permissions = ref([
-  { id: 1, name: '查看用户', groupId: 1 },
-  { id: 2, name: '新增用户', groupId: 1 },
-  { id: 3, name: '编辑用户', groupId: 1 },
-  { id: 4, name: '删除用户', groupId: 1 },
-  { id: 5, name: '查看角色', groupId: 2 },
-  { id: 6, name: '新增角色', groupId: 2 },
-  { id: 7, name: '编辑角色', groupId: 2 },
-  { id: 8, name: '删除角色', groupId: 2 },
-  { id: 9, name: '查看日志', groupId: 3 },
-  { id: 10, name: '导出日志', groupId: 3 },
-  { id: 11, name: '管理系统设置', groupId: 4 },
-  { id: 12, name: '管理权限', groupId: 4 }
-]);
+// 模拟用户角色映射
+const userRoles = ref({
+  1: [1], // superadmin -> SUPER_ADMIN
+  2: [2], // admin -> ADMIN
+  3: [3]  // user1 -> USER
+});
+
+// 获取用户列表
+const fetchUsers = async () => {
+  try {
+    loadingUsers.value = true;
+    const response = await AuthAPI.getUserList();
+    console.log(response.data.data);
+    users.value = response.data.data.map(user => ({
+      ...user,
+      status: String(user.status),
+      roleIds: userRoles.value[user.id] || []
+    }));
+  } catch (error) {
+    ElMessage.error('获取用户列表失败');
+    console.error(error);
+  } finally {
+    loadingUsers.value = false;
+  }
+};
+
+// 获取角色列表
+const fetchRoles = async () => {
+  try {
+    loadingRoles.value = true;
+    const response = await AuthAPI.getRoleList();
+    console.log(response.data.data);
+    roles.value = response.data.data.map(role => ({
+      ...role,
+      permissions: getPermissionsForRole(role.id)
+    }));
+  } catch (error) {
+    ElMessage.error('获取角色列表失败');
+    console.error(error);
+  } finally {
+    loadingRoles.value = false;
+  }
+};
+
+// 为角色分配权限 (模拟数据)
+const getPermissionsForRole = (roleId) => {
+  switch (roleId) {
+    case 1:
+      return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // SUPER_ADMIN
+    case 2:
+      return [1, 2, 3, 4, 5, 6, 7, 8]; // ADMIN
+    case 3:
+      return [1, 5, 9]; // USER
+    default:
+      return [];
+  }
+};
 
 // 权限分组
 const permissionGroups = ref([
   {
     id: 1,
     name: '用户管理',
-    permissions: permissions.value.filter(p => p.groupId === 1)
+    permissions: [
+      {id: 1, name: '查看用户'},
+      {id: 2, name: '新增用户'},
+      {id: 3, name: '编辑用户'},
+      {id: 4, name: '删除用户'}
+    ]
   },
   {
     id: 2,
     name: '角色管理',
-    permissions: permissions.value.filter(p => p.groupId === 2)
+    permissions: [
+      {id: 5, name: '查看角色'},
+      {id: 6, name: '新增角色'},
+      {id: 7, name: '编辑角色'},
+      {id: 8, name: '删除角色'}
+    ]
   },
   {
     id: 3,
     name: '日志管理',
-    permissions: permissions.value.filter(p => p.groupId === 3)
+    permissions: [
+      {id: 9, name: '查看日志'},
+      {id: 10, name: '导出日志'}
+    ]
   },
   {
     id: 4,
     name: '系统设置',
-    permissions: permissions.value.filter(p => p.groupId === 4)
+    permissions: [
+      {id: 11, name: '管理系统设置'},
+      {id: 12, name: '管理权限'}
+    ]
   }
 ]);
 
@@ -616,41 +608,41 @@ const permissionTree = ref([
     id: 1,
     label: '用户管理',
     children: [
-      { id: 1, label: '查看用户' },
-      { id: 2, label: '新增用户' },
-      { id: 3, label: '编辑用户' },
-      { id: 4, label: '删除用户' }
+      {id: 1, label: '查看用户'},
+      {id: 2, label: '新增用户'},
+      {id: 3, label: '编辑用户'},
+      {id: 4, label: '删除用户'}
     ]
   },
   {
     id: 2,
     label: '角色管理',
     children: [
-      { id: 5, label: '查看角色' },
-      { id: 6, label: '新增角色' },
-      { id: 7, label: '编辑角色' },
-      { id: 8, label: '删除角色' }
+      {id: 5, label: '查看角色'},
+      {id: 6, label: '新增角色'},
+      {id: 7, label: '编辑角色'},
+      {id: 8, label: '删除角色'}
     ]
   },
   {
     id: 3,
     label: '日志管理',
     children: [
-      { id: 9, label: '查看日志' },
-      { id: 10, label: '导出日志' }
+      {id: 9, label: '查看日志'},
+      {id: 10, label: '导出日志'}
     ]
   },
   {
     id: 4,
     label: '系统设置',
     children: [
-      { id: 11, label: '管理系统设置' },
-      { id: 12, label: '管理权限' }
+      {id: 11, label: '管理系统设置'},
+      {id: 12, label: '管理权限'}
     ]
   }
 ]);
 
-// 假数据 - 用户日志
+// 用户日志数据
 const userLogs = ref([
   {
     id: 1,
@@ -748,28 +740,26 @@ const userPageSize = ref(10);
 const showAddUserDialog = ref(false);
 const formUser = ref({
   id: undefined,
-  name: '',
-  username: '',
+  userName: '',
   password: '',
   email: '',
   roleIds: [],
   status: '1'
 });
 const userRules = ref({
-  name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+  userName: [
+    {required: true, message: '请输入用户名', trigger: 'blur'},
+    {min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur'}
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' }
+    {required: true, message: '请输入密码', trigger: 'blur'},
+    {min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur'}
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: ['blur', 'change'] }
+    {required: true, message: '请输入邮箱', trigger: 'blur'},
+    {type: 'email', message: '请输入正确的邮箱格式', trigger: ['blur', 'change']}
   ],
-  roleIds: [{ required: true, message: '请选择至少一个角色', trigger: 'change' }]
+  roleIds: [{required: true, message: '请选择至少一个角色', trigger: 'change'}]
 });
 const userFormRef = ref(null);
 
@@ -780,12 +770,12 @@ const rolePageSize = ref(10);
 const showAddRoleDialog = ref(false);
 const formRole = ref({
   id: undefined,
-  name: '',
+  roleName: '',
   description: ''
 });
 const roleRules = ref({
-  name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入角色描述', trigger: 'blur' }]
+  roleName: [{required: true, message: '请输入角色名称', trigger: 'blur'}],
+  description: [{required: true, message: '请输入角色描述', trigger: 'blur'}]
 });
 const roleFormRef = ref(null);
 const showRolePermissionsDialog = ref(false);
@@ -808,11 +798,11 @@ const resetPasswordForm = ref({
 });
 const resetPasswordRules = ref({
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' }
+    {required: true, message: '请输入新密码', trigger: 'blur'},
+    {min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur'}
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    {required: true, message: '请确认密码', trigger: 'blur'},
     {
       validator: (rule, value, callback) => {
         if (value !== resetPasswordForm.value.newPassword) {
@@ -831,8 +821,7 @@ const userIdToReset = ref(null);
 // 计算属性 - 筛选用户
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.username.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
+    const matchesSearch = user.userName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
         user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase());
     const matchesRole = !userRoleFilter.value || user.roleIds.includes(Number(userRoleFilter.value));
     const matchesStatus = !userStatusFilter.value || user.status === userStatusFilter.value;
@@ -844,7 +833,7 @@ const filteredUsers = computed(() => {
 // 计算属性 - 筛选角色
 const filteredRoles = computed(() => {
   return roles.value.filter(role => {
-    return role.name.toLowerCase().includes(roleSearchQuery.value.toLowerCase()) ||
+    return role.roleName.toLowerCase().includes(roleSearchQuery.value.toLowerCase()) ||
         role.description.toLowerCase().includes(roleSearchQuery.value.toLowerCase());
   });
 });
@@ -866,7 +855,8 @@ const filteredLogs = computed(() => {
 
 // 生命周期钩子
 onMounted(() => {
-  // 初始化操作
+  fetchUsers();
+  fetchRoles();
 });
 
 // 方法 - 菜单切换
@@ -893,7 +883,7 @@ const handleUserCurrentChange = (val) => {
 };
 
 const handleEditUser = (user) => {
-  formUser.value = { ...user };
+  formUser.value = {...user};
   showAddUserDialog.value = true;
 };
 
@@ -903,36 +893,35 @@ const submitUserForm = async () => {
 
     if (formUser.value.id) {
       // 编辑现有用户
-      const index = users.value.findIndex(u => u.id === formUser.value.id);
-      if (index !== -1) {
-        users.value[index] = { ...formUser.value };
-        addUserLog('editUser', `编辑用户: ${formUser.value.username}`);
-        ElMessage.success('用户编辑成功');
-      }
+      await AuthAPI.updateUser(formUser.value.id, formUser.value);
+      ElMessage.success('用户编辑成功');
     } else {
       // 创建新用户
-      const newId = Math.max(...users.value.map(u => u.id), 0) + 1;
-      const newUser = {
-        ...formUser.value,
-        id: newId,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      users.value.push(newUser);
-      addUserLog('createUser', `创建新用户: ${newUser.username}`);
+      await AuthAPI.createUser(formUser.value);
       ElMessage.success('用户创建成功');
     }
 
     showAddUserDialog.value = false;
     userFormRef.value.resetFields();
+    fetchUsers();
   } catch (error) {
     console.error('表单验证失败', error);
+    ElMessage.error(error.response?.data?.message || '操作失败');
   }
 };
 
-const handleUserStatusChange = (user) => {
-  const statusText = user.status === '1' ? '启用' : '禁用';
-  addUserLog('changeUserStatus', `将用户 ${user.username} ${statusText}`);
-  ElMessage.success(`用户已${statusText}`);
+const handleUserStatusChange = async (user) => {
+  try {
+    await AuthAPI.updateUserStatus(user.id, {
+      status: user.status === '1' ? 0 : 1
+    });
+    fetchUsers();
+    const statusText = user.status === '1' ? '启用' : '禁用';
+    ElMessage.success(`用户已${statusText}`);
+  } catch (error) {
+    ElMessage.error('状态更新失败');
+    console.error(error);
+  }
 };
 
 const handleResetPassword = (user) => {
@@ -948,17 +937,16 @@ const submitResetPassword = async () => {
   try {
     await resetPasswordFormRef.value.validate();
 
-    // 模拟重置密码
-    const user = users.value.find(u => u.id === userIdToReset.value);
-    if (user) {
-      addUserLog('resetPassword', `重置用户 ${user.username} 的密码`);
-      ElMessage.success('密码重置成功');
-    }
+    await AuthAPI.resetUserPassword(userIdToReset.value, {
+      newPassword: resetPasswordForm.value.newPassword
+    });
 
+    ElMessage.success('密码重置成功');
     showResetPasswordDialog.value = false;
     resetPasswordFormRef.value.resetFields();
   } catch (error) {
     console.error('密码验证失败', error);
+    ElMessage.error(error.response?.data?.message || '密码重置失败');
   }
 };
 
@@ -967,17 +955,21 @@ const handleDeleteUser = (userId) => {
   if (!user) return;
 
   ElMessageBox.confirm(
-      `确定要删除用户 ${user.username} 吗？`,
+      `确定要删除用户 ${user.userName} 吗？`,
       '删除确认',
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }
-  ).then(() => {
-    users.value = users.value.filter(u => u.id !== userId);
-    addUserLog('deleteUser', `删除用户: ${user.username}`);
-    ElMessage.success('用户删除成功');
+  ).then(async () => {
+    try {
+      await AuthAPI.deleteUser(userId);
+      ElMessage.success('用户删除成功');
+      fetchUsers();
+    } catch (error) {
+      ElMessage.error(error.response?.data?.message || '删除失败');
+    }
   }).catch(() => {
     // 取消删除
   });
@@ -994,7 +986,7 @@ const handleRoleCurrentChange = (val) => {
 };
 
 const handleEditRole = (role) => {
-  formRole.value = { ...role };
+  formRole.value = {...role};
   showAddRoleDialog.value = true;
 };
 
@@ -1004,36 +996,25 @@ const submitRoleForm = async () => {
 
     if (formRole.value.id) {
       // 编辑现有角色
-      const index = roles.value.findIndex(r => r.id === formRole.value.id);
-      if (index !== -1) {
-        // 保留原有权限
-        formRole.value.permissions = roles.value[index].permissions;
-        roles.value[index] = { ...formRole.value };
-        addUserLog('editRole', `编辑角色: ${formRole.value.name}`);
-        ElMessage.success('角色编辑成功');
-      }
+      await AuthAPI.updateRole(formRole.value.id, formRole.value);
+      ElMessage.success('角色编辑成功');
     } else {
       // 创建新角色
-      const newId = Math.max(...roles.value.map(r => r.id), 0) + 1;
-      const newRole = {
-        ...formRole.value,
-        id: newId,
-        permissions: [] // 新角色默认无权限
-      };
-      roles.value.push(newRole);
-      addUserLog('createRole', `创建新角色: ${newRole.name}`);
+      await AuthAPI.createRole(formRole.value);
       ElMessage.success('角色创建成功');
     }
 
     showAddRoleDialog.value = false;
     roleFormRef.value.resetFields();
+    fetchRoles();
   } catch (error) {
     console.error('表单验证失败', error);
+    ElMessage.error(error.response?.data?.message || '操作失败');
   }
 };
 
 const handleRolePermissions = (role) => {
-  currentRoleForPermissions.value = { ...role };
+  currentRoleForPermissions.value = {...role};
   currentRolePermissions.value = [...role.permissions];
   selectedPermissions.value = [...role.permissions];
   showRolePermissionsDialog.value = true;
@@ -1043,42 +1024,42 @@ const handlePermissionCheck = (data, checked, indeterminate) => {
   selectedPermissions.value = [...checked.checkedKeys];
 };
 
-const saveRolePermissions = () => {
+const saveRolePermissions = async () => {
   if (!currentRoleForPermissions.value) return;
 
-  const index = roles.value.findIndex(r => r.id === currentRoleForPermissions.value.id);
-  if (index !== -1) {
-    roles.value[index].permissions = [...selectedPermissions.value];
-    addUserLog('changePermission', `修改角色 ${roles.value[index].name} 的权限`);
+  try {
+    await AuthAPI.updateRolePermissions(currentRoleForPermissions.value.id, {
+      permissionIds: selectedPermissions.value
+    });
     ElMessage.success('权限配置保存成功');
+    fetchRoles();
+    showRolePermissionsDialog.value = false;
+  } catch (error) {
+    ElMessage.error('权限配置保存失败');
+    console.error(error);
   }
-
-  showRolePermissionsDialog.value = false;
 };
 
 const handleDeleteRole = (roleId) => {
   const role = roles.value.find(r => r.id === roleId);
   if (!role) return;
 
-  // 检查是否有用户使用该角色
-  const hasUsers = users.value.some(u => u.roleIds.includes(roleId));
-  if (hasUsers) {
-    ElMessage.warning('该角色已被用户使用，不能删除');
-    return;
-  }
-
   ElMessageBox.confirm(
-      `确定要删除角色 ${role.name} 吗？`,
+      `确定要删除角色 ${role.roleName} 吗？`,
       '删除确认',
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }
-  ).then(() => {
-    roles.value = roles.value.filter(r => r.id !== roleId);
-    addUserLog('deleteRole', `删除角色: ${role.name}`);
-    ElMessage.success('角色删除成功');
+  ).then(async () => {
+    try {
+      await AuthAPI.deleteRole(roleId);
+      ElMessage.success('角色删除成功');
+      fetchRoles();
+    } catch (error) {
+      ElMessage.error(error.response?.data?.message || '删除失败');
+    }
   }).catch(() => {
     // 取消删除
   });
@@ -1097,15 +1078,19 @@ const handleLogCurrentChange = (val) => {
 // 辅助方法
 const getRoleName = (roleId) => {
   const role = roles.value.find(r => r.id === roleId);
-  return role ? role.name : '';
+  return role ? role.roleName : '';
 };
 
 const getRoleType = (roleId) => {
   switch (roleId) {
-    case 1: return 'success';
-    case 2: return 'primary';
-    case 3: return 'info';
-    default: return 'default';
+    case 1:
+      return 'success';
+    case 2:
+      return 'primary';
+    case 3:
+      return 'info';
+    default:
+      return 'default';
   }
 };
 
@@ -1117,7 +1102,7 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleString();
 };
 
-const tableRowClassName = ({ row }) => {
+const tableRowClassName = ({row}) => {
   return row.status === '0' ? 'row-disabled' : '';
 };
 
@@ -1271,4 +1256,3 @@ const addUserLog = (operation, details) => {
   overflow-y: auto;
 }
 </style>
-
