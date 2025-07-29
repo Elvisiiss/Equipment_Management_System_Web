@@ -560,10 +560,10 @@ const renderChart = () => {
         return result;
       }
     },
-    legend: {
-      data: ['时间稼动率', '性能稼动率', '良率', 'OEE'],
-      bottom: 10
-    },
+    // legend: {
+    //   data: ['时间稼动率', '性能稼动率', '良率', 'OEE'],
+    //   bottom: 10
+    // },
     grid: {
       left: '3%',
       right: '4%',
