@@ -121,145 +121,335 @@ const menuItems = [
     meta: { title: '首页', icon: HomeFilled }
   },
   {
-    path: '/inspection',
-    name: 'InspectionManagement',
-    meta: { title: '点巡检管理', icon: List },
+    path: '/asset',
+    name: 'asset',
+    meta: { title: '资产管理', icon: HomeFilled },
     children: [
       {
-        path: '/inspection/period',
-        name: 'InspectionPeriodSetting',
-        meta: { title: '点检项目周期设置' }
-      },
-      {
-        path: '/inspection/history',
-        name: 'InspectionHistory',
-        meta: { title: '历史数据' }
-      },
-      {
-        path: '/inspection/abnormal-setting',
-        name: 'InspectionAbnormalSetting',
-        meta: { title: '点检项目异常标识设置' }
+        path: '/asset/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
+          {
+            path: '/asset/manage/A',
+            name: 'A',
+            meta: { title: '页面A' },
+          }
+        ]
+      },{
+        path: '/asset/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/asset/configuration/B',
+            name: 'B',
+            meta: { title: '页面B' },
+          }
+        ]
+      },{
+        path: '/asset/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/asset/screen/C',
+            name: 'C',
+            meta: { title: '页面C' },
+          }
+        ]
       }
     ]
   },
   {
-    path: '/repair',
-    name: 'RepairManagement',
-    meta: { title: '维修管理', icon: Tools },
+    path: '/equipment',
+    name: 'equipment',
+    meta: { title: '设备实时监控', icon: HomeFilled },
     children: [
       {
-        path: '/repair/guide',
-        name: 'RepairGuide',
-        meta: { title: '维修指引' }
-      },
+        path: '/equipment/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
+          {
+            path: '/equipment/manage/D',
+            name: 'D',
+            meta: { title: '页面D' },
+          }
+        ]
+      },{
+        path: '/equipment/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/equipment/configuration/E',
+            name: 'E',
+            meta: { title: '页面E' },
+          }
+        ]
+      },{
+        path: '/equipment/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/equipment/screen/F',
+            name: 'F',
+            meta: { title: '页面F' },
+          }
+        ]
+      }
+    ]
+  },
+  {
+    path: '/inspection',
+    name: 'inspection',
+    meta: { title: '点巡检管理', icon: HomeFilled },
+    children: [
       {
-        path: '/repair/manage',
-        name: 'RepairManage',
-        meta: { title: '设备维修管理' }
+        path: '/inspection/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
+          {
+            path: '/inspection/manage/G',
+            name: 'G',
+            meta: { title: '页面G' },
+          }
+        ]
+      },{
+        path: '/inspection/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/inspection/configuration/H',
+            name: 'H',
+            meta: { title: '页面H' },
+          }
+        ]
+      },{
+        path: '/inspection/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/inspection/screen/I',
+            name: 'I',
+            meta: { title: '页面I' },
+          }
+        ]
       }
     ]
   },
   {
     path: '/maintenance',
-    name: 'MaintenanceManagement',
-    meta: { title: '保养管理', icon: Setting }
-  },
-  {
-    path: '/equipment',
-    name: 'EquipmentManagement',
-    meta: { title: '设备监控', icon: Monitor },
+    name: 'maintenance',
+    meta: { title: '保养管理', icon: HomeFilled },
     children: [
       {
-        path: '/equipment/monitoring-room',
-        name: 'EquipmentMonitoringRoom',
-        meta: { title: '设备监控室' }
-      },
+        path: '/maintenance/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
+          {
+            path: '/maintenance/manage/J',
+            name: 'J',
+            meta: { title: '页面J' },
+          }
+        ]
+      },{
+        path: '/maintenance/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/maintenance/configuration/K',
+            name: 'K',
+            meta: { title: '页面K' },
+          }
+        ]
+      },{
+        path: '/maintenance/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/maintenance/screen/L',
+            name: 'L',
+            meta: { title: '页面L' },
+          }
+        ]
+      }
+    ]
+  },
+  {
+    path: '/mold',
+    name: 'mold',
+    meta: { title: '模具/治工具管理', icon: HomeFilled },
+    children: [
       {
-        path: '/equipment/status-statistics',
-        name: 'EquipmentStatusStatistics',
-        meta: { title: '设备状态统计' }
-      },
-      {
-        path: '/equipment/status-history',
-        name: 'EquipmentStatusHistory',
-        meta: { title: '设备状态履历图' }
+        path: '/mold/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
+          {
+            path: '/mold/manage/M',
+            name: 'M',
+            meta: { title: '页面M' },
+          }
+        ]
+      },{
+        path: '/mold/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/mold/configuration/N',
+            name: 'N',
+            meta: { title: '页面N' },
+          }
+        ]
+      },{
+        path: '/mold/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/mold/screen/O',
+            name: 'O',
+            meta: { title: '页面O' },
+          }
+        ]
       }
     ]
   },
   {
     path: '/parts',
-    name: 'PartsManagement',
-    meta: { title: '备件管理', icon: Box },
+    name: 'parts',
+    meta: { title: '备件管理', icon: HomeFilled },
     children: [
       {
-        path: '/parts/inventory-list',
-        name: 'InventoryList',
-        meta: { title: '库存列表' }
-      },
-      {
-        path: '/parts/pending-storage',
-        name: 'PendingStorageManagement',
-        meta: { title: '待入库管理' }
-      },
-      {
-        path: '/parts/storage-detail',
-        name: 'StorageDetail',
-        meta: { title: '入库明细' }
+        path: '/parts/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
+          {
+            path: '/parts/manage/P',
+            name: 'P',
+            meta: { title: '页面P' },
+          }
+        ]
+      },{
+        path: '/parts/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/parts/configuration/Q',
+            name: 'Q',
+            meta: { title: '页面Q' },
+          }
+        ]
+      },{
+        path: '/parts/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/parts/screen/R',
+            name: 'R',
+            meta: { title: '页面R' },
+          }
+        ]
       }
     ]
   },
-  // 新增三级菜单示例（资产管理）
   {
-    path: '/asset',
-    name: 'AssetManage',
-    meta: { title: '资产管理', icon: Connection },
+    path: '/repair',
+    name: 'repair',
+    meta: { title: '维修管理', icon: HomeFilled },
     children: [
       {
-        path: '/asset/manage',
-        name: 'EquipmentManage',
-        meta: { title: '设备管理' },
-        children: [  // 三级菜单
+        path: '/repair/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
           {
-            path: '/asset/manage/list',
-            name: 'EquipmentList',
-            meta: { title: '设备列表' }
-          },
-          {
-            path: '/asset/manage/detail',
-            name: 'EquipmentDetail',
-            meta: { title: '设备详情' }
-          },
-          {
-            path: '/asset/manage/maintenance',
-            name: 'EquipmentMaintenance',
-            meta: { title: '维护记录' }
+            path: '/repair/manage/S',
+            name: 'S',
+            meta: { title: '页面S' },
           }
         ]
-      },
-      {
-        path: '/asset/history',
-        name: 'EquipmentHistory',
-        meta: { title: '设备履历' }
+      },{
+        path: '/repair/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/repair/configuration/T',
+            name: 'T',
+            meta: { title: '页面T' },
+          }
+        ]
+      },{
+        path: '/repair/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/repair/screen/U',
+            name: 'U',
+            meta: { title: '页面U' },
+          }
+        ]
       }
     ]
   },
   {
     path: '/system',
-    name: 'SystemManagement',
-    meta: { title: '系统管理', icon: User },
+    name: 'system',
+    meta: { title: '系统管理', icon: HomeFilled },
     children: [
       {
-        path: '/system/menu-permission',
-        name: 'MenuPermissionManagement',
-        meta: {title: '菜单权限'}
-      },
-      {
-        path: '/system/staff-configuration',
-        name: 'StaffConfiguration',
-        meta: {title: '人员配置'}
+        path: '/system/manage',
+        name: 'manage',
+        meta: { title: '管理' },
+        children: [
+          {
+            path: '/system/manage/V',
+            name: 'V',
+            meta: { title: '页面V' },
+          }
+        ]
+      },{
+        path: '/system/configuration',
+        name: 'configuration',
+        meta: { title: '配置' },
+        children: [
+          {
+            path: '/system/configuration/W',
+            name: 'W',
+            meta: { title: '页面W' },
+          }
+        ]
+      },{
+        path: '/system/screen',
+        name: 'screen',
+        meta: { title: '大屏' },
+        children: [
+          {
+            path: '/system/screen/X',
+            name: 'X',
+            meta: { title: '页面X' },
+          }
+        ]
       }
     ]
-  }
+  },
+
+
 ]
 
 // 当前激活的菜单

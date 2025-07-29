@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import {HomeFilled} from "@element-plus/icons-vue";
 
 const routes = [
     {
@@ -13,229 +14,294 @@ const routes = [
         component: () => import('@/views/Auth/Login.vue'),
         meta: { title: '登录' }
     },
-    {
-        path: '/inspection',
-        name: 'InspectionManagement',
-        component: () => import('@/views/inspection/InspectionManagement.vue'),
-        meta: { title: '点巡检管理' },
-    },
-    {
-        path: '/inspection/period',
-        name: 'InspectionPeriodSetting',
-        component: () => import('@/views/inspection/InspectionPeriodSetting.vue'),
-        meta: { title: '点检项目周期设置' }
-    },
-    {
-        path: '/inspection/history',
-        name: 'InspectionHistory',
-        component: () => import('@/views/inspection/InspectionHistory.vue'),
-        meta: { title: '历史数据' }
-    },
-    {
-        path: '/inspection/abnormal-setting',
-        name: 'InspectionAbnormalSetting',
-        component: () => import('@/views/inspection/InspectionAbnormalSetting.vue'),
-        meta: { title: '点检项目异常标识设置' }
-    },
-    {
-        path: '/repair',
-        name: 'RepairManagement',
-        component: () => import('@/views/repair/RepairManagement.vue'),
-        meta: { title: '维修管理' },
-    },
-    {
-        path: '/repair/guide',
-        name: 'RepairGuide',
-        component: () => import('@/views/repair/RepairGuide.vue'),
-        meta: { title: '维修指引' }
-    },
-    {
-        path: '/repair/manage',
-        name: 'RepairManage',
-        component: () => import('@/views/repair/RepairManage.vue'),
-        meta: { title: '设备维修管理' }
-    },
-    {
-        path: '/maintenance',
-        name: 'MaintenanceManagement',
-        component: () => import('@/views/maintenance/MaintenanceManagement.vue'),
-        meta: { title: '保养管理' }
-    },
-    {
-        path: '/equipment',
-        name: 'EquipmentManagement',
-        component: () => import('@/views/equipment/EquipmentManagement.vue'),
-        meta: { title: '设备实时监控管理' },
-    },
-    {
-        path: '/equipment/monitoring-room',
-        name: 'EquipmentMonitoringRoom',
-        component: () => import('@/views/equipment/EquipmentMonitoringRoom.vue'),
-        meta: { title: '设备监控室' }
-    },
-    {
-        path: '/equipment/status-statistics',
-        name: ' EquipmentStatusStatistics',
-        component:()=>import('@/views/equipment/EquipmentStatusStatistics.vue'),
-        meta: { title: '设备状态统计' }
-    },
-    {
-        path: '/equipment/status-history',
-        name: 'EquipmentStatusHistory',
-        component: () => import('@/views/equipment/EquipmentStatusHistory.vue'),
-        meta: { title: '设备状态履历图' }
-    },
-    {
-        path: '/equipment/real-time',
-        name: 'EquipmentRealTimeMonitoring',
-        component: () => import('@/views/equipment/EquipmentOEETrend.vue'),
-        meta: { title: '设备OEE趋势' }
-    },
-    {
-        path: '/equipment/online-management',
-        name: 'VirtualFactory',
-        component: () => import('@/views/equipment/VirtualFactory.vue'),
-        meta: { title: '虚拟工厂及设置' }
-    },
-    {
-        path: '/equipment/online-detail',
-        name: 'UtilizationReport',
-        component: () => import('@/views/equipment/UtilizationReport.vue'),
-        meta: { title: '稼动率报表' }
-    },
-    {
-        path: '/equipment/history',
-        name: 'DowntimeManagement ',
-        component: () => import('@/views/equipment/DowntimeManagement.vue'),
-        meta: { title: '设备停机管理' }
-    },
-    {
-        path: '/parts',
-        name: 'PartsManagement',
-        component: () => import('@/views/parts/PartsManagement.vue'),
-        meta: { title: '备件管理' },
-    },
-    {
-        path: '/parts/inventory-list',
-        name: 'InventoryList',
-        component: () => import('@/views/parts/InventoryList.vue'),
-        meta: { title: '库存列表' }
-    },
-    {
-        path: '/parts/pending-storage',
-        name: 'PendingStorageManagement',
-        component: () => import('@/views/parts/PendingStorageManagement.vue'),
-        meta: { title: '待入库管理' }
-    },
-    {
-        path: '/parts/storage-detail',
-        name: 'StorageDetail',
-        component: () => import('@/views/parts/StorageDetail.vue'),
-        meta: { title: '入库明细' }
-    },
-    {
-        path: '/parts/outbound-audit',
-        name: 'OutboundAudit',
-        component: () => import('@/views/parts/OutboundAudit.vue'),
-        meta: { title: '出库审核页面' }
-    },
-    {
-        path: '/parts/outbound-detail',
-        name: 'OutboundDetail',
-        component: () => import('@/views/parts/OutboundDetail.vue'),
-        meta: { title: '出库明细' }
-    },
-    {
-        path: '/mold',
-        name: 'MoldManagement',
-        component: () => import('@/views/mold/MoldManagement.vue'),
-        meta: { title: '模具管理' },
-    },
-    {
-        path: '/mold/life-cycle',
-        name: 'MoldLifeCycle',
-        component: () => import('@/views/mold/MoldLifeCycle.vue'),
-        meta: { title: '模具生命周期管理' }
-    },
-    {
-        path: '/mold/warehouse',
-        name: 'MoldWarehouse',
-        component: () => import('@/views/mold/MoldWarehouse.vue'),
-        meta: { title: '模具仓库' }
-    },
-    {
-        path: '/system',
-        name: 'SystemManagement',
-        component: () => import('@/views/system/SystemManagement.vue'),
-        meta: { title: '权限管理' },
-    },
-    {
-        path: '/system/menu-permission',
-        name: 'MenuPermissionManagement',
-        component: () => import('@/views/system/MenuPermissionManagement.vue'),
-        meta: { title: '系统菜单管理及账户权限' }
-    },
-    {
-        path: '/system/staff-configuration',
-        name: 'StaffConfiguration',
-        component: () => import('@/views/system/StaffConfiguration.vue'),
-        meta: { title: '人员配置' }
-    },
-    {
-        path: '/system/wechat-alert',
-        name: 'WechatAlertSetting',
-        component: () => import('@/views/system/WechatAlertSetting.vue'),
-        meta: { title: '微信预警设置' }
-    },
-    {
-        path: '/system/wechat-message',
-        name: 'WechatMessageManagement',
-        component: () => import('@/views/system/WechatMessageManagement.vue'),
-        meta: { title: '微信信息管理' }
-    },
+    // Asset Management
     {
         path: '/asset',
-        name: 'AssetManage',
-        component:()=> import('@/views/asset/AssetManage.vue'),
-        meta: {title: '资产管理'}
+        name: 'asset',
+        meta: { title: '资产管理', icon: HomeFilled },
     },
     {
         path: '/asset/manage',
-        name: 'EquipmentManage',
-        component:()=> import('@/views/asset/EquipmentManage.vue'),
-        meta: {title: '设备管理'}
+        name: 'asset-manage',
+        meta: { title: '管理' },
     },
     {
-        path: '/asset/history',
-        name: 'EquipmentHistory',
-        component:()=> import('@/views/asset/EquipmentHistory.vue'),
-        meta: {title: '设备履历页'}
+        path: '/asset/manage/A',
+        name: 'A',
+        meta: { title: '页面A' },
     },
     {
-        path: '/asset/online-equip',
-        name: 'OnlineEquipmentManagement',
-        component:()=> import('@/views/asset/OnlineEquipmentManagement.vue'),
-        meta: {title: '联机设备管理'}
+        path: '/asset/configuration',
+        name: 'asset-configuration',
+        meta: { title: '配置' },
     },
     {
-        path: '/asset/detail',
-        name: 'OnlineEquipmentDetail',
-        component:()=> import('@/views/asset/OnlineEquipmentDetail.vue'),
-        meta: {title: '联机设备详情'}
+        path: '/asset/configuration/B',
+        name: 'B',
+        meta: { title: '页面B' },
     },
     {
-        path: '/LifeCycle/workshop',
-        name: 'workshop',
-        meta: { title: '车间管理' },
-        component:()=> import('@/views/LifeCycle/workshop.vue'),
+        path: '/asset/screen',
+        name: 'asset-screen',
+        meta: { title: '大屏' },
     },
     {
-        path: '/LifeCycle/User-Role-Permission',
-        name: 'UserRolePermission',
-        meta: { title: '用户角色权限' },
-        component:()=> import('@/views/LifeCycle/User-Role-Permission.vue'),
+        path: '/asset/screen/C',
+        name: 'C',
+        meta: { title: '页面C' },
     },
-
+    // Equipment Monitoring
+    {
+        path: '/equipment',
+        name: 'equipment',
+        meta: { title: '设备实时监控', icon: HomeFilled },
+    },
+    {
+        path: '/equipment/manage',
+        name: 'equipment-manage',
+        meta: { title: '管理' },
+    },
+    {
+        path: '/equipment/manage/D',
+        name: 'D',
+        meta: { title: '页面D' },
+    },
+    {
+        path: '/equipment/configuration',
+        name: 'equipment-configuration',
+        meta: { title: '配置' },
+    },
+    {
+        path: '/equipment/configuration/E',
+        name: 'E',
+        meta: { title: '页面E' },
+    },
+    {
+        path: '/equipment/screen',
+        name: 'equipment-screen',
+        meta: { title: '大屏' },
+    },
+    {
+        path: '/equipment/screen/F',
+        name: 'F',
+        meta: { title: '页面F' },
+    },
+    // Inspection Management
+    {
+        path: '/inspection',
+        name: 'inspection',
+        meta: { title: '点巡检管理', icon: HomeFilled },
+    },
+    {
+        path: '/inspection/manage',
+        name: 'inspection-manage',
+        meta: { title: '管理' },
+    },
+    {
+        path: '/inspection/manage/G',
+        name: 'G',
+        meta: { title: '页面G' },
+    },
+    {
+        path: '/inspection/configuration',
+        name: 'inspection-configuration',
+        meta: { title: '配置' },
+    },
+    {
+        path: '/inspection/configuration/H',
+        name: 'H',
+        meta: { title: '页面H' },
+    },
+    {
+        path: '/inspection/screen',
+        name: 'inspection-screen',
+        meta: { title: '大屏' },
+    },
+    {
+        path: '/inspection/screen/I',
+        name: 'I',
+        meta: { title: '页面I' },
+    },
+    // Maintenance Management
+    {
+        path: '/maintenance',
+        name: 'maintenance',
+        meta: { title: '保养管理', icon: HomeFilled },
+    },
+    {
+        path: '/maintenance/manage',
+        name: 'maintenance-manage',
+        meta: { title: '管理' },
+    },
+    {
+        path: '/maintenance/manage/J',
+        name: 'J',
+        meta: { title: '页面J' },
+    },
+    {
+        path: '/maintenance/configuration',
+        name: 'maintenance-configuration',
+        meta: { title: '配置' },
+    },
+    {
+        path: '/maintenance/configuration/K',
+        name: 'K',
+        meta: { title: '页面K' },
+    },
+    {
+        path: '/maintenance/screen',
+        name: 'maintenance-screen',
+        meta: { title: '大屏' },
+    },
+    {
+        path: '/maintenance/screen/L',
+        name: 'L',
+        meta: { title: '页面L' },
+    },
+    // Mold Management
+    {
+        path: '/mold',
+        name: 'mold',
+        meta: { title: '模具/治工具管理', icon: HomeFilled },
+    },
+    {
+        path: '/mold/manage',
+        name: 'mold-manage',
+        meta: { title: '管理' },
+    },
+    {
+        path: '/mold/manage/M',
+        name: 'M',
+        meta: { title: '页面M' },
+    },
+    {
+        path: '/mold/configuration',
+        name: 'mold-configuration',
+        meta: { title: '配置' },
+    },
+    {
+        path: '/mold/configuration/N',
+        name: 'N',
+        meta: { title: '页面N' },
+    },
+    {
+        path: '/mold/screen',
+        name: 'mold-screen',
+        meta: { title: '大屏' },
+    },
+    {
+        path: '/mold/screen/O',
+        name: 'O',
+        meta: { title: '页面O' },
+    },
+    // Parts Management
+    {
+        path: '/parts',
+        name: 'parts',
+        meta: { title: '备件管理', icon: HomeFilled },
+    },
+    {
+        path: '/parts/manage',
+        name: 'parts-manage',
+        meta: { title: '管理' },
+    },
+    {
+        path: '/parts/manage/P',
+        name: 'P',
+        meta: { title: '页面P' },
+    },
+    {
+        path: '/parts/configuration',
+        name: 'parts-configuration',
+        meta: { title: '配置' },
+    },
+    {
+        path: '/parts/configuration/Q',
+        name: 'Q',
+        meta: { title: '页面Q' },
+    },
+    {
+        path: '/parts/screen',
+        name: 'parts-screen',
+        meta: { title: '大屏' },
+    },
+    {
+        path: '/parts/screen/R',
+        name: 'R',
+        meta: { title: '页面R' },
+    },
+    // Repair Management
+    {
+        path: '/repair',
+        name: 'repair',
+        meta: { title: '维修管理', icon: HomeFilled },
+    },
+    {
+        path: '/repair/manage',
+        name: 'repair-manage',
+        meta: { title: '管理' },
+    },
+    {
+        path: '/repair/manage/S',
+        name: 'S',
+        meta: { title: '页面S' },
+    },
+    {
+        path: '/repair/configuration',
+        name: 'repair-configuration',
+        meta: { title: '配置' },
+    },
+    {
+        path: '/repair/configuration/T',
+        name: 'T',
+        meta: { title: '页面T' },
+    },
+    {
+        path: '/repair/screen',
+        name: 'repair-screen',
+        meta: { title: '大屏' },
+    },
+    {
+        path: '/repair/screen/U',
+        name: 'U',
+        meta: { title: '页面U' },
+    },
+    // System Management
+    {
+        path: '/system',
+        name: 'system',
+        meta: { title: '系统管理', icon: HomeFilled },
+    },
+    {
+        path: '/system/manage',
+        name: 'system-manage',
+        meta: { title: '管理' },
+    },
+    {
+        path: '/system/manage/V',
+        name: 'V',
+        meta: { title: '页面V' },
+    },
+    {
+        path: '/system/configuration',
+        name: 'system-configuration',
+        meta: { title: '配置' },
+    },
+    {
+        path: '/system/configuration/W',
+        name: 'W',
+        meta: { title: '页面W' },
+    },
+    {
+        path: '/system/screen',
+        name: 'system-screen',
+        meta: { title: '大屏' },
+    },
+    {
+        path: '/system/screen/X',
+        name: 'X',
+        meta: { title: '页面X' },
+    }
 ]
 
 const router = createRouter({
