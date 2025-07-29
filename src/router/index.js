@@ -222,7 +222,19 @@ const routes = [
         name: 'OnlineEquipmentDetail',
         component:()=> import('@/views/asset/OnlineEquipmentDetail.vue'),
         meta: {title: '联机设备详情'}
-    }
+    },
+    {
+        path: '/LifeCycle/workshop',
+        name: 'workshop',
+        meta: { title: '车间' },
+        component:()=> import('@/views/LifeCycle/workshop.vue'),
+    },
+    {
+        path: '/LifeCycle/User-Role-Permission',
+        name: 'UserRolePermission',
+        meta: { title: '用户角色权限' },
+        component:()=> import('@/views/LifeCycle/User-Role-Permission.vue'),
+    },
 
 ]
 

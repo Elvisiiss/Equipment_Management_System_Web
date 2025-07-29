@@ -257,6 +257,23 @@ const menuItems = [
         meta: { title: '联机设备详情' }
       }
     ]
+  },
+  {
+    path: '/LifeCycle',
+    name: 'LifeCycle',
+    meta: { title: '生命周期' },
+    children: [
+      {
+        path: '/LifeCycle/User-Role-Permission',
+        name: 'UserRolePermission',
+        meta: { title: '用户角色权限' }
+      },
+      {
+        path: '/LifeCycle/workshop',
+        name: 'workshop',
+        meta: { title: '车间' }
+      }
+    ]
   }
 ]
 
