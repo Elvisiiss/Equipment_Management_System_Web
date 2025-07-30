@@ -167,29 +167,72 @@ const menuItems = [
     meta: { title: '设备实时监控', icon: Monitor },
     children: [
       {
-        path: '/equipment/manage',
-        name: 'manage',
-        meta: { title: '管理' },
+        path: '/equipment/monitoring',
+        name: 'Monitoring',
+        component: () => import('@/views/equipment/Monitoring.vue'),
+        meta: { title: '实时状态监控' },
         children: [
           {
-            path: '/equipment/manage/D',
-            name: 'D',
-            meta: { title: '页面D' },
-          }
+            path: '/equipment/monitoring/spc',
+            name: 'SPCManagement',
+            meta: { title: '设备SPC监控' }
+          },
+          {
+            path: '/equipment/monitoring/exception',
+            name: 'Exception',
+            meta: { title: '异常与阈值' }
+          },
         ]
       },
       {
-        path: '/equipment/configuration',
-        name: 'configuration',
-        meta: { title: '配置' },
+        path: '/equipment/status',
+        name: 'Status',
+        meta: { title: '设备状态管理' },
         children: [
           {
-            path: '/equipment/configuration/E',
-            name: 'E',
-            meta: { title: '页面E' },
+            path: '/equipment/status/policies',
+            name: 'Policies',
+            meta: { title: '状态规则与策略' }
+          },
+          {
+            path: '/equipment/status/log',
+            name: 'Log',
+            meta: { title: '状态维护' }
+          },
+        ]
+      },
+      {
+        path: '/equipment/location',
+        name: 'Location',
+        meta: { title: '布局管理' },
+        children: [
+          {
+            path: '/equipment/location/transfer',
+            name: 'Transfer',
+            component: () => import('@/views/equipment/manage/Transfer.vue'),
+            meta: { title: '设备转机' },
+          },
+          {
+            path: '/equipment/location/pm',
+            name: 'PM',
+            component: () => import('@/views/equipment/manage/PM.vue'),
+            meta: { title: 'PM工单' },
+          },
+          {
+            path: '/equipment/location/recover',
+            name: 'Recover',
+            component: () => import('@/views/equipment/manage/Recover.vue'),
+            meta: { title: '复机管理' },
+          },
+          {
+            path: '/equipment/location/logic',
+            name: 'Logic',
+            component: () => import('@/views/equipment/manage/Logic.vue'),
+            meta: { title: '逻辑位置' },
           }
         ]
       },
+
       {
         path: '/equipment/screen',
         name: 'screen',
@@ -211,6 +254,11 @@ const menuItems = [
             meta: { title: 'IOT管理看板' },
           }
         ]
+      },
+      {
+        path: '/equipment/configuration',
+        name: 'configuration',
+        meta: { title: '配置' }
       }
     ]
   },
@@ -337,31 +385,7 @@ const menuItems = [
             meta: { title: '页面M' },
           }
         ]
-      },
-      // {
-      //   path: '/mold/configuration',
-      //   name: 'configuration',
-      //   meta: { title: '配置' },
-      //   children: [
-      //     {
-      //       path: '/mold/configuration/N',
-      //       name: 'N',
-      //       meta: { title: '页面N' },
-      //     }
-      //   ]
-      // },
-      // {
-      //   path: '/mold/screen',
-      //   name: 'screen',
-      //   meta: { title: '大屏' },
-      //   children: [
-      //     {
-      //       path: '/mold/screen/O',
-      //       name: 'O',
-      //       meta: { title: '页面O' },
-      //     }
-      //   ]
-      // }
+      }
     ]
   },
   {
