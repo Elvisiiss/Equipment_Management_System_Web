@@ -446,9 +446,14 @@ const menuItems = [
         meta: { title: '管理' },
         children: [
           {
-            path: '/repair/manage/S',
-            name: 'S',
-            meta: { title: '页面S' },
+            path: '/repair/manage/KnowledgeBase',
+            name: 'KnowledgeBase',
+            meta: { title: '维修知识库' },
+          },
+          {
+            path: '/repair/manage/RepairOrder',
+            name: 'RepairOrder',
+            meta: { title: '维修工单管理' },
           }
         ]
       },{
@@ -457,9 +462,9 @@ const menuItems = [
         meta: { title: '配置' },
         children: [
           {
-            path: '/repair/configuration/T',
-            name: 'T',
-            meta: { title: '页面T' },
+            path: '/repair/configuration/RepairConfig',
+            name: 'RepairConfig',
+            meta: { title: '维修配置管理' },
           }
         ]
       },{
@@ -468,9 +473,9 @@ const menuItems = [
         meta: { title: '大屏' },
         children: [
           {
-            path: '/repair/screen/U',
-            name: 'U',
-            meta: { title: '页面U' },
+            path: '/repair/screen/RepairDashboard',
+            name: 'RepairDashboard',
+            meta: { title: '数据展示' },
           }
         ]
       }

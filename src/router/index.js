@@ -263,7 +263,7 @@ const routes = [
     {
         path: '/parts/manage/SparePartCode',
         name: 'SparePartCode',
-        component: () => import('@/views/parts/manage/SparePartCode.vue.html'),
+        component: () => import('@/views/parts/manage/SparePartCode.vue'),
         meta: { title: '备件编码管理' },
     },
     {
@@ -340,10 +340,16 @@ const routes = [
         meta: { title: '管理' },
     },
     {
-        path: '/repair/manage/S',
-        name: 'S',
-        component: () => import('@/views/repair/manage/S.vue'),
-        meta: { title: '页面S' },
+        path: '/repair/manage/KnowledgeBase',
+        name: 'KnowledgeBase',
+        component: () => import('@/views/repair/manage/KnowledgeBase.vue'),
+        meta: { title: '维修知识库' },
+    },
+    {
+        path: '/repair/manage/RepairOrder',
+        name: 'RepairOrder',
+        component: () => import('@/views/repair/manage/RepairOrder.vue'),
+        meta: { title: '维修工单管理' },
     },
     {
         path: '/repair/configuration',
@@ -352,10 +358,10 @@ const routes = [
         meta: { title: '配置' },
     },
     {
-        path: '/repair/configuration/T',
-        name: 'T',
-        component: () => import('@/views/repair/configuration/T.vue'),
-        meta: { title: '页面T' },
+        path: '/repair/configuration/RepairConfig',
+        name: 'RepairConfig',
+        component: () => import('@/views/repair/configuration/RepairConfig.vue'),
+        meta: { title: '维修配置管理' },
     },
     {
         path: '/repair/screen',
@@ -364,10 +370,10 @@ const routes = [
         meta: { title: '大屏' },
     },
     {
-        path: '/repair/screen/U',
-        name: 'U',
-        component: () => import('@/views/repair/screen/U.vue'),
-        meta: { title: '页面U' },
+        path: '/repair/screen/RepairDashboard',
+        name: 'RepairDashboard',
+        component: () => import('@/views/repair/screen/RepairDashboard.vue'),
+        meta: { title: '数据展示' },
     },
     // System Management
     {

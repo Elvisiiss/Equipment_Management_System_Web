@@ -1,7 +1,7 @@
 <template>
   <div class="top-bar">
     <div class="logo-container">
-      <img src="../../assets/logo.svg" alt="Logo" class="logo">
+      <img src="/public/img.png" alt="Logo" class="logo">
       <h1 class="title">设备管理系统</h1>
     </div>
     <div class="user-info">
@@ -66,8 +66,8 @@ const logout = () => {
 }
 
 .logo {
-  height: 36px;
-  width: 36px;
+  height: 40%;
+  width: 40%;
 }
 
 .title {
