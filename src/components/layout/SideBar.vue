@@ -123,7 +123,7 @@ const menuItems = [
   {
     path: '/asset',
     name: 'asset',
-    meta: { title: '资产管理', icon: HomeFilled },
+    meta: { title: '资产管理', icon: Connection },
     children: [
       {
         path: '/asset/manage',
@@ -164,7 +164,7 @@ const menuItems = [
   {
     path: '/equipment',
     name: 'equipment',
-    meta: { title: '设备实时监控', icon: HomeFilled },
+    meta: { title: '设备实时监控', icon: Monitor },
     children: [
       {
         path: '/equipment/manage',
@@ -205,7 +205,7 @@ const menuItems = [
   {
     path: '/inspection',
     name: 'inspection',
-    meta: { title: '点巡检管理', icon: HomeFilled },
+    meta: { title: '点巡检管理', icon: List },
     children: [
       {
         path: '/inspection/manage',
@@ -246,7 +246,7 @@ const menuItems = [
   {
     path: '/maintenance',
     name: 'maintenance',
-    meta: { title: '保养管理', icon: HomeFilled },
+    meta: { title: '保养管理', icon: Setting },
     children: [
       {
         path: '/maintenance/manage',
@@ -328,7 +328,7 @@ const menuItems = [
   {
     path: '/parts',
     name: 'parts',
-    meta: { title: '备件管理', icon: HomeFilled },
+    meta: { title: '备件管理', icon: Box },
     children: [
       {
         path: '/parts/manage',
@@ -369,7 +369,7 @@ const menuItems = [
   {
     path: '/repair',
     name: 'repair',
-    meta: { title: '维修管理', icon: HomeFilled },
+    meta: { title: '维修管理', icon: Tools },
     children: [
       {
         path: '/repair/manage',
@@ -410,7 +410,7 @@ const menuItems = [
   {
     path: '/system',
     name: 'system',
-    meta: { title: '系统管理', icon: HomeFilled },
+    meta: { title: '系统管理', icon: User },
     children: [
       {
         path: '/system/manage',
