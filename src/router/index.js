@@ -95,10 +95,22 @@ const routes = [
         meta: { title: '大屏' },
     },
     {
-        path: '/equipment/screen/F',
-        name: 'F',
-        component: () => import('@/views/equipment/screen/F.vue'),
-        meta: { title: '页面F' },
+        path: '/equipment/screen/oee',
+        name: 'OEEManagement',
+        component:()=>import('@/views/equipment/screen/OEEManagement.vue'),
+        meta: { title: 'OEE管理看板' },
+    },
+    {
+        path: '/equipment/screen/status',
+        name: 'EquipmentStatus',
+        component:()=>import('@/views/equipment/screen/EquipmentStatus.vue'),
+        meta: { title: '设备状态看板' },
+    },
+    {
+        path: '/equipment/screen/iot',
+        name: 'IOTManagement',
+        component:()=>import('@/views/equipment/screen/IOTManagement.vue'),
+        meta: { title: 'IOT管理看板' },
     },
     // Inspection Management
     {
