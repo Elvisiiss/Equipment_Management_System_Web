@@ -177,7 +177,8 @@ const menuItems = [
             meta: { title: '页面D' },
           }
         ]
-      },{
+      },
+      {
         path: '/equipment/configuration',
         name: 'configuration',
         meta: { title: '配置' },
@@ -188,15 +189,26 @@ const menuItems = [
             meta: { title: '页面E' },
           }
         ]
-      },{
+      },
+      {
         path: '/equipment/screen',
         name: 'screen',
         meta: { title: '大屏' },
         children: [
           {
-            path: '/equipment/screen/F',
-            name: 'F',
-            meta: { title: '页面F' },
+            path: '/equipment/screen/oee',
+            name: 'OEEManagement',
+            meta: { title: 'OEE管理看板' },
+          },
+          {
+            path: '/equipment/screen/status',
+            name: 'EquipmentStatus',
+            meta: { title: '设备状态看板' },
+          },
+          {
+            path: '/equipment/screen/iot',
+            name: 'IOTManagement',
+            meta: { title: 'IOT管理看板' },
           }
         ]
       }
@@ -229,7 +241,8 @@ const menuItems = [
             meta: { title: '页面H' },
           }
         ]
-      },{
+      },
+      {
         path: '/inspection/screen',
         name: 'screen',
         meta: { title: '大屏' },
@@ -290,9 +303,9 @@ const menuItems = [
     meta: { title: '模具/治工具管理', icon: HomeFilled },
     children: [
       {
-        path: '/mold/manage',
+        path: '/mold/cycle',
         name: 'manage',
-        meta: { title: '管理' },
+        meta: { title: '全生命周期管理' },
         children: [
           {
             path: '/mold/manage/M',
@@ -300,29 +313,55 @@ const menuItems = [
             meta: { title: '页面M' },
           }
         ]
-      },{
-        path: '/mold/configuration',
-        name: 'configuration',
-        meta: { title: '配置' },
+      },
+      {
+        path: '/mold/mistake',
+        name: 'manage',
+        meta: { title: '防用错管理' },
         children: [
           {
-            path: '/mold/configuration/N',
-            name: 'N',
-            meta: { title: '页面N' },
+            path: '/mold/manage/M',
+            name: 'M',
+            meta: { title: '页面M' },
           }
         ]
-      },{
-        path: '/mold/screen',
-        name: 'screen',
-        meta: { title: '大屏' },
+      },
+      {
+        path: '/mold/cycle',
+        name: 'manage',
+        meta: { title: '台账管理' },
         children: [
           {
-            path: '/mold/screen/O',
-            name: 'O',
-            meta: { title: '页面O' },
+            path: '/mold/manage/M',
+            name: 'M',
+            meta: { title: '页面M' },
           }
         ]
-      }
+      },
+      // {
+      //   path: '/mold/configuration',
+      //   name: 'configuration',
+      //   meta: { title: '配置' },
+      //   children: [
+      //     {
+      //       path: '/mold/configuration/N',
+      //       name: 'N',
+      //       meta: { title: '页面N' },
+      //     }
+      //   ]
+      // },
+      // {
+      //   path: '/mold/screen',
+      //   name: 'screen',
+      //   meta: { title: '大屏' },
+      //   children: [
+      //     {
+      //       path: '/mold/screen/O',
+      //       name: 'O',
+      //       meta: { title: '页面O' },
+      //     }
+      //   ]
+      // }
     ]
   },
   {
