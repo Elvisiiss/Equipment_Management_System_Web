@@ -249,6 +249,48 @@ const routes = [
         meta: { title: '页面P' },
     },
     {
+        path: '/parts/manage/SparePartCode',
+        name: 'SparePartCode',
+        component: () => import('@/views/parts/manage/SparePartCode.vue.html'),
+        meta: { title: '备件编码管理' },
+    },
+    {
+        path: '/parts/manage/SparePartInventory',
+        name: 'SparePartInventory',
+        component: () => import('@/views/parts/manage/SparePartInventory.vue'),
+        meta: { title: '备品备件台账' },
+    },
+    {
+        path: '/parts/manage/EdgeInventory',
+        name: 'EdgeInventory',
+        component: () => import('@/views/parts/manage/EdgeInventory.vue'),
+        meta: { title: '线边库存管理' },
+    },
+    {
+        path: '/parts/manage/EquipmentBOM',
+        name: 'EquipmentBOM',
+        component: () => import('@/views/parts/manage/EquipmentBOM.vue'),
+        meta: { title: '设备BOM管理' },
+    },
+    {
+        path: '/parts/manage/EquipmentDetail',
+        name: 'EquipmentDetail',
+        component: () => import('@/views/parts/manage/EquipmentDetail.vue'),
+        meta: { title: '设备详情-不要的' },
+    },
+    {
+        path: '/parts/manage/LocationForm',
+        name: 'LocationForm',
+        component: () => import('@/views/parts/manage/LocationForm.vue'),
+        meta: { title: '表单-不要的' },
+    },
+    {
+        path: '/parts/manage/LocationManagement',
+        name: 'LocationManagement',
+        component: () => import('@/views/parts/manage/LocationManagement.vue'),
+        meta: { title: '库位管理' },
+    },
+    {
         path: '/parts/configuration',
         name: 'parts-configuration',
         component: () => import('@/views/parts/configuration.vue'),

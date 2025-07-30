@@ -336,10 +336,40 @@ const menuItems = [
         meta: { title: '管理' },
         children: [
           {
-            path: '/parts/manage/P',
-            name: 'P',
-            meta: { title: '页面P' },
-          }
+            path: '/parts/manage/SparePartCode',
+            name: 'SparePartCode',
+            meta: { title: '备件编码管理' },
+          },
+          {
+            path: '/parts/manage/SparePartInventory',
+            name: 'SparePartInventory',
+            meta: { title: '备品备件台账' },
+          },
+          {
+            path: '/parts/manage/EdgeInventory',
+            name: 'EdgeInventory',
+            meta: { title: '线边库存管理' },
+          },
+          {
+            path: '/parts/manage/EquipmentBOM',
+            name: 'EquipmentBOM',
+            meta: { title: '设备BOM管理' },
+          },
+          {
+            path: '/parts/manage/EquipmentDetail',
+            name: 'EquipmentDetail',
+            meta: { title: '设备详情-不要的' },
+          },
+          {
+            path: '/parts/manage/LocationForm',
+            name: 'LocationForm',
+            meta: { title: '表单-不要的' },
+          },
+          {
+            path: '/parts/manage/LocationManagement',
+            name: 'LocationManagement',
+            meta: { title: '库位管理' },
+          },
         ]
       },{
         path: '/parts/configuration',
