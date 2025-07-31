@@ -145,6 +145,12 @@ const routes = [
         meta: { title: '页面E' },
     },
     {
+        path: '/equipment/EquipmentManage',
+        name: 'EquipmentManage',
+        component: () => import('@/views/equipment/EquipmentManage.vue'),
+        meta: { title: '设备管理' }
+    },
+    {
         path: '/equipment/screen',
         name: 'equipment-screen',
         component: () => import('@/views/equipment/screen.vue'),
@@ -217,6 +223,12 @@ const routes = [
         name: 'maintenance',
         component: () => import('@/views/maintenance/IndexPage.vue'),
         meta: { title: '保养管理', icon: HomeFilled },
+    },
+    {
+        path: '/maintenance/form',
+        name: 'm_form',
+        component: () => import('@/views/maintenance/m_form.vue'),
+        meta: { title: '设备保养' },
     },
     {
         path: '/maintenance/manage',

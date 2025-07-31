@@ -169,7 +169,6 @@ const menuItems = [
       {
         path: '/equipment/monitoring',
         name: 'Monitoring',
-        component: () => import('@/views/equipment/Monitoring.vue'),
         meta: { title: '实时状态监控' },
         children: [
           {
@@ -232,7 +231,11 @@ const menuItems = [
           }
         ]
       },
-
+      {
+        path: '/equipment/EquipmentManage',
+        name: 'EquipmentManage',
+        meta: { title: '设备管理' }
+      },
       {
         path: '/equipment/screen',
         name: 'screen',

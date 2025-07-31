@@ -1,7 +1,7 @@
 <template>
   <div class="top-bar">
     <div class="logo-container">
-      <img src="/public/img.png" alt="Logo" class="logo">
+      <img src="/img.png" alt="Logo" class="logo">
       <h1 class="title">设备管理系统</h1>
     </div>
     <div class="user-info">
