@@ -228,7 +228,13 @@ const routes = [
         path: '/maintenance/form',
         name: 'm_form',
         component: () => import('@/views/maintenance/m_form.vue'),
-        meta: { title: '设备保养' },
+        meta: { title: '设备保养-表单' },
+    },
+    {
+        path: '/maintenance/action',
+        name: 'm_action',
+        component: () => import('@/views/maintenance/m_action.vue'),
+        meta: { title: '设备保养-执行' },
     },
     {
         path: '/maintenance/manage',

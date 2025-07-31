@@ -236,7 +236,82 @@ export default {
                 ]
             }
         }
-    }
+    },
+
+    // ========= 保养计划管理 =========
+    // 创建保养计划
+    async createMaintenancePlan(data) {
+        // await auth.post('/plans', data)
+        await delay(500)
+        return {
+            success: true,
+            message: '保养计划创建成功',
+            data: { id: Math.floor(Math.random() * 1000) }
+        }
+    },
+
+    // 获取保养计划详情
+    async getPlanDetail(id) {
+        // const response = await auth.get(`/plans/${id}`)
+        // return response.data
+        await delay(500)
+        return {
+            success: true,
+            data: {
+                id: id,
+                name: '日常保养计划',
+                category: 'daily',
+                cycle: 1,
+                cycleUnit: 'days',
+                executor: '张三',
+                items: [
+                    {
+                        id: 101,
+                        name: '清洁导轨',
+                        category: '清洁类',
+                        standard: '导轨无灰尘、油污',
+                        method: '使用无尘布和专用清洁剂擦拭',
+                        problemHandling: '发现生锈立即报告',
+                        handlingMethod: '',
+                        tools: '无尘布,清洁剂'
+                    }
+                ]
+            }
+        }
+    },
+
+    // ========= 保养任务 =========
+    // 获取任务详情
+    async getTaskDetail(id) {
+        // const response = await auth.get(`/tasks/${id}`)
+        // return response.data
+        await delay(500)
+        return {
+            success: true,
+            data: {
+                id: id,
+                equipmentId: 1,
+                equipmentName: '立式加工中心-MC001',
+                taskName: '日常保养检查',
+                status: 'IN_PROGRESS',
+                plannedDate: '2025-08-01',
+                executor: '张三',
+                items: [
+                    {
+                        id: 1,
+                        name: '清洁导轨',
+                        category: '清洁类',
+                        standard: '导轨无灰尘、油污',
+                        method: '使用无尘布和专用清洁剂擦拭',
+                        problemHandling: '发现生锈立即报告',
+                        handlingMethod: '',
+                        tools: '无尘布,清洁剂',
+                        completed: false
+                    }
+                ]
+            }
+        }
+    },
 }
 
 // 延迟函数

@@ -4,6 +4,11 @@
     <div class="page-header">
       <h2>{{ equipmentName }} - 保养管理</h2>
       <div class="header-actions">
+        <!-- 自定义保养计划按钮 -->
+        <el-button type="primary" @click="showCreatePlan = true">
+          <el-icon><Setting /></el-icon>
+          自定义保养计划
+        </el-button>
         <el-button type="primary" @click="showCreateTask = true">
           <el-icon><Plus /></el-icon>
           创建保养任务
@@ -42,7 +47,7 @@
           <template #header>
             <div class="card-header">
               <span>保养计划</span>
-              <el-button type="primary" text @click="showPlanDialog = true">
+              <el-button type="primary" text @click="showCreatePlan = true">
                 <el-icon><Edit /></el-icon>
                 编辑计划
               </el-button>
@@ -63,60 +68,19 @@
                 <el-tag size="small" :type="plan.status === 'OVERDUE' ? 'danger' : 'success'">
                   {{ plan.statusLabel }}
                 </el-tag>
+                <div class="plan-actions">
+                  <el-button
+                      type="primary"
+                      size="small"
+                      @click="startMaintenance(plan)"
+                      v-if="plan.status === 'PENDING' || plan.status === 'OVERDUE'"
+                  >
+                    开始保养
+                  </el-button>
+                </div>
               </div>
             </el-timeline-item>
           </el-timeline>
-        </el-card>
-      </el-col>
-
-      <!-- 右侧：数据分析 -->
-      <el-col :span="12">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>设备健康分析</span>
-              <el-button type="primary" text @click="refreshData">
-                <el-icon><Refresh /></el-icon>
-                刷新
-              </el-button>
-            </div>
-          </template>
-
-          <div class="metrics-container">
-            <div class="metric-card" v-for="metric in equipmentMetrics" :key="metric.name">
-              <div class="metric-header">
-                <span>{{ metric.name }}</span>
-                <el-tag size="small" :type="getTrendType(metric.trend)">
-                  {{ metric.trend === 'UP' ? '上升' : metric.trend === 'DOWN' ? '下降' : '稳定' }}
-                </el-tag>
-              </div>
-              <div class="metric-value">
-                {{ metric.value }} {{ metric.unit }}
-                <el-progress
-                    :percentage="getProgressValue(metric)"
-                    :color="getProgressColor(metric)"
-                />
-              </div>
-              <div class="metric-suggestion">
-                <el-icon><Warning /></el-icon>
-                {{ metric.suggestion }}
-              </div>
-            </div>
-          </div>
-
-          <div class="quality-score">
-            <h4>保养质量评分</h4>
-            <el-progress
-                type="circle"
-                :percentage="qualityScore.score"
-                :color="getScoreColor"
-            />
-            <div class="quality-factors">
-              <div v-for="(value, key) in qualityScore.factors" :key="key">
-                {{ key }}: {{ value }}分
-              </div>
-            </div>
-          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -126,7 +90,7 @@
       <template #header>
         <div class="card-header">
           <span>当前任务：{{ currentTask.taskName }}</span>
-          <el-button type="success" @click="startTask">
+          <el-button type="success" @click="startMaintenance(currentTask)">
             <el-icon><VideoPlay /></el-icon>
             开始执行
           </el-button>
@@ -142,57 +106,6 @@
           </el-tag>
         </el-descriptions-item>
       </el-descriptions>
-
-      <div class="task-items">
-        <h4>保养项目：</h4>
-        <el-checkbox-group v-model="completedItems">
-          <el-checkbox
-              v-for="item in currentTask.items"
-              :key="item"
-              :label="item"
-              :disabled="taskStarted"
-          >
-            {{ item }}
-          </el-checkbox>
-        </el-checkbox-group>
-      </div>
-    </el-card>
-
-    <!-- 维保资料库 -->
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>维保资料库</span>
-          <el-button type="primary" text @click="showLibrary = true">
-            <el-icon><FolderOpened /></el-icon>
-            查看全部
-          </el-button>
-        </div>
-      </template>
-
-      <el-collapse>
-        <el-collapse-item
-            v-for="category in maintenanceLibrary"
-            :key="category.equipmentType"
-            :title="category.equipmentTypeLabel"
-        >
-          <div
-              v-for="item in category.maintenanceItems"
-              :key="item.id"
-              class="maintenance-item"
-          >
-            <h4>{{ item.name }}</h4>
-            <p>{{ item.description }}</p>
-            <div class="item-meta">
-              <span>标准工时：{{ item.standardTime }}分钟</span>
-              <span>工具：{{ item.tools.join('、') }}</span>
-            </div>
-            <el-button size="small" @click="applyTemplate(item)">
-              应用模板
-            </el-button>
-          </div>
-        </el-collapse-item>
-      </el-collapse>
     </el-card>
 
     <!-- 对话框：创建任务 -->
@@ -227,49 +140,6 @@
       </template>
     </el-dialog>
 
-    <!-- 对话框：执行保养 -->
-    <el-dialog v-model="showExecuteTask" title="执行保养任务" width="800px">
-      <el-form :model="executeForm" label-width="120px">
-        <el-form-item label="开始时间">
-          {{ executeForm.startTime }}
-        </el-form-item>
-        <el-form-item label="保养项目">
-          <div v-for="(item, index) in executeForm.items" :key="index" class="execute-item">
-            <h4>{{ item.name }}</h4>
-            <el-input v-model="item.result" placeholder="执行结果" />
-            <el-upload
-                :action="uploadAction"
-                :headers="uploadHeaders"
-                :on-success="(res) => handleUploadSuccess(res, item)"
-                multiple
-                list-type="picture-card"
-                :limit="3"
-            >
-              <el-icon><Plus /></el-icon>
-            </el-upload>
-          </div>
-        </el-form-item>
-        <el-form-item label="使用配件">
-          <el-table :data="executeForm.parts" style="width: 100%">
-            <el-table-column prop="name" label="配件名称" />
-            <el-table-column prop="quantity" label="数量">
-              <template #default="{ row }">
-                <el-input-number v-model="row.quantity" :min="0" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="unit" label="单位" />
-          </el-table>
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="executeForm.remarks" type="textarea" :rows="3" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showExecuteTask = false">取消</el-button>
-        <el-button type="success" @click="completeTask">完成保养</el-button>
-      </template>
-    </el-dialog>
-
     <!-- 对话框：保养记录 -->
     <el-dialog v-model="showHistory" title="保养历史记录" width="900px">
       <el-timeline>
@@ -298,22 +168,118 @@
         </el-timeline-item>
       </el-timeline>
     </el-dialog>
+
+    <!-- 对话框：自定义保养计划 -->
+    <el-dialog v-model="showCreatePlan" title="自定义保养计划" width="900px">
+      <el-form :model="planForm" ref="planFormRef" label-width="120px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="计划名称" prop="name" required>
+              <el-input v-model="planForm.name" placeholder="请输入计划名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="计划类别" prop="category" required>
+              <el-select v-model="planForm.category" placeholder="请选择类别">
+                <el-option label="日常保养" value="daily" />
+                <el-option label="月度保养" value="monthly" />
+                <el-option label="季度保养" value="quarterly" />
+                <el-option label="年度保养" value="yearly" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="保养周期" prop="cycle" required>
+              <el-input-number v-model="planForm.cycle" :min="1" :max="365" />
+              <el-select v-model="planForm.cycleUnit" style="width: 100px; margin-left: 10px">
+                <el-option label="天" value="days" />
+                <el-option label="周" value="weeks" />
+                <el-option label="月" value="months" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="执行人" prop="executor" required>
+              <el-select v-model="planForm.executor" placeholder="请选择执行人">
+                <el-option label="张三" value="张三" />
+                <el-option label="李四" value="李四" />
+                <el-option label="王五" value="王五" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="保养项目">
+          <el-button type="primary" @click="addMaintenanceItem" plain>
+            <el-icon><Plus /></el-icon> 添加保养项
+          </el-button>
+
+          <div v-for="(item, index) in planForm.items" :key="index" class="plan-item-card">
+            <div class="item-header">
+              <span>保养项 {{ index + 1 }}</span>
+              <el-button type="danger" size="small" @click="removeItem(index)" circle>
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
+
+            <el-form-item :label="'名称'" :prop="`items[${index}].name`" :rules="{ required: true, message: '请输入名称' }">
+              <el-input v-model="item.name" placeholder="保养项名称" />
+            </el-form-item>
+
+            <el-form-item :label="'类别'">
+              <el-input v-model="item.category" placeholder="保养类别" />
+            </el-form-item>
+
+            <el-form-item :label="'执行标准'">
+              <el-input v-model="item.standard" type="textarea" :rows="2" placeholder="执行标准" />
+            </el-form-item>
+
+            <el-form-item :label="'执行方法'">
+              <el-input v-model="item.method" type="textarea" :rows="2" placeholder="执行方法" />
+            </el-form-item>
+
+            <el-form-item :label="'问题处理'">
+              <el-input v-model="item.problemHandling" type="textarea" :rows="2" placeholder="问题处理方法" />
+            </el-form-item>
+
+            <el-form-item :label="'处理方式'">
+              <el-input v-model="item.handlingMethod" placeholder="处理方式" />
+            </el-form-item>
+
+            <el-form-item :label="'处理工具'">
+              <el-input v-model="item.tools" placeholder="所需工具，用逗号分隔" />
+            </el-form-item>
+
+            <el-form-item :label="'备注'">
+              <el-input v-model="item.remark" type="textarea" :rows="2" placeholder="备注信息" />
+            </el-form-item>
+          </div>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showCreatePlan = false">取消</el-button>
+        <el-button type="primary" @click="savePlan">保存计划</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
-
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  Plus, Edit, Refresh, Warning, VideoPlay, Document, FolderOpened
+  Plus, Edit, Document, Setting, Delete, VideoPlay
 } from '@element-plus/icons-vue'
 import maintenanceAPI from '@/api/maintenanceAPI'
 
 const route = useRoute()
+const router = useRouter()
 const equipmentId = computed(() => route.query.id || 1)
-
 const equipmentName = computed(() => route.query.name || '设备')
 
 // 设备信息
@@ -328,7 +294,71 @@ const equipmentInfo = ref({
   maintenancePerson: '张三'
 })
 
+const showCreatePlan = ref(false)
+const planFormRef = ref()
+const planForm = reactive({
+  name: '',
+  category: '',
+  cycle: 1,
+  cycleUnit: 'days',
+  executor: '',
+  items: [
+    {
+      name: '',
+      category: '',
+      standard: '',
+      method: '',
+      problemHandling: '',
+      handlingMethod: '',
+      tools: '',
+      remark: ''
+    }
+  ]
+})
 
+// 新增方法
+const addMaintenanceItem = () => {
+  planForm.items.push({
+    name: '',
+    category: '',
+    standard: '',
+    method: '',
+    problemHandling: '',
+    handlingMethod: '',
+    tools: '',
+    remark: ''
+  })
+}
+
+const removeItem = (index) => {
+  if (planForm.items.length > 1) {
+    planForm.items.splice(index, 1)
+  } else {
+    ElMessage.warning('至少保留一个保养项')
+  }
+}
+
+const savePlan = async () => {
+  try {
+    await planFormRef.value.validate()
+
+    // 调用API保存保养计划
+    await maintenanceAPI.createMaintenancePlan({
+      equipmentId: equipmentId.value,
+      ...planForm
+    })
+
+    ElMessage.success('保养计划保存成功')
+    showCreatePlan.value = false
+
+    // 刷新数据
+    loadData()
+  } catch (error) {
+    if (!error) {
+      ElMessage.error('请填写完整信息')
+    }
+  }
+}
 
 // 状态计算
 const equipmentStatus = computed(() => {
@@ -341,27 +371,12 @@ const equipmentStatus = computed(() => {
 // 数据
 const maintenancePlans = ref([])
 const currentTask = ref(null)
-const equipmentMetrics = ref([])
-const qualityScore = ref({
-  score: 85,
-  factors: {
-    '按时完成率': 90,
-    '操作规范性': 80,
-    '故障减少率': 85
-  },
-  recommendations: []
-})
-const maintenanceLibrary = ref([])
 const maintenanceRecords = ref([])
 
 // 表单状态
 const showCreateTask = ref(false)
-const showExecuteTask = ref(false)
 const showHistory = ref(false)
-const showPlanDialog = ref(false)
-const showLibrary = ref(false)
 const taskStarted = ref(false)
-const completedItems = ref([])
 
 // 表单数据
 const taskForm = reactive({
@@ -371,45 +386,37 @@ const taskForm = reactive({
   items: []
 })
 
-const executeForm = reactive({
-  startTime: '',
-  items: [],
-  parts: [],
-  remarks: ''
-})
-
-// 上传配置
-const uploadAction = '/api/upload'
-const uploadHeaders = { token: 'your-token' }
-
 // 方法
 const loadData = async () => {
   try {
     // 加载保养计划
     const plansRes = await maintenanceAPI.getMaintenanceCycles({ equipmentId: equipmentId.value })
-    maintenancePlans.value = plansRes.data.content
+    maintenancePlans.value = plansRes.data.content.map(plan => {
+      return {
+        ...plan,
+        cycleTypeLabel: getCycleTypeLabel(plan.cycleType),
+        statusLabel: getStatusLabel(plan.status)
+      }
+    })
 
     // 加载当前任务
     const tasksRes = await maintenanceAPI.getMaintenanceTasks({ equipmentId: equipmentId.value })
-    currentTask.value = tasksRes.data.content.find(t => t.status === 'PENDING')
+    const tasks = tasksRes.data.content.map(task => {
+      return {
+        ...task,
+        statusLabel: getTaskStatusLabel(task.status)
+      }
+    })
 
-    // 加载设备指标
-    const metricsRes = await maintenanceAPI.getEquipmentMetrics(equipmentId.value)
-    equipmentMetrics.value = metricsRes.data.metrics
-
-    // 加载质量评分
-    const qualityRes = await maintenanceAPI.getMaintenanceQuality(equipmentId.value)
-    qualityScore.value = qualityRes.data
-
-    // 加载维保资料
-    const libraryRes = await maintenanceAPI.getMaintenanceLibrary()
-    maintenanceLibrary.value = libraryRes.data.content
+    // 找到待处理或进行中的任务
+    currentTask.value = tasks.find(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS')
 
     // 加载保养记录
     const recordsRes = await maintenanceAPI.getMaintenanceRecords({ equipmentId: equipmentId.value })
     maintenanceRecords.value = recordsRes.data.content
   } catch (error) {
     ElMessage.error('加载数据失败')
+    console.error(error)
   }
 }
 
@@ -420,29 +427,35 @@ const getDaysUntil = (dateStr) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 }
 
-const getTrendType = (trend) => {
-  switch(trend) {
-    case 'UP': return 'danger'
-    case 'DOWN': return 'success'
-    default: return 'info'
+// 状态类型转换
+const getCycleTypeLabel = (type) => {
+  switch(type) {
+    case 'DAILY': return '日常'
+    case 'WEEKLY': return '每周'
+    case 'MONTHLY': return '每月'
+    case 'QUARTERLY': return '每季'
+    case 'YEARLY': return '每年'
+    default: return type
   }
 }
 
-const getProgressValue = (metric) => {
-  // 简化的进度计算
-  return Math.min(100, Math.max(0, metric.value))
+const getStatusLabel = (status) => {
+  switch(status) {
+    case 'PENDING': return '待处理'
+    case 'IN_PROGRESS': return '进行中'
+    case 'COMPLETED': return '已完成'
+    case 'OVERDUE': return '已超期'
+    default: return status
+  }
 }
 
-const getProgressColor = (metric) => {
-  if (metric.trend === 'UP') return '#f56c6c'
-  if (metric.trend === 'DOWN') return '#67c23a'
-  return '#409eff'
-}
-
-const getScoreColor = (score) => {
-  if (score >= 90) return '#67c23a'
-  if (score >= 70) return '#e6a23c'
-  return '#f56c6c'
+const getTaskStatusLabel = (status) => {
+  switch(status) {
+    case 'PENDING': return '待处理'
+    case 'IN_PROGRESS': return '进行中'
+    case 'COMPLETED': return '已完成'
+    default: return status
+  }
 }
 
 const taskStatusType = (status) => {
@@ -468,47 +481,12 @@ const createTask = async () => {
     loadData()
   } catch (error) {
     ElMessage.error('创建失败')
-  }
-}
-
-const startTask = () => {
-  taskStarted.value = true
-  executeForm.startTime = new Date().toLocaleString()
-  executeForm.items = currentTask.value.items.map(item => ({
-    name: item,
-    result: '',
-    photos: [],
-    video: '',
-    audio: ''
-  }))
-  executeForm.parts = [
-    { name: '润滑油', quantity: 0, unit: '升' },
-    { name: '滤芯', quantity: 0, unit: '个' }
-  ]
-  showExecuteTask.value = true
-}
-
-const handleUploadSuccess = (response, item) => {
-  item.photos.push(response.url)
-}
-
-const completeTask = async () => {
-  try {
-    await maintenanceAPI.completeTask(currentTask.value.id, {
-      items: executeForm.items,
-      parts: executeForm.parts.filter(p => p.quantity > 0),
-      remarks: executeForm.remarks,
-      duration: Date.now() - new Date(executeForm.startTime).getTime()
-    })
-    ElMessage.success('任务完成')
-    showExecuteTask.value = false
-    loadData()
-  } catch (error) {
-    ElMessage.error('提交失败')
+    console.error(error)
   }
 }
 
 const calculateDuration = (start, end) => {
+  if (!start || !end) return '-'
   const startTime = new Date(start)
   const endTime = new Date(end)
   const diff = endTime - startTime
@@ -517,14 +495,17 @@ const calculateDuration = (start, end) => {
   return `${hours}小时${minutes}分钟`
 }
 
-const applyTemplate = (template) => {
-  taskForm.items = [template.name, ...template.description.split('、')]
-  ElMessage.success('已应用模板')
-}
-
-const refreshData = () => {
-  loadData()
-  ElMessage.success('数据已刷新')
+// 开始保养 - 路由跳转
+const startMaintenance = (task) => {
+  router.push({
+    path: '/maintenance/action',
+    query: {
+      id: equipmentId.value,
+      name: equipmentName.value,
+      taskId: task.id,
+      taskName: task.taskName
+    }
+  })
 }
 
 onMounted(() => {
@@ -562,80 +543,32 @@ onMounted(() => {
 
 .plan-item {
   padding: 10px;
+  position: relative;
 }
 
-.metrics-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.metric-card {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.metric-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.metric-value {
-  margin-bottom: 10px;
-}
-
-.metric-suggestion {
-  font-size: 12px;
-  color: #666;
-}
-
-.quality-score {
-  text-align: center;
-  margin-top: 20px;
-}
-
-.quality-factors {
-  margin-top: 15px;
-  font-size: 14px;
-  color: #666;
+.plan-actions {
+  margin-top: 10px;
 }
 
 .current-task {
   margin-bottom: 20px;
 }
 
-.task-items {
-  margin-top: 20px;
-}
-
-.maintenance-item {
+.plan-item-card {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
   padding: 15px;
-  border-bottom: 1px solid #eee;
+  margin: 15px 0;
+  background-color: #f8f9fa;
+  position: relative;
 }
 
-.maintenance-item:last-child {
-  border-bottom: none;
-}
-
-.item-meta {
-  margin: 10px 0;
-  font-size: 12px;
-  color: #666;
-}
-
-.execute-item {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 8px;
-}
-
-.record-images {
-  margin-top: 10px;
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #dcdfe6;
 }
 </style>
