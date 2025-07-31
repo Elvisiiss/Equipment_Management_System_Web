@@ -208,25 +208,21 @@ const menuItems = [
           {
             path: '/equipment/location/transfer',
             name: 'Transfer',
-            component: () => import('@/views/equipment/manage/Transfer.vue'),
             meta: { title: '设备转机' },
           },
           {
             path: '/equipment/location/pm',
             name: 'PM',
-            component: () => import('@/views/equipment/manage/PM.vue'),
             meta: { title: 'PM工单' },
           },
           {
             path: '/equipment/location/recover',
             name: 'Recover',
-            component: () => import('@/views/equipment/manage/Recover.vue'),
             meta: { title: '复机管理' },
           },
           {
             path: '/equipment/location/logic',
             name: 'Logic',
-            component: () => import('@/views/equipment/manage/Logic.vue'),
             meta: { title: '逻辑位置' },
           }
         ]
