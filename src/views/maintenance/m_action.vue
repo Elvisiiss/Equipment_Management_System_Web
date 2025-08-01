@@ -51,6 +51,7 @@
                   type="textarea"
                   :rows="2"
                   placeholder="记录执行结果"
+                  :disabled="item.completed"
               />
             </el-form-item>
 
@@ -60,11 +61,16 @@
                   type="textarea"
                   :rows="2"
                   placeholder="如发现问题请描述"
+                  :disabled="item.completed"
               />
             </el-form-item>
 
             <el-form-item label="处理方式">
-              <el-input v-model="item.handlingMethod" placeholder="处理方式" />
+              <el-input
+                  v-model="item.handlingMethod"
+                  placeholder="处理方式"
+                  :disabled="item.completed"
+              />
             </el-form-item>
 
             <el-form-item label="上传图片">
@@ -74,6 +80,7 @@
                   :auto-upload="false"
                   :on-change="(file) => handleUploadChange(file, item)"
                   :file-list="item.photos"
+                  :disabled="item.completed"
               >
                 <el-icon><Plus /></el-icon>
               </el-upload>
@@ -86,8 +93,16 @@
               type="primary"
               @click="completeItem(index)"
               :disabled="item.completed"
+              v-if="!item.completed"
           >
-            {{ item.completed ? '已完成' : '标记完成' }}
+            标记完成
+          </el-button>
+          <el-button
+              type="warning"
+              @click="editItem(index)"
+              v-if="item.completed"
+          >
+            再次编辑
           </el-button>
         </div>
       </div>
@@ -99,7 +114,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Check } from '@element-plus/icons-vue'
+import { Check, Plus } from '@element-plus/icons-vue'
 import maintenanceAPI from '@/api/maintenanceAPI'
 
 const route = useRoute()
@@ -163,7 +178,7 @@ const handleUploadChange = (file, item) => {
   if (!item.photos) {
     item.photos = []
   }
-  item.photos.push({ url: URL.createObjectURL(file.raw), name: file.name })
+  item.photos.push({url: URL.createObjectURL(file.raw), name: file.name})
 }
 
 // 标记保养项完成
@@ -172,10 +187,18 @@ const completeItem = (index) => {
   ElMessage.success(`保养项 "${currentTask.items[index].name}" 已完成`)
 }
 
+// 再次编辑保养项
+const editItem = (index) => {
+  currentTask.items[index].completed = false
+  ElMessage.info(`保养项 "${currentTask.items[index].name}" 可再次编辑`)
+}
+
 // 完成整个保养任务
 const completeMaintenance = async () => {
   try {
+    console.log(1)
     const allCompleted = currentTask.items.every(item => item.completed)
+    console.log(2)
     if (!allCompleted) {
       ElMessage.warning('请完成所有保养项后再提交')
       return
@@ -194,11 +217,15 @@ const completeMaintenance = async () => {
 
 // 任务状态样式
 const taskStatusType = (status) => {
-  switch(status) {
-    case 'PENDING': return 'warning'
-    case 'IN_PROGRESS': return 'primary'
-    case 'COMPLETED': return 'success'
-    default: return 'info'
+  switch (status) {
+    case 'PENDING':
+      return 'warning'
+    case 'IN_PROGRESS':
+      return 'primary'
+    case 'COMPLETED':
+      return 'success'
+    default:
+      return 'info'
   }
 }
 

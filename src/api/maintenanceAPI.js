@@ -32,23 +32,47 @@ export default {
                 content: [
                     {
                         id: 1,
+                        name: '日常清洁计划',
                         equipmentId: 1,
                         equipmentName: '立式加工中心-MC001',
                         cycleType: 'DAILY',
                         cycleValue: 1,
+                        cycleUnit: 'days',
                         nextDate: '2025-08-01',
                         executor: '张三',
-                        line: 'A产线'
+                        status: 'PENDING',
+                        items: [
+                            {
+                                name: '清洁导轨',
+                                category: '清洁类',
+                                standard: '导轨无灰尘、油污',
+                                method: '使用无尘布和专用清洁剂擦拭',
+                                problemHandling: '发现生锈立即报告',
+                                tools: '无尘布,清洁剂'
+                            }
+                        ]
                     },
                     {
                         id: 2,
-                        equipmentId: 2,
-                        equipmentName: '数控车床-LT002',
-                        cycleType: 'WEEKLY',
-                        cycleValue: 2,
-                        nextDate: '2025-08-03',
+                        name: '月度维护计划',
+                        equipmentId: 1,
+                        equipmentName: '立式加工中心-MC001',
+                        cycleType: 'MONTHLY',
+                        cycleValue: 1,
+                        cycleUnit: 'months',
+                        nextDate: '2025-08-15',
                         executor: '李四',
-                        line: 'B产线'
+                        status: 'PENDING',
+                        items: [
+                            {
+                                name: '检查润滑油',
+                                category: '润滑类',
+                                standard: '润滑油量在标准线内',
+                                method: '使用油尺检查油量',
+                                problemHandling: '油量不足时补充润滑油',
+                                tools: '油尺,润滑油'
+                            }
+                        ]
                     }
                 ],
                 totalElements: 2
@@ -56,18 +80,36 @@ export default {
         }
     },
 
-    // 创建保养周期
-    async createMaintenanceCycle(data) {
-        // await auth.post('/cycles', data)
+    // 创建保养计划
+    async createMaintenancePlan(data) {
+        // await auth.post('/plans', data)
         await delay(500)
-        return { success: true, message: '创建成功' }
+        return {
+            success: true,
+            message: '保养计划创建成功',
+            data: { id: Math.floor(Math.random() * 1000) + 10 }
+        }
     },
 
-    // 更新保养周期
-    async updateMaintenanceCycle(id, data) {
-        // await auth.put(`/cycles/${id}`, data)
+    // 更新保养计划
+    async updateMaintenancePlan(id, data) {
+        // await auth.put(`/plans/${id}`, data)
         await delay(500)
-        return { success: true, message: '更新成功' }
+        return {
+            success: true,
+            message: '保养计划更新成功',
+            data: { id }
+        }
+    },
+
+    // 删除保养计划
+    async deleteMaintenancePlan(id) {
+        // await auth.delete(`/plans/${id}`)
+        await delay(500)
+        return {
+            success: true,
+            message: '保养计划已删除'
+        }
     },
 
     // ========= 保养任务 =========
@@ -162,7 +204,10 @@ export default {
                             {
                                 name: '清洁导轨',
                                 result: '正常',
-                                photos: ['photo1.jpg', 'photo2.jpg'],
+                                photos: [
+                                    'https://dummyimage.com/100x100/4CAF50/fff',
+                                    'https://dummyimage.com/100x100/2196F3/fff'
+                                ],
                                 video: 'video1.mp4',
                                 audio: 'audio1.mp3',
                                 parts: [
@@ -239,16 +284,6 @@ export default {
     },
 
     // ========= 保养计划管理 =========
-    // 创建保养计划
-    async createMaintenancePlan(data) {
-        // await auth.post('/plans', data)
-        await delay(500)
-        return {
-            success: true,
-            message: '保养计划创建成功',
-            data: { id: Math.floor(Math.random() * 1000) }
-        }
-    },
 
     // 获取保养计划详情
     async getPlanDetail(id) {
