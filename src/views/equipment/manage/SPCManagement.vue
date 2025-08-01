@@ -70,13 +70,13 @@
           <el-card shadow="hover" style="height:100%;">
             <template #header>
               <span>X-R 控制图</span>
-              <el-button
-                  v-if="detail"
-                  type="success"
-                  size="small"
-                  style="float:right;margin-top:-4px"
-                  @click="exportChart"
-              >导出图片</el-button>
+<!--              <el-button-->
+<!--                  v-if="detail"-->
+<!--                  type="success"-->
+<!--                  size="small"-->
+<!--                  style="float:right;margin-top:-4px"-->
+<!--                  @click="exportChart"-->
+<!--              >导出图片</el-button>-->
             </template>
 
             <!-- 重构的图表容器 -->

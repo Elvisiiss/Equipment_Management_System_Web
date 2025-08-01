@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chenfengyuan/vue-barcode": "^2.0.2",
     "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
@@ -16,6 +17,7 @@
     "dexie": "^4.0.11",
     "echarts": "^5.6.0",
     "element-plus": "^2.10.4",
+    "mitt": "^3.0.1",
     "papaparse": "^5.5.3",
     "pinia": "^3.0.3",
     "sass-embedded": "^1.89.2",

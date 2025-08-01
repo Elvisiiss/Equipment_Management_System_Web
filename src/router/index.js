@@ -28,11 +28,30 @@ const routes = [
         meta: { title: '管理' },
     },
     {
-        path: '/asset/manage/A',
-        name: 'A',
-        component: () => import('@/views/asset/manage/A.vue'),
-        meta: { title: '页面A' },
+        path: '/asset/manage/ledger',
+        name: 'EquipmentLedger',
+        component: () => import('@/views/asset/manage/EquipmentLedger.vue'),
+        meta: { title: '设备台账' },
     },
+    {
+        path: '/asset/manage/master',
+        name: 'AssetMaster',
+        component: () => import('@/views/asset/manage/AssetMaster.vue'),
+        meta: { title: '主数据管理' },
+    },
+    {
+        path: '/asset/manage/index',
+        name: 'AssetIndex',
+        component: () => import('@/views/asset/manage/AssetIndex.vue'),
+        meta: { title: '资产索引' },
+    },
+    {
+        path: '/asset/manage/import',
+        name: 'AssetImport',
+        component: () => import('@/views/asset/manage/AssetImport.vue'),
+        meta: { title: '资产入库' },
+    },
+
     {
         path: '/asset/configuration',
         name: 'asset-configuration',
