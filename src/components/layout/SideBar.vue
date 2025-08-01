@@ -506,6 +506,14 @@ const menuItems = [
             meta: { title: '数据展示' },
           }
         ]
+      },{
+        path: '/repair/worker/list',
+        name: 'repair-worker-list',
+        meta: { title: '我的工单' },
+      },{
+        path: '/repair/admin/list',
+        name: 'repair-admin-list',
+        meta: { title: '待维修设备' },
       }
     ]
   },

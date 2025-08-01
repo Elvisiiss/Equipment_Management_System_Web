@@ -131,7 +131,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import repairAPI from '@/api/repair'
+import repairAPI from '@/api/repairB.js'
 
 const loading = ref(false)
 const knowledgeList = ref([])

@@ -80,7 +80,7 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { use } from 'echarts/core'
 import VChart from 'vue-echarts'
 import RepairKanban from '@/views/repair/components/RepairKanban.vue'
-import repairAPI from '@/api/repair'
+import repairAPI from '@/api/repairB.js'
 
 
 use([

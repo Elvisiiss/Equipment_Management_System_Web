@@ -42,7 +42,14 @@
           <!-- 新增：保养按钮 -->
           <el-button type="success" size="small" @click="goToMaintenance(row)">保养</el-button>
           <!-- 新增：维修按钮 -->
-          <el-button type="warning" size="small" @click="handleRepair(row)">维修</el-button>
+          <el-button
+              type="warning"
+              size="small"
+              @click="goToRepairForm(row)"
+              :disabled="row.status === 3 || row.status === 5"
+          >
+            {{ row.status === 5 ? '已报修' : '报修' }}
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -313,10 +320,6 @@ const goToMaintenance = (row) => {
   })
 }
 
-// 维修按钮事件（暂未实现）
-const handleRepair = (row) => {
-  ElMessage.info('维修功能开发中，设备ID：' + row.id)
-}
 
 // 关闭对话框
 const handleDialogClose = () => {
@@ -354,14 +357,38 @@ const handleNameplateChange = (file) => {
 
 // 状态标签样式
 const getStatusType = (status) => {
-  const types = { 1: 'success', 2: 'warning', 3: 'danger', 4: 'info' }
+  const types = {
+    1: 'success',  // 运行中
+    2: 'warning',  // 停机
+    3: 'danger',   // 维修中
+    4: 'info',     // 已报废
+    5: 'danger'    // 待维修（新增）
+  }
   return types[status] || 'info'
 }
 
 // 状态标签文本
 const getStatusLabel = (status) => {
-  const labels = { 1: '运行中', 2: '停机', 3: '维修中', 4: '已报废' }
+  const labels = {
+    1: '运行中',
+    2: '停机',
+    3: '维修中',
+    4: '已报废',
+    5: '待维修'  // 新增
+  }
   return labels[status] || '未知状态'
+}
+
+// 跳转到维修申请表单
+const goToRepairForm = (row) => {
+  router.push({
+    path: '/repair/form',
+    query: {
+      id: row.id,
+      name: row.mcName,
+      number: row.mcNumber
+    }
+  })
 }
 
 onMounted(() => {

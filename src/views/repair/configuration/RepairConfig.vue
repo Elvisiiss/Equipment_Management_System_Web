@@ -169,7 +169,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import repairAPI from '@/api/repair'
+import repairAPI from '@/api/repairB.js'
 
 const activeTab = ref('escalation')
 

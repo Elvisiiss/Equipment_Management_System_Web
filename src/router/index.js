@@ -426,6 +426,30 @@ const routes = [
         meta: { title: '维修管理', icon: HomeFilled },
     },
     {
+        path: '/repair/form',
+        name: 'RepairForm',
+        component: () => import('@/views/repair/RepairForm.vue'),
+        meta: { title: '维修申请' }
+    },
+    {
+        path: '/repair/admin/list',
+        name: 'RepairListAdmin',
+        component: () => import('@/views/repair/RepairListAdmin.vue'),
+        meta: { title: '待维修设备' }
+    },
+    {
+        path: '/repair/worker/list',
+        name: 'RepairListWorker',
+        component: () => import('@/views/repair/RepairListWorker.vue'),
+        meta: { title: '我的工单' }
+    },
+    {
+        path: '/repair/detail/:id',
+        name: 'RepairDetail',
+        component: () => import('@/views/repair/RepairOrder.vue'),
+        meta: { title: '工单详情' }
+    },
+    {
         path: '/repair/manage',
         name: 'repair-manage',
         component: () => import('@/views/repair/manage.vue'),

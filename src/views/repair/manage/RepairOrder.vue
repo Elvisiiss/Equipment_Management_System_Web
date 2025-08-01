@@ -132,7 +132,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import RepairForm from '@/views/repair/components/RepairForm.vue'
-import repairAPI from '@/api/repair'
+import repairAPI from '@/api/repairB.js'
 
 const loading = ref(false)
 const tableData = ref([])
