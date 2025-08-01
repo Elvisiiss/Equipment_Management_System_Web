@@ -66,7 +66,7 @@
         </el-col>
 
         <!-- 右侧：X-R 控制图 -->
-        <el-col :span="16">
+        <el-col :span="16" style="height:100%">
           <el-card shadow="hover" style="height:100%;">
             <template #header>
               <span>X-R 控制图</span>
