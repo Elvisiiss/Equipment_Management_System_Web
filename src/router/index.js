@@ -243,10 +243,28 @@ const routes = [
         meta: { title: '管理' },
     },
     {
-        path: '/maintenance/manage/J',
-        name: 'J',
-        component: () => import('@/views/maintenance/manage/J.vue'),
-        meta: { title: '页面J' },
+        path: '/maintenance/manage/ApprovalList',
+        name: 'ApprovalList',
+        component: () => import('@/views/maintenance/manage/ApprovalList.vue'),
+        meta: { title: '审批列表' },
+    },
+    {
+        path: '/maintenance/manage/ApprovalDetail',
+        name: 'ApprovalDetail',
+        component: () => import('@/views/maintenance/manage/ApprovalDetail.vue'),
+        meta: { title: '审批详情' },
+    },
+    {
+        path: '/maintenance/manage/MyApprovals',
+        name: 'MyApprovals',
+        component: () => import('@/views/maintenance/manage/MyApprovals.vue'),
+        meta: { title: '我的审批结果' },
+    },
+    {
+        path: '/maintenance/manage/ResubmitTask',
+        name: 'ResubmitTask',
+        component: () => import('@/views/maintenance/manage/ResubmitTask.vue'),
+        meta: { title: '重新提交页面' },
     },
     {
         path: '/maintenance/configuration',

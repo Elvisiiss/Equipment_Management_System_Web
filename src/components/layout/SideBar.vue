@@ -314,9 +314,14 @@ const menuItems = [
         meta: { title: '管理' },
         children: [
           {
-            path: '/maintenance/manage/J',
-            name: 'J',
-            meta: { title: '页面J' },
+            path: '/maintenance/manage/ApprovalList',
+            name: 'ApprovalList',
+            meta: { title: '审批列表页面' },
+          },
+          {
+            path: '/maintenance/manage/MyApprovals',
+            name: 'MyApprovals',
+            meta: { title: '我的审批结果' },
           }
         ]
       },{
