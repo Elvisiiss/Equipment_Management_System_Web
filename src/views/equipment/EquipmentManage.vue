@@ -178,8 +178,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import baseMcAPI from '@/api/equipment'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'  // 新增导入useRoute
 const router = useRouter()
+const route = useRoute()  // 获取当前路由实例
 // 数据
 const loading = ref(false)
 const searchKeyword = ref('')
@@ -392,7 +393,17 @@ const goToRepairForm = (row) => {
 }
 
 onMounted(() => {
-  loadData()
+  // 从URL参数中获取search值
+  const searchParam = route.query.search
+  if (searchParam) {
+    // 设置搜索关键词
+    searchKeyword.value = searchParam
+    // 执行搜索
+    handleSearch()
+  } else {
+    // 没有搜索参数时加载默认数据
+    loadData()
+  }
 })
 </script>
 

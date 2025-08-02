@@ -136,8 +136,8 @@ const router = useRouter();
 const authStore = useAuthStore()
 
 const accountForm = ref({
-  account: '',
-  password: '',
+  account: 'user1',
+  password: 'z423z423',
   remember: false
 });
 
