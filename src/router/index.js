@@ -536,10 +536,10 @@ const routes = [
         meta: { title: '配置' },
     },
     {
-        path: '/system/configuration/W',
-        name: 'W',
-        component: () => import('@/views/system/configuration/W.vue'),
-        meta: { title: '页面W' },
+        path: '/system/configuration/DepartmentApproval',
+        name: 'DepartmentApproval',
+        component: () => import('@/views/system/configuration/DepartmentApproval.vue'),
+        meta: { title: '审批设置' },
     },
     {
         path: '/system/screen',

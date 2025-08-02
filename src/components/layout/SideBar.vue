@@ -555,9 +555,9 @@ const menuItems = [
         meta: { title: '配置' },
         children: [
           {
-            path: '/system/configuration/W',
-            name: 'W',
-            meta: { title: '页面W' },
+            path: '/system/configuration/DepartmentApproval',
+            name: 'DepartmentApproval',
+            meta: { title: '审批设置' },
           }
         ]
       },{
