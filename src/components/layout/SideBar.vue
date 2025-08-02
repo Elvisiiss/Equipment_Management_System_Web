@@ -131,10 +131,26 @@ const menuItems = [
         meta: { title: '管理' },
         children: [
           {
-            path: '/asset/manage/A',
-            name: 'A',
-            meta: { title: '页面A' },
-          }
+            path: '/asset/manage/ledger',
+            name: 'EquipmentLedger',
+            meta: { title: '设备台账' },
+          },
+          {
+            path: '/asset/manage/master',
+            name: 'AssetMaster',
+            meta: { title: '主数据管理' },
+          },
+          {
+            path: '/asset/manage/index',
+            name: 'AssetIndex',
+            meta: { title: '资产索引' },
+          },
+          {
+            path: '/asset/manage/import',
+            name: 'AssetImport',
+            meta: { title: '资产入库' },
+          },
+
         ]
       },{
         path: '/asset/configuration',
