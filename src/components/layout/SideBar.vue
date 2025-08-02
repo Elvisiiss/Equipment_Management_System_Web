@@ -528,9 +528,9 @@ const menuItems = [
         meta: { title: '管理' },
         children: [
           {
-            path: '/system/manage/V',
-            name: 'V',
-            meta: { title: '页面V' },
+            path: '/system/manage/users_roles_permissions',
+            name: 'users_roles_permissions',
+            meta: { title: '用户管理' },
           }
         ]
       },{

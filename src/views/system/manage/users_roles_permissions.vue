@@ -16,9 +16,9 @@
             <el-icon><UserFilled /></el-icon>
             <span>角色列表</span>
           </el-menu-item>
-          <el-menu-item index="user-log">
-            <el-icon><Document /></el-icon>
-            <span>用户日志</span>
+          <el-menu-item index="permission-management">
+            <el-icon><Lock /></el-icon>
+            <span>权限管理</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
@@ -67,7 +67,7 @@
           </div>
 
           <el-table
-              :data="filteredUsers"
+              :data="paginatedUsers"
               border
               style="width: 100%; margin-top: 16px;"
               :row-class-name="tableRowClassName"
@@ -81,6 +81,7 @@
                     v-for="roleId in scope.row.roleIds"
                     :key="roleId"
                     :type="getRoleType(roleId)"
+                    style="margin-right: 5px;"
                 >
                   {{ getRoleName(roleId) }}
                 </el-tag>
@@ -90,8 +91,8 @@
               <template #default="scope">
                 <el-switch
                     v-model="scope.row.status"
-                    active-value="1"
-                    inactive-value="0"
+                    :active-value="1"
+                    :inactive-value="0"
                     @change="handleUserStatusChange(scope.row)"
                 ></el-switch>
               </template>
@@ -154,7 +155,7 @@
           </div>
 
           <el-table
-              :data="filteredRoles"
+              :data="paginatedRoles"
               border
               style="width: 100%; margin-top: 16px;"
           >
@@ -163,7 +164,7 @@
             <el-table-column prop="description" label="角色描述"></el-table-column>
             <el-table-column label="权限数量">
               <template #default="scope">
-                {{ scope.row.permissions.length }}
+                {{ scope.row.permissionIds?.length || 0 }}
               </template>
             </el-table-column>
             <el-table-column label="用户数量">
@@ -210,69 +211,38 @@
           ></el-pagination>
         </div>
 
-        <!-- 用户日志页面 -->
-        <div v-if="activeMenu === 'user-log'" class="content-wrapper">
+        <!-- 权限管理页面 -->
+        <div v-if="activeMenu === 'permission-management'" class="content-wrapper">
           <div class="content-header">
-            <h2>用户日志</h2>
-          </div>
-
-          <div class="search-bar">
-            <el-input
-                v-model="logSearchQuery"
-                placeholder="搜索用户或操作"
-                prefix-icon="Search"
-                class="search-input"
-            ></el-input>
-            <el-select
-                v-model="logOperationFilter"
-                placeholder="操作类型"
-                class="operation-filter"
-                clearable
-            >
-              <el-option
-                  v-for="op in operationTypes"
-                  :key="op.value"
-                  :label="op.label"
-                  :value="op.value"
-              ></el-option>
-            </el-select>
-            <el-date-picker
-                v-model="logDateRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                class="date-filter"
-            ></el-date-picker>
+            <h2>权限管理</h2>
           </div>
 
           <el-table
-              :data="filteredLogs"
+              :data="permissions"
               border
               style="width: 100%; margin-top: 16px;"
           >
             <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="username" label="用户"></el-table-column>
-            <el-table-column prop="operation" label="操作"></el-table-column>
-            <el-table-column prop="ip" label="IP地址"></el-table-column>
-            <el-table-column prop="details" label="操作详情" width="300"></el-table-column>
-            <el-table-column prop="timestamp" label="操作时间">
+            <el-table-column prop="permName" label="权限名称"></el-table-column>
+            <el-table-column prop="description" label="权限描述"></el-table-column>
+            <el-table-column label="操作" width="120">
               <template #default="scope">
-                {{ formatDate(scope.row.timestamp) }}
+                <el-button
+                    size="small"
+                    @click="handleEditPermission(scope.row)"
+                >
+                  编辑
+                </el-button>
+                <el-button
+                    size="small"
+                    type="danger"
+                    @click="handleDeletePermission(scope.row.id)"
+                >
+                  删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
-
-          <el-pagination
-              @size-change="handleLogSizeChange"
-              @current-change="handleLogCurrentChange"
-              :current-page="logCurrentPage"
-              :page-sizes="[10, 20, 50]"
-              :page-size="logPageSize"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="filteredLogs.length"
-              class="pagination"
-          ></el-pagination>
         </div>
       </el-main>
     </el-container>
@@ -290,12 +260,12 @@
           label-width="100px"
       >
         <el-form-item label="用户名" prop="userName">
-          <el-input v-model="formUser.userName" :disabled="formUser.id !== undefined"></el-input>
+          <el-input v-model="formUser.userName" :disabled="!!formUser.id"></el-input>
         </el-form-item>
         <el-form-item
             label="密码"
             prop="password"
-            v-if="formUser.id === undefined"
+            v-if="!formUser.id"
         >
           <el-input v-model="formUser.password" type="password"></el-input>
         </el-form-item>
@@ -319,8 +289,8 @@
         <el-form-item label="状态">
           <el-switch
               v-model="formUser.status"
-              active-value="1"
-              inactive-value="0"
+              :active-value="1"
+              :inactive-value="0"
           ></el-switch>
         </el-form-item>
       </el-form>
@@ -429,65 +399,45 @@
       </template>
     </el-dialog>
 
-    <!-- 右上角角色权限管理悬浮框 -->
-    <el-drawer
-        title="角色权限总览"
-        v-model="showPermissionDialog"
-        direction="right"
-        :width="500"
+    <!-- 编辑权限对话框 -->
+    <el-dialog
+        title="编辑权限"
+        v-model="showEditPermissionDialog"
+        width="500px"
     >
-      <div class="permission-overview">
-        <el-select
-            v-model="selectedRoleForPermissionOverview"
-            placeholder="选择角色"
-            class="role-selector"
-            @change="handleRoleChangeForPermissionOverview"
+      <el-form
+          :model="formPermission"
+          ref="permissionFormRef"
+          label-width="100px"
+      >
+        <el-form-item label="权限名称" prop="permName">
+          <el-input v-model="formPermission.permName" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="权限描述" prop="description">
+          <el-input
+              v-model="formPermission.description"
+              type="textarea"
+              :rows="3"
+          ></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditPermissionDialog = false">取消</el-button>
+        <el-button
+            type="primary"
+            @click="submitPermissionForm"
         >
-          <el-option
-              v-for="role in roles"
-              :key="role.id"
-              :label="role.roleName"
-              :value="role.id"
-          ></el-option>
-        </el-select>
-
-        <div v-if="currentRoleInOverview" class="role-permission-details">
-          <h3>{{ currentRoleInOverview.roleName }} 权限详情</h3>
-          <div class="permission-groups">
-            <div v-for="group in permissionGroups" :key="group.id" class="permission-group">
-              <div class="group-title">{{ group.name }}</div>
-              <el-checkbox-group
-                  v-model="currentRolePermissionIds"
-                  class="permission-checkboxes"
-              >
-                <el-checkbox
-                    v-for="perm in group.permissions"
-                    :key="perm.id"
-                    :label="perm.id"
-                >
-                  {{ perm.name }}
-                </el-checkbox>
-              </el-checkbox-group>
-            </div>
-          </div>
-
-          <el-button
-              type="primary"
-              @click="savePermissionOverviewChanges"
-              class="save-permissions-btn"
-          >
-            保存权限变更
-          </el-button>
-        </div>
-      </div>
-    </el-drawer>
+          确认
+        </el-button>
+      </template>
+    </el-dialog>
   </el-container>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import {
-  User, UserFilled, Document,
+  User, UserFilled, Lock,
   Plus,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -504,232 +454,8 @@ const loadingUsers = ref(false);
 const roles = ref([]);
 const loadingRoles = ref(false);
 
-// 模拟用户角色映射
-const userRoles = ref({
-  1: [1], // superadmin -> SUPER_ADMIN
-  2: [2], // admin -> ADMIN
-  3: [3]  // user1 -> USER
-});
-
-// 获取用户列表
-const fetchUsers = async () => {
-  try {
-    loadingUsers.value = true;
-    const response = await AuthAPI.getUserList();
-    console.log(response.data.data);
-    users.value = response.data.data.map(user => ({
-      ...user,
-      status: String(user.status),
-      roleIds: userRoles.value[user.id] || []
-    }));
-  } catch (error) {
-    ElMessage.error('获取用户列表失败');
-    console.error(error);
-  } finally {
-    loadingUsers.value = false;
-  }
-};
-
-// 获取角色列表
-const fetchRoles = async () => {
-  try {
-    loadingRoles.value = true;
-    const response = await AuthAPI.getRoleList();
-    console.log(response.data.data);
-    roles.value = response.data.data.map(role => ({
-      ...role,
-      permissions: getPermissionsForRole(role.id)
-    }));
-  } catch (error) {
-    ElMessage.error('获取角色列表失败');
-    console.error(error);
-  } finally {
-    loadingRoles.value = false;
-  }
-};
-
-// 为角色分配权限 (模拟数据)
-const getPermissionsForRole = (roleId) => {
-  switch (roleId) {
-    case 1:
-      return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // SUPER_ADMIN
-    case 2:
-      return [1, 2, 3, 4, 5, 6, 7, 8]; // ADMIN
-    case 3:
-      return [1, 5, 9]; // USER
-    default:
-      return [];
-  }
-};
-
-// 权限分组
-const permissionGroups = ref([
-  {
-    id: 1,
-    name: '用户管理',
-    permissions: [
-      {id: 1, name: '查看用户'},
-      {id: 2, name: '新增用户'},
-      {id: 3, name: '编辑用户'},
-      {id: 4, name: '删除用户'}
-    ]
-  },
-  {
-    id: 2,
-    name: '角色管理',
-    permissions: [
-      {id: 5, name: '查看角色'},
-      {id: 6, name: '新增角色'},
-      {id: 7, name: '编辑角色'},
-      {id: 8, name: '删除角色'}
-    ]
-  },
-  {
-    id: 3,
-    name: '日志管理',
-    permissions: [
-      {id: 9, name: '查看日志'},
-      {id: 10, name: '导出日志'}
-    ]
-  },
-  {
-    id: 4,
-    name: '系统设置',
-    permissions: [
-      {id: 11, name: '管理系统设置'},
-      {id: 12, name: '管理权限'}
-    ]
-  }
-]);
-
-// 权限树形结构数据
-const permissionTree = ref([
-  {
-    id: 1,
-    label: '用户管理',
-    children: [
-      {id: 1, label: '查看用户'},
-      {id: 2, label: '新增用户'},
-      {id: 3, label: '编辑用户'},
-      {id: 4, label: '删除用户'}
-    ]
-  },
-  {
-    id: 2,
-    label: '角色管理',
-    children: [
-      {id: 5, label: '查看角色'},
-      {id: 6, label: '新增角色'},
-      {id: 7, label: '编辑角色'},
-      {id: 8, label: '删除角色'}
-    ]
-  },
-  {
-    id: 3,
-    label: '日志管理',
-    children: [
-      {id: 9, label: '查看日志'},
-      {id: 10, label: '导出日志'}
-    ]
-  },
-  {
-    id: 4,
-    label: '系统设置',
-    children: [
-      {id: 11, label: '管理系统设置'},
-      {id: 12, label: '管理权限'}
-    ]
-  }
-]);
-
-// 用户日志数据
-const userLogs = ref([
-  {
-    id: 1,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'login',
-    ip: '192.168.1.1',
-    details: '用户登录系统',
-    timestamp: '2023-06-01 08:30:45'
-  },
-  {
-    id: 2,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'createUser',
-    ip: '192.168.1.1',
-    details: '创建新用户: qianqi',
-    timestamp: '2023-06-01 09:15:22'
-  },
-  {
-    id: 3,
-    userId: 2,
-    username: 'lisi',
-    operation: 'login',
-    ip: '192.168.1.2',
-    details: '用户登录系统',
-    timestamp: '2023-06-01 10:05:18'
-  },
-  {
-    id: 4,
-    userId: 2,
-    username: 'lisi',
-    operation: 'editRole',
-    ip: '192.168.1.2',
-    details: '编辑角色: 普通用户',
-    timestamp: '2023-06-01 10:30:45'
-  },
-  {
-    id: 5,
-    userId: 3,
-    username: 'wangwu',
-    operation: 'login',
-    ip: '192.168.1.3',
-    details: '用户登录系统',
-    timestamp: '2023-06-01 11:20:33'
-  },
-  {
-    id: 6,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'deleteUser',
-    ip: '192.168.1.1',
-    details: '删除用户: zhaoliu',
-    timestamp: '2023-06-01 14:10:25'
-  },
-  {
-    id: 7,
-    userId: 2,
-    username: 'lisi',
-    operation: 'logout',
-    ip: '192.168.1.2',
-    details: '用户退出系统',
-    timestamp: '2023-06-01 16:45:12'
-  },
-  {
-    id: 8,
-    userId: 1,
-    username: 'zhangsan',
-    operation: 'changePermission',
-    ip: '192.168.1.1',
-    details: '修改角色权限: 部门管理员',
-    timestamp: '2023-06-01 17:20:05'
-  }
-]);
-
-// 操作类型
-const operationTypes = ref([
-  { label: '登录', value: 'login' },
-  { label: '退出', value: 'logout' },
-  { label: '创建用户', value: 'createUser' },
-  { label: '编辑用户', value: 'editUser' },
-  { label: '删除用户', value: 'deleteUser' },
-  { label: '创建角色', value: 'createRole' },
-  { label: '编辑角色', value: 'editRole' },
-  { label: '删除角色', value: 'deleteRole' },
-  { label: '修改权限', value: 'changePermission' }
-]);
+// 权限数据
+const permissions = ref([]);
 
 // 用户管理相关状态
 const userSearchQuery = ref('');
@@ -744,7 +470,7 @@ const formUser = ref({
   password: '',
   email: '',
   roleIds: [],
-  status: '1'
+  status: 1
 });
 const userRules = ref({
   userName: [
@@ -783,12 +509,13 @@ const currentRoleForPermissions = ref(null);
 const currentRolePermissions = ref([]);
 const selectedPermissions = ref([]);
 
-// 日志管理相关状态
-const logSearchQuery = ref('');
-const logOperationFilter = ref('');
-const logDateRange = ref([]);
-const logCurrentPage = ref(1);
-const logPageSize = ref(10);
+// 权限管理相关状态
+const showEditPermissionDialog = ref(false);
+const formPermission = ref({
+  id: '',
+  permName: '',
+  description: ''
+});
 
 // 重置密码相关状态
 const showResetPasswordDialog = ref(false);
@@ -818,16 +545,56 @@ const resetPasswordRules = ref({
 const resetPasswordFormRef = ref(null);
 const userIdToReset = ref(null);
 
+// 权限树形结构数据
+const permissionTree = ref([
+  {
+    id: 'user',
+    label: '用户权限',
+    children: [
+      {id: 1, label: '查看用户信息 (user:view)'},
+      {id: 2, label: '创建新用户 (user:create)'},
+      {id: 3, label: '编辑用户信息 (user:edit)'},
+      {id: 4, label: '删除用户 (user:delete)'}
+    ]
+  },
+  {
+    id: 'role',
+    label: '角色权限',
+    children: [
+      {id: 5, label: '管理角色权限 (role:manage)'}
+    ]
+  },
+  {
+    id: 'device',
+    label: '设备权限',
+    children: [
+      {id: 6, label: '查看设备信息 (device:view)'},
+      {id: 7, label: '添加新设备 (device:create)'},
+      {id: 8, label: '编辑设备信息 (device:edit)'},
+      {id: 9, label: '删除设备 (device:delete)'},
+      {id: 10, label: '分配设备 (device:assign)'},
+      {id: 11, label: '设备维护管理 (device:maintenance)'}
+    ]
+  }
+]);
+
 // 计算属性 - 筛选用户
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
     const matchesSearch = user.userName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
         user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase());
     const matchesRole = !userRoleFilter.value || user.roleIds.includes(Number(userRoleFilter.value));
-    const matchesStatus = !userStatusFilter.value || user.status === userStatusFilter.value;
+    const matchesStatus = !userStatusFilter.value || user.status === Number(userStatusFilter.value);
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+});
+
+// 分页后的用户数据
+const paginatedUsers = computed(() => {
+  const start = (userCurrentPage.value - 1) * userPageSize.value;
+  const end = start + userPageSize.value;
+  return filteredUsers.value.slice(start, end);
 });
 
 // 计算属性 - 筛选角色
@@ -838,25 +605,18 @@ const filteredRoles = computed(() => {
   });
 });
 
-// 计算属性 - 筛选日志
-const filteredLogs = computed(() => {
-  return userLogs.value.filter(log => {
-    const matchesSearch = log.username.toLowerCase().includes(logSearchQuery.value.toLowerCase()) ||
-        log.operation.toLowerCase().includes(logSearchQuery.value.toLowerCase()) ||
-        log.details.toLowerCase().includes(logSearchQuery.value.toLowerCase());
-    const matchesOperation = !logOperationFilter.value || log.operation === logOperationFilter.value;
-    const matchesDateRange = !logDateRange.value.length ||
-        (new Date(log.timestamp) >= new Date(logDateRange.value[0]) &&
-            new Date(log.timestamp) <= new Date(logDateRange.value[1]));
-
-    return matchesSearch && matchesOperation && matchesDateRange;
-  });
+// 分页后的角色数据
+const paginatedRoles = computed(() => {
+  const start = (roleCurrentPage.value - 1) * rolePageSize.value;
+  const end = start + rolePageSize.value;
+  return filteredRoles.value.slice(start, end);
 });
 
 // 生命周期钩子
 onMounted(() => {
   fetchUsers();
   fetchRoles();
+  fetchPermissions();
 });
 
 // 方法 - 菜单切换
@@ -867,8 +627,6 @@ const handleMenuSelect = (index) => {
     userCurrentPage.value = 1;
   } else if (index === 'role-list') {
     roleCurrentPage.value = 1;
-  } else if (index === 'user-log') {
-    logCurrentPage.value = 1;
   }
 };
 
@@ -913,10 +671,10 @@ const submitUserForm = async () => {
 const handleUserStatusChange = async (user) => {
   try {
     await AuthAPI.updateUserStatus(user.id, {
-      status: user.status === '1' ? 0 : 1
+      status: user.status
     });
     fetchUsers();
-    const statusText = user.status === '1' ? '启用' : '禁用';
+    const statusText = user.status === 1 ? '启用' : '禁用';
     ElMessage.success(`用户已${statusText}`);
   } catch (error) {
     ElMessage.error('状态更新失败');
@@ -955,7 +713,7 @@ const handleDeleteUser = (userId) => {
   if (!user) return;
 
   ElMessageBox.confirm(
-      `确定要删除用户 ${user.userName} 吗？`,
+      `确定要删除用户 ${user.userName} 吗？删除操作可能会导致系统不完整，请谨慎操作！`,
       '删除确认',
       {
         confirmButtonText: '确定',
@@ -1015,8 +773,8 @@ const submitRoleForm = async () => {
 
 const handleRolePermissions = (role) => {
   currentRoleForPermissions.value = {...role};
-  currentRolePermissions.value = [...role.permissions];
-  selectedPermissions.value = [...role.permissions];
+  currentRolePermissions.value = [...(role.permissionIds || [])];
+  selectedPermissions.value = [...(role.permissionIds || [])];
   showRolePermissionsDialog.value = true;
 };
 
@@ -1045,7 +803,7 @@ const handleDeleteRole = (roleId) => {
   if (!role) return;
 
   ElMessageBox.confirm(
-      `确定要删除角色 ${role.roleName} 吗？`,
+      `确定要删除角色 ${role.roleName} 吗？删除操作可能会导致系统不完整，请谨慎操作！`,
       '删除确认',
       {
         confirmButtonText: '确定',
@@ -1065,20 +823,63 @@ const handleDeleteRole = (roleId) => {
   });
 };
 
-// 方法 - 用户日志
-const handleLogSizeChange = (val) => {
-  logPageSize.value = val;
-  logCurrentPage.value = 1;
+// 方法 - 权限管理
+const fetchPermissions = async () => {
+  try {
+    const response = await AuthAPI.getPermissionList();
+    permissions.value = response.data.data;
+  } catch (error) {
+    ElMessage.error('获取权限列表失败');
+    console.error(error);
+  }
 };
 
-const handleLogCurrentChange = (val) => {
-  logCurrentPage.value = val;
+const handleEditPermission = (permission) => {
+  formPermission.value = {...permission};
+  showEditPermissionDialog.value = true;
+};
+
+const submitPermissionForm = async () => {
+  try {
+    await AuthAPI.updatePermission(formPermission.value.id, formPermission.value);
+    ElMessage.success('权限更新成功');
+    showEditPermissionDialog.value = false;
+    fetchPermissions();
+  } catch (error) {
+    ElMessage.error('权限更新失败');
+    console.error(error);
+  }
+};
+
+const handleDeletePermission = (permissionId) => {
+  const permission = permissions.value.find(p => p.id === permissionId);
+  if (!permission) return;
+
+  ElMessageBox.confirm(
+      `确定要删除权限 ${permission.permName} 吗？删除操作可能会导致系统不完整，请谨慎操作！`,
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+  ).then(async () => {
+    try {
+      await AuthAPI.deletePermission(permissionId);
+      ElMessage.success('权限删除成功');
+      fetchPermissions();
+    } catch (error) {
+      ElMessage.error(error.response?.data?.message || '删除失败');
+    }
+  }).catch(() => {
+    // 取消删除
+  });
 };
 
 // 辅助方法
 const getRoleName = (roleId) => {
   const role = roles.value.find(r => r.id === roleId);
-  return role ? role.roleName : '';
+  return role ? role.roleName : '未知角色';
 };
 
 const getRoleType = (roleId) => {
@@ -1098,25 +899,39 @@ const getUserCountByRole = (roleId) => {
   return users.value.filter(u => u.roleIds.includes(roleId)).length;
 };
 
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleString();
-};
-
 const tableRowClassName = ({row}) => {
-  return row.status === '0' ? 'row-disabled' : '';
+  return row.status === 0 ? 'row-disabled' : '';
 };
 
-const addUserLog = (operation, details) => {
-  const newLogId = Math.max(...userLogs.value.map(log => log.id), 0) + 1;
-  userLogs.value.unshift({
-    id: newLogId,
-    userId: currentUser.value.id,
-    username: currentUser.value.username,
-    operation,
-    ip: '127.0.0.1', // 模拟本地IP
-    details,
-    timestamp: new Date().toLocaleString()
-  });
+// 获取用户列表
+const fetchUsers = async () => {
+  try {
+    loadingUsers.value = true;
+    const response = await AuthAPI.getUserList();
+    users.value = response.data.data.map(user => ({
+      ...user,
+      status: user.status
+    }));
+  } catch (error) {
+    ElMessage.error('获取用户列表失败');
+    console.error(error);
+  } finally {
+    loadingUsers.value = false;
+  }
+};
+
+// 获取角色列表
+const fetchRoles = async () => {
+  try {
+    loadingRoles.value = true;
+    const response = await AuthAPI.getRoleList();
+    roles.value = response.data.data;
+  } catch (error) {
+    ElMessage.error('获取角色列表失败');
+    console.error(error);
+  } finally {
+    loadingRoles.value = false;
+  }
 };
 </script>
 
@@ -1195,47 +1010,6 @@ const addUserLog = (operation, details) => {
   margin-bottom: 15px;
   font-weight: bold;
   color: #666;
-}
-
-.permission-overview {
-  padding: 10px;
-}
-
-.role-selector {
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.role-permission-details {
-  margin-top: 10px;
-}
-
-.permission-groups {
-  margin-top: 15px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.permission-group {
-  margin-bottom: 15px;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  padding: 10px;
-}
-
-.group-title {
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #409eff;
-}
-
-.permission-checkboxes {
-  padding-left: 15px;
-}
-
-.save-permissions-btn {
-  margin-top: 20px;
-  width: 100%;
 }
 
 ::v-deep .row-disabled {

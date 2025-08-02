@@ -505,10 +505,10 @@ const routes = [
         meta: { title: '管理' },
     },
     {
-        path: '/system/manage/V',
-        name: 'V',
-        component: () => import('@/views/system/manage/V.vue'),
-        meta: { title: '页面V' },
+        path: '/system/manage/users_roles_permissions',
+        name: 'users_roles_permissions',
+        component: () => import('@/views/system/manage/users_roles_permissions.vue'),
+        meta: { title: '用户管理' },
     },
     {
         path: '/system/configuration',

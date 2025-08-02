@@ -64,5 +64,20 @@ export default {
     // 删除角色
     deleteRole(roleId) {
         return request.delete(`/system/menu-permission/roles/${roleId}`)
+    },
+
+    // 获取权限列表
+    getPermissionList() {
+        return request.get('/system/menu-permission/permissions')
+    },
+
+    // 更新权限
+    updatePermission(permissionId, permissionData) {
+        return request.put(`/system/menu-permission/permissions/${permissionId}`, permissionData)
+    },
+
+    // 删除权限
+    deletePermission(permissionId) {
+        return request.delete(`/system/menu-permission/permissions/${permissionId}`)
     }
 }
