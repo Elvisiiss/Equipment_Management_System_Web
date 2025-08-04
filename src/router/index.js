@@ -51,6 +51,60 @@ const routes = [
         component: () => import('@/views/asset/manage/AssetImport.vue'),
         meta: { title: '资产入库' },
     },
+    {
+        path: '/asset/manage/life',
+        name: 'AssetLifecycle',
+        component: () => import('@/views/asset/manage/AssetLifecycle.vue'),
+        meta: { title: '全生命周期管理' },
+    },
+    /* 1. 设备请购 */
+    {
+        path: '/asset/manage/life/purchase',
+        name: 'AssetPurchase',
+        component: () => import('@/views/asset/manage/lifecycle/AssetPurchase.vue'),
+        meta: { title: '设备请购', group: 'lifecycle' }
+    },
+    /* 2. 设备验收 */
+    {
+        path: '/asset/manage/life/accept',
+        name: 'AssetAccept',
+        component: () => import('@/views/asset/manage/lifecycle/AssetAccept.vue'),
+        meta: { title: '设备验收', group: 'lifecycle' }
+    },
+    /* 3. 设备转固 */
+    {
+        path: '/asset/manage/life/capitalize',
+        name: 'AssetCapitalize',
+        component: () => import('@/views/asset/manage/lifecycle/AssetCapitalize.vue'),
+        meta: { title: '设备转固', group: 'lifecycle' }
+    },
+    /* 4. 资产卡片打印 */
+    {
+        path: '/asset/manage/life/card-print',
+        name: 'AssetCardPrint',
+        component: () => import('@/views/asset/manage/lifecycle/AssetCardPrint.vue'),
+        meta: { title: '资产卡片打印', group: 'lifecycle' }
+    },
+    /* 5. 基础资料录入（转移/借用/盘点/报废…） */
+    {
+        path: '/asset/manage/life/base-info',
+        name: 'AssetBaseInfo',
+        component: () => import('@/views/asset/manage/lifecycle/AssetBaseInfo.vue'),
+        meta: { title: '基础资料录入', group: 'lifecycle' }
+    },
+    /* 6. 设备报废 */
+    {
+        path: '/asset/manage/life/scrap',
+        name: 'AssetScrap',
+        component: () => import('@/views/asset/manage/lifecycle/AssetScrap.vue'),
+        meta: { title: '设备报废', group: 'lifecycle' }
+    },
+    {
+        path: '/asset/manage/life/transfer',
+        name: 'AssetTransfer',
+        component: () => import('@/views/asset/manage/AssetTransfer.vue'),
+        meta: { title: '资产转移'}
+    },
 
     {
         path: '/asset/configuration',

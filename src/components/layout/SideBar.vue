@@ -150,6 +150,16 @@ const menuItems = [
             name: 'AssetImport',
             meta: { title: '资产入库' },
           },
+          {
+            path: '/asset/manage/life',
+            name: 'AssetLifecycle',
+            meta: { title: '全生命周期管理' },
+          },
+          {
+            path: '/asset/manage/life/transfer',
+            name: 'AssetTransfer',
+            meta: { title: '资产转移'}
+          },
 
         ]
       },{
