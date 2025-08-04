@@ -381,15 +381,34 @@ const menuItems = [
     meta: { title: '模具/治工具管理', icon: HomeFilled },
     children: [
       {
-        path: '/mold/cycle',
+        path: '/mold/manage',
         name: 'manage',
-        meta: { title: '全生命周期管理' },
+        meta: { title: '管理' },
         children: [
           {
-            path: '/mold/manage/M',
-            name: 'M',
-            meta: { title: '页面M' },
-          }
+            path: '/mold/ledger',
+            name: 'ToolLedger',
+            component: () => import('@/views/mold/manage/ToolLedger.vue'),
+            meta: { title: '模/治具台账管理' },
+          },
+          {
+            path: '/mold/operation',
+            name: 'ToolOperation',
+            component: () => import('@/views/mold/manage/ToolOperation.vue'),
+            meta: { title: '治具作业台' },
+          },
+          {
+            path: '/mold/maintenance',
+            name: 'ToolMaintenance',
+            component: () => import('@/views/mold/manage/ToolMaintenance.vue'),
+            meta: { title: ' 维护与点检' },
+          },
+          {
+            path: '/mold/manage/storage',
+            name: 'ToolStorage',
+            component: () => import('@/views/mold/manage/ToolStorage.vue'),
+            meta: { title: '存储与权限' },
+          },
         ]
       },
       {

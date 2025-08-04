@@ -29,57 +29,115 @@
 
     <!-- 右侧主内容 -->
     <el-main>
-      <el-card>
-        <template #header>
-          <span>资产主数据 & 索引</span>
-          <el-button type="primary" size="small" style="float:right" @click="openAssetDialog('add')">新增资产</el-button>
-        </template>
-
-        <!-- 搜索栏 -->
-        <el-form :inline="true" :model="query" class="mb-12">
-          <el-form-item label="工厂">
-            <el-select v-model="query.factory" clearable placeholder="全部" style="width:120px">
-              <el-option v-for="f in factories" :key="f" :label="f" :value="f"/>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="车间">
-            <el-select v-model="query.workshop" clearable placeholder="全部" style="width:120px">
-              <el-option v-for="w in workshops" :key="w" :label="w" :value="w"/>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="产线">
-            <el-select v-model="query.line" clearable placeholder="全部" style="width:120px">
-              <el-option v-for="l in lines" :key="l" :label="l" :value="l"/>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="关键字">
-            <el-input v-model="query.keyword" placeholder="编号/名称" style="width:150px"/>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="search">查询</el-button>
-          </el-form-item>
-        </el-form>
-
-        <!-- 资产表 -->
-        <el-table :data="pageData" border stripe>
-          <el-table-column prop="code" label="资产编号"/>
-          <el-table-column prop="name" label="名称"/>
-          <el-table-column prop="type" label="类型"/>
-          <el-table-column prop="model" label="规格"/>
-          <el-table-column label="操作" width="160">
-            <template #default="{row}">
-              <el-button size="small" @click="openTrace(row)">追溯</el-button>
-              <el-button size="small" @click="openAssetDialog('edit',row)">编辑</el-button>
+      <el-tabs v-model="activeTab">
+        <!-- 资产索引标签页 -->
+        <el-tab-pane label="资产索引" name="index">
+          <el-card>
+            <template #header>
+              <span>资产主数据 & 索引</span>
+              <el-button type="primary" size="small" style="float:right" @click="openAssetDialog('add')">新增资产</el-button>
             </template>
-          </el-table-column>
-        </el-table>
 
-        <el-pagination background class="mt-12"
-                       v-model:current-page="page.current"
-                       :page-size="page.size"
-                       :total="filteredAssets.length"
-                       layout="prev, pager, next"/>
-      </el-card>
+            <!-- 搜索栏 -->
+            <el-form :inline="true" :model="query" class="mb-12">
+              <el-form-item label="工厂">
+                <el-select v-model="query.factory" clearable placeholder="全部" style="width:120px">
+                  <el-option v-for="f in factories" :key="f" :label="f" :value="f"/>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="车间">
+                <el-select v-model="query.workshop" clearable placeholder="全部" style="width:120px">
+                  <el-option v-for="w in workshops" :key="w" :label="w" :value="w"/>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="产线">
+                <el-select v-model="query.line" clearable placeholder="全部" style="width:120px">
+                  <el-option v-for="l in lines" :key="l" :label="l" :value="l"/>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="资产类型">
+                <el-select v-model="query.assetType" clearable placeholder="全部" style="width:120px">
+                  <el-option label="设备" value="设备"/>
+                  <el-option label="模治具" value="模治具"/>
+                  <el-option label="零配件" value="零配件"/>
+                </el-select>
+              </el-form-item>
+              <el-form-item label="关键字">
+                <el-input v-model="query.keyword" placeholder="编号/名称" style="width:150px"/>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="search">查询</el-button>
+              </el-form-item>
+            </el-form>
+
+            <!-- 资产表 -->
+            <el-table :data="pageData" border stripe>
+              <el-table-column prop="code" label="资产编号" width="120" sortable/>
+              <el-table-column prop="name" label="名称" width="150" sortable/>
+              <el-table-column prop="type" label="类型" width="100" sortable/>
+              <el-table-column prop="model" label="规格" width="150"/>
+              <el-table-column prop="factory" label="工厂" width="120" sortable/>
+              <el-table-column prop="workshop" label="车间" width="120" sortable/>
+              <el-table-column prop="line" label="产线" width="120" sortable/>
+              <el-table-column label="操作" width="160" fixed="right">
+                <template #default="{row}">
+                  <el-button size="small" @click="openTrace(row)">追溯</el-button>
+                  <el-button size="small" @click="openAssetDialog('edit',row)">编辑</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <el-pagination background class="mt-12"
+                           v-model:current-page="page.current"
+                           :page-size="page.size"
+                           :total="filteredAssets.length"
+                           layout="prev, pager, next"/>
+          </el-card>
+        </el-tab-pane>
+
+        <!-- 资产导入标签页 -->
+        <el-tab-pane label="资产导入" name="import">
+          <el-card>
+            <template #header><span>采购同步 & Excel 导入</span></template>
+
+            <!-- 采购同步 -->
+            <el-card shadow="never" class="mb-12">
+              <template #header>
+                <span>采购系统自动入库</span>
+                <el-button :loading="syncLoading" type="primary" size="small"
+                           style="float:right" @click="handleSync">立即同步</el-button>
+              </template>
+              <el-descriptions border>
+                <el-descriptions-item label="上次同步">{{ lastSync }}</el-descriptions-item>
+                <el-descriptions-item label="成功条数">{{ syncResult.success }}</el-descriptions-item>
+                <el-descriptions-item label="失败条数">{{ syncResult.fail }}</el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+
+            <!-- Excel 导入 -->
+            <el-upload
+                class="upload-demo"
+                drag
+                accept=".xlsx"
+                :before-upload="handleExcel">
+              <i class="el-icon-upload"/>
+              <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+              <template #tip>
+                <div class="el-upload__tip">
+                  请先下载
+                  <el-link type="primary" @click="downloadTemplate">模板文件</el-link>
+                </div>
+              </template>
+            </el-upload>
+
+            <!-- 导入结果 -->
+            <el-table v-if="importResult.length" :data="importResult" class="mt-12">
+              <el-table-column prop="row" label="行号"/>
+              <el-table-column prop="msg" label="结果"/>
+            </el-table>
+          </el-card>
+        </el-tab-pane>
+      </el-tabs>
     </el-main>
   </el-container>
 
@@ -109,6 +167,21 @@
         </el-select>
       </el-form-item>
       <el-form-item label="规格"><el-input v-model="assetForm.model"/></el-form-item>
+      <el-form-item label="工厂">
+        <el-select v-model="assetForm.factory">
+          <el-option v-for="f in factories" :key="f" :label="f" :value="f"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="车间">
+        <el-select v-model="assetForm.workshop">
+          <el-option v-for="w in workshops" :key="w" :label="w" :value="w"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="产线">
+        <el-select v-model="assetForm.line">
+          <el-option v-for="l in lines" :key="l" :label="l" :value="l"/>
+        </el-select>
+      </el-form-item>
     </el-form>
     <template #footer>
       <el-button @click="assetDialog.visible=false">取消</el-button>
@@ -118,22 +191,38 @@
 
   <!-- 追溯弹窗 -->
   <el-dialog v-model="traceVisible" :title="`追溯：${currentAsset.name}`" width="60%">
-    <el-descriptions :column="1" border>
+    <el-descriptions :column="2" border>
       <el-descriptions-item label="编号">{{ currentAsset.code }}</el-descriptions-item>
       <el-descriptions-item label="名称">{{ currentAsset.name }}</el-descriptions-item>
       <el-descriptions-item label="类型">{{ currentAsset.type }}</el-descriptions-item>
+      <el-descriptions-item label="规格">{{ currentAsset.model }}</el-descriptions-item>
+      <el-descriptions-item label="位置">{{ `${currentAsset.factory}/${currentAsset.workshop}/${currentAsset.line}` }}</el-descriptions-item>
     </el-descriptions>
 
     <el-divider content-position="left">正向追溯（子件）</el-divider>
     <el-table :data="traceChildren" size="small" border>
       <el-table-column prop="code" label="子件编号"/>
       <el-table-column prop="name" label="名称"/>
+      <el-table-column prop="type" label="类型"/>
+      <el-table-column prop="model" label="规格"/>
+      <el-table-column label="操作" width="120">
+        <template #default="{row}">
+          <el-button size="small" @click="openTrace(row)">查看</el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <el-divider content-position="left">反向追溯（父件）</el-divider>
     <el-table :data="traceParents" size="small" border>
       <el-table-column prop="code" label="父件编号"/>
       <el-table-column prop="name" label="名称"/>
+      <el-table-column prop="type" label="类型"/>
+      <el-table-column prop="model" label="规格"/>
+      <el-table-column label="操作" width="120">
+        <template #default="{row}">
+          <el-button size="small" @click="openTrace(row)">查看</el-button>
+        </template>
+      </el-table-column>
     </el-table>
 
     <template #footer>
@@ -146,6 +235,8 @@
 import { ref, reactive, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+
+const activeTab = ref('index')
 
 /* ========= 假数据：组织树 ========= */
 const orgTree = ref([
@@ -276,7 +367,7 @@ const findParent = (nodes, id, parent = null) => {
 }
 
 /* ========= 右侧资产 ========= */
-const query = reactive({ factory: '', workshop: '', line: '', keyword: '' })
+const query = reactive({ factory: '', workshop: '', line: '', assetType: '', keyword: '' })
 const page = reactive({ current: 1, size: 20 })
 const activeNode = ref(null)
 
@@ -297,6 +388,7 @@ const filteredAssets = computed(() =>
         (!query.factory  || a.factory  === query.factory) &&
         (!query.workshop || a.workshop === query.workshop) &&
         (!query.line     || a.line     === query.line) &&
+        (!query.assetType || a.type === query.assetType) &&
         (!query.keyword  || a.code.includes(query.keyword) || a.name.includes(query.keyword))
     )
 )
@@ -310,22 +402,47 @@ const search = () => {
 
 /* ========= 资产弹窗 ========= */
 const assetDialog = reactive({ visible: false, mode: 'add' })
-const assetForm = reactive({ id: null, code: '', name: '', type: '', model: '' })
+const assetForm = reactive({
+  id: null,
+  code: '',
+  name: '',
+  type: '设备',
+  model: '',
+  factory: '',
+  workshop: '',
+  line: ''
+})
 const openAssetDialog = (mode, row) => {
   assetDialog.mode = mode
   if (mode === 'add') {
-    Object.assign(assetForm, { id: null, code: '', name: '', type: '设备', model: '' })
+    Object.assign(assetForm, {
+      id: null,
+      code: '',
+      name: '',
+      type: '设备',
+      model: '',
+      factory: query.factory || '',
+      workshop: query.workshop || '',
+      line: query.line || ''
+    })
   } else {
     Object.assign(assetForm, row)
   }
   assetDialog.visible = true
 }
 const saveAsset = () => {
+  if (!assetForm.code || !assetForm.name) {
+    ElMessage.warning('请填写资产编号和名称')
+    return
+  }
+
   if (assetDialog.mode === 'add') {
     allAssets.value.push({ ...assetForm, id: Date.now() })
+    ElMessage.success('新增资产成功')
   } else {
     const idx = allAssets.value.findIndex(a => a.id === assetForm.id)
     Object.assign(allAssets.value[idx], assetForm)
+    ElMessage.success('更新资产成功')
   }
   assetDialog.visible = false
 }
@@ -337,15 +454,48 @@ const traceChildren = ref([])
 const traceParents = ref([])
 
 /* 模拟 BOM 结构：设备→模治具→零配件 */
-const bom = {
-  /* id -> {children:[], parents:[]} */
-}
-/* 生成简单 BOM */
+const bom = {}
+/* 生成更合理的 BOM 结构 */
 allAssets.value.forEach(a => {
-  const deps = allAssets.value.filter(x => x !== a)
-  bom[a.id] = {
-    children: deps.slice(0, 2),
-    parents: deps.slice(2, 4)
+  // 设备包含模治具，模治具包含零配件
+  if (a.type === '设备') {
+    // 查找属于同一车间的模治具作为子件
+    const children = allAssets.value.filter(x =>
+        x.type === '模治具' &&
+        x.workshop === a.workshop &&
+        x !== a
+    ).slice(0, 3)
+
+    // 随机选择1-2个父件（通常是产线或其他设备）
+    const parents = allAssets.value.filter(x =>
+        (x.type === '设备' || x.type === '产线') &&
+        x !== a
+    ).slice(0, Math.floor(Math.random() * 2) + 1)
+
+    bom[a.id] = { children, parents }
+  } else if (a.type === '模治具') {
+    // 查找属于同一车间的零配件作为子件
+    const children = allAssets.value.filter(x =>
+        x.type === '零配件' &&
+        x.workshop === a.workshop &&
+        x !== a
+    ).slice(0, 5)
+
+    // 父件是设备
+    const parents = allAssets.value.filter(x =>
+        x.type === '设备' &&
+        x.workshop === a.workshop
+    ).slice(0, 2)
+
+    bom[a.id] = { children, parents }
+  } else if (a.type === '零配件') {
+    // 零配件没有子件，父件是模治具
+    const parents = allAssets.value.filter(x =>
+        x.type === '模治具' &&
+        x.workshop === a.workshop
+    ).slice(0, 2)
+
+    bom[a.id] = { children: [], parents }
   }
 })
 
@@ -354,6 +504,67 @@ const openTrace = (row) => {
   traceChildren.value = bom[row.id]?.children || []
   traceParents.value = bom[row.id]?.parents || []
   traceVisible.value = true
+}
+
+/* ========= 导入功能 ========= */
+const lastSync = ref('2025-08-01 10:00:00')
+const syncResult = ref({ success: 0, fail: 0 })
+const syncLoading = ref(false)
+const importResult = ref([])
+
+const handleSync = () => {
+  syncLoading.value = true
+  setTimeout(() => {
+    // 模拟同步数据
+    const newAssets = Array.from({ length: 20 }, (_, i) => ({
+      id: Date.now() + i,
+      code: `IMP${Date.now().toString().slice(-4)}${i}`,
+      name: `导入设备${i + 1}`,
+      type: ['设备', '模治具', '零配件'][i % 3],
+      model: 'IMP-' + Math.floor(Math.random() * 1000),
+      factory: ['工厂A', '工厂B'][i % 2],
+      workshop: `车间${(i % 6) + 1}`,
+      line: `产线${(i % 6) + 1}`
+    }))
+
+    allAssets.value.push(...newAssets)
+    syncResult.value = { success: 18, fail: 2 }
+    lastSync.value = new Date().toLocaleString()
+    syncLoading.value = false
+    ElMessage.success('同步完成，新增18条资产')
+  }, 1000)
+}
+
+const handleExcel = (file) => {
+  // 模拟导入数据
+  const newAssets = Array.from({ length: 10 }, (_, i) => ({
+    id: Date.now() + i + 1000,
+    code: `EXL${Date.now().toString().slice(-4)}${i}`,
+    name: `Excel导入${i + 1}`,
+    type: ['设备', '模治具', '零配件'][(i + 1) % 3],
+    model: 'EXL-' + Math.floor(Math.random() * 1000),
+    factory: ['工厂A', '工厂B'][(i + 1) % 2],
+    workshop: `车间${((i + 1) % 6) + 1}`,
+    line: `产线${((i + 1) % 6) + 1}`
+  }))
+
+  allAssets.value.push(...newAssets)
+
+  // 模拟导入结果
+  importResult.value = [
+    { row: 2, msg: '导入成功' },
+    { row: 3, msg: '编号已存在' },
+    { row: 4, msg: '导入成功' },
+    { row: 5, msg: '导入成功' }
+  ]
+
+  ElMessage.success('导入完成，新增10条资产')
+  return false // 阻止真实上传
+}
+
+const downloadTemplate = () => {
+  ElMessage.info('模板下载已触发')
+  // 实际项目中用 window.open('/template.xlsx')
 }
 </script>
 
@@ -376,4 +587,7 @@ const openTrace = (row) => {
 }
 .mt-12 { margin-top: 12px; }
 .mb-12 { margin-bottom: 12px; }
+.upload-demo {
+  margin-top: 20px;
+}
 </style>
