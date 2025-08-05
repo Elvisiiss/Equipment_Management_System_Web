@@ -5,12 +5,8 @@
 
 import request from '@/utils/request'
 
-// 模拟延迟函数
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
 // 看板数据接口
 export const getDashboardData = async (params) => {
-  await delay(500)
   return {
     code: 'success',
     data: {
@@ -33,7 +29,6 @@ export const getDashboardData = async (params) => {
 
 // 策略配置接口
 export const getPolicyList = async (params) => {
-  await delay(500)
   return {
     code: 'success',
     data: [
@@ -58,7 +53,6 @@ export const getPolicyList = async (params) => {
 }
 
 export const createPolicy = async (data) => {
-  await delay(500)
   return {
     code: 'success',
     data: { id: 'POL-' + Date.now() }
@@ -66,24 +60,20 @@ export const createPolicy = async (data) => {
 }
 
 export const updatePolicy = async (data) => {
-  await delay(500)
   return { code: 'success' }
 }
 
 export const deletePolicy = async (id) => {
-  await delay(500)
   return { code: 'success' }
 }
 
 // 异常处理接口
 export const processException = async (exceptionNo) => {
-  await delay(500)
   return { code: 'success' }
 }
 
 // 计划管理接口
 export const getPlanList = async (params) => {
-  await delay(500)
   return {
     code: 'success',
     data: {
@@ -108,17 +98,14 @@ export const getPlanList = async (params) => {
 }
 
 export const updatePlanStatus = async (planNo, status) => {
-  await delay(500)
   return { code: 'success' }
 }
 
 export const deletePlan = async (planNo) => {
-  await delay(500)
   return { code: 'success' }
 }
 
 export const generateTasks = async (planId) => {
-  await delay(500)
   return {
     code: 'success',
     data: { count: planId ? 5 : 15 }
@@ -127,7 +114,6 @@ export const generateTasks = async (planId) => {
 
 // 任务执行接口
 export const getTaskList = async (params) => {
-  await delay(500)
   return {
     code: 'success',
     data: {
@@ -150,18 +136,15 @@ export const getTaskList = async (params) => {
 }
 
 export const executeTask = async (taskNo) => {
-  await delay(500)
   return { code: 'success' }
 }
 
 export const cancelTask = async (taskNo) => {
-  await delay(500)
   return { code: 'success' }
 }
 
 // 异常列表接口
 export const getExceptionList = async (params) => {
-  await delay(500)
   return {
     code: 'success',
     data: {
@@ -184,7 +167,6 @@ export const getExceptionList = async (params) => {
 
 // 报表接口
 export const getReportData = async (params) => {
-  await delay(500)
   return {
     code: 'success',
     data: {

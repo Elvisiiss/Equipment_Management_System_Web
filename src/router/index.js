@@ -261,16 +261,10 @@ const routes = [
         meta: { title: '管理' },
     },
     {
-        path: '/inspection/manage/G',
-        name: 'G',
-        component: () => import('@/views/inspection/manage/G.vue'),
-        meta: { title: '页面G' },
-    },
-    {
         path: '/inspection/manage/ExceptionList',
         name: 'ExceptionList',
         component: () => import('@/views/inspection/manage/ExceptionList.vue'),
-        meta: { title: 'EXC列表' },
+        meta: { title: '异常列表' },
     },
     {
         path: '/inspection/manage/PlanList',
@@ -282,19 +276,13 @@ const routes = [
         path: '/inspection/manage/TaskList',
         name: 'TaskList',
         component: () => import('@/views/inspection/manage/TaskList.vue'),
-        meta: { title: 'TASK列表' },
+        meta: { title: '任务列表' },
     },
     {
         path: '/inspection/configuration',
         name: 'inspection-configuration',
         component: () => import('@/views/inspection/configuration.vue'),
         meta: { title: '配置' },
-    },
-    {
-        path: '/inspection/configuration/H',
-        name: 'H',
-        component: () => import('@/views/inspection/configuration/H.vue'),
-        meta: { title: '页面H' },
     },
     {
         path: '/inspection/configuration/PolicyConfig',
@@ -309,12 +297,6 @@ const routes = [
         meta: { title: '大屏' },
     },
     {
-        path: '/inspection/screen/I',
-        name: 'I',
-        component: () => import('@/views/inspection/screen/I.vue'),
-        meta: { title: '页面I' },
-    },
-    {
         path: '/inspection/screen/Dashboard',
         name: 'Dashboard',
         component: () => import('@/views/inspection/screen/Dashboard.vue'),
@@ -324,13 +306,13 @@ const routes = [
         path: '/inspection/screen/EfficiencyAnalysis',
         name: 'EfficiencyAnalysis',
         component: () => import('@/views/inspection/screen/EfficiencyAnalysis.vue'),
-        meta: { title: '分析EFF' },
+        meta: { title: '效率分析' },
     },
     {
         path: '/inspection/screen/ExceptionAnalysis',
         name: 'ExceptionAnalysis',
         component: () => import('@/views/inspection/screen/ExceptionAnalysis.vue'),
-        meta: { title: '分析EXC' },
+        meta: { title: '异常分析' },
     },
     // Maintenance Management
     {
@@ -636,6 +618,12 @@ const routes = [
         name: 'users_roles_permissions',
         component: () => import('@/views/system/manage/users_roles_permissions.vue'),
         meta: { title: '用户管理' },
+    },
+    {
+        path: '/system/manage/regionManagement',
+        name: 'regionManagement',
+        component: () => import('@/views/system/manage/regionManagement.vue'),
+        meta: { title: '区域管理' },
     },
     {
         path: '/system/configuration',
