@@ -414,53 +414,25 @@ const menuItems = [
         meta: { title: '管理' },
         children: [
           {
-            path: '/mold/ledger',
-            name: 'ToolLedger',
-            component: () => import('@/views/mold/manage/ToolLedger.vue'),
-            meta: { title: '模/治具台账管理' },
+            path: '/mold/manage/life',
+            name: 'MoldLifecycle',
+            meta: { title: '全生命周期管理' },
           },
           {
-            path: '/mold/operation',
-            name: 'ToolOperation',
-            component: () => import('@/views/mold/manage/ToolOperation.vue'),
-            meta: { title: '治具作业台' },
+            path: '/mold/manage/operation',
+            name: 'ToolErrorProof',
+            meta: { title: '防用错处理' },
           },
           {
-            path: '/mold/maintenance',
+            path: '/mold/manage/maintenance',
             name: 'ToolMaintenance',
-            component: () => import('@/views/mold/manage/ToolMaintenance.vue'),
             meta: { title: ' 维护与点检' },
           },
           {
             path: '/mold/manage/storage',
             name: 'ToolStorage',
-            component: () => import('@/views/mold/manage/ToolStorage.vue'),
             meta: { title: '存储与权限' },
           },
-        ]
-      },
-      {
-        path: '/mold/mistake',
-        name: 'manage',
-        meta: { title: '防用错管理' },
-        children: [
-          {
-            path: '/mold/manage/M',
-            name: 'M',
-            meta: { title: '页面M' },
-          }
-        ]
-      },
-      {
-        path: '/mold/cycle',
-        name: 'manage',
-        meta: { title: '台账管理' },
-        children: [
-          {
-            path: '/mold/manage/M',
-            name: 'M',
-            meta: { title: '页面M' },
-          }
         ]
       }
     ]
