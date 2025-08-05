@@ -267,6 +267,24 @@ const routes = [
         meta: { title: '页面G' },
     },
     {
+        path: '/inspection/manage/ExceptionList',
+        name: 'ExceptionList',
+        component: () => import('@/views/inspection/manage/ExceptionList.vue'),
+        meta: { title: 'EXC列表' },
+    },
+    {
+        path: '/inspection/manage/PlanList',
+        name: 'PlanList',
+        component: () => import('@/views/inspection/manage/PlanList.vue'),
+        meta: { title: '计划列表' },
+    },
+    {
+        path: '/inspection/manage/TaskList',
+        name: 'TaskList',
+        component: () => import('@/views/inspection/manage/TaskList.vue'),
+        meta: { title: 'TASK列表' },
+    },
+    {
         path: '/inspection/configuration',
         name: 'inspection-configuration',
         component: () => import('@/views/inspection/configuration.vue'),
@@ -279,6 +297,12 @@ const routes = [
         meta: { title: '页面H' },
     },
     {
+        path: '/inspection/configuration/PolicyConfig',
+        name: 'PolicyConfig',
+        component: () => import('@/views/inspection/configuration/PolicyConfig.vue'),
+        meta: { title: '点巡检配置' },
+    },
+    {
         path: '/inspection/screen',
         name: 'inspection-screen',
         component: () => import('@/views/inspection/screen.vue'),
@@ -289,6 +313,24 @@ const routes = [
         name: 'I',
         component: () => import('@/views/inspection/screen/I.vue'),
         meta: { title: '页面I' },
+    },
+    {
+        path: '/inspection/screen/Dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/inspection/screen/Dashboard.vue'),
+        meta: { title: '仪表盘' },
+    },
+    {
+        path: '/inspection/screen/EfficiencyAnalysis',
+        name: 'EfficiencyAnalysis',
+        component: () => import('@/views/inspection/screen/EfficiencyAnalysis.vue'),
+        meta: { title: '分析EFF' },
+    },
+    {
+        path: '/inspection/screen/ExceptionAnalysis',
+        name: 'ExceptionAnalysis',
+        component: () => import('@/views/inspection/screen/ExceptionAnalysis.vue'),
+        meta: { title: '分析EXC' },
     },
     // Maintenance Management
     {

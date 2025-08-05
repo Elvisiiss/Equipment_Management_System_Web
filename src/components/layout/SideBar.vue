@@ -301,7 +301,19 @@ const menuItems = [
             path: '/inspection/manage/G',
             name: 'G',
             meta: { title: '页面G' },
-          }
+          },{
+            path: '/inspection/manage/ExceptionList',
+            name: 'ExceptionList',
+            meta: { title: 'EXC列表' },
+          },{
+            path: '/inspection/manage/PlanList',
+            name: 'PlanList',
+            meta: { title: '计划列表' },
+          },{
+            path: '/inspection/manage/TaskList',
+            name: 'TaskList',
+            meta: { title: 'TASK列表' },
+          },
         ]
       },{
         path: '/inspection/configuration',
@@ -312,6 +324,10 @@ const menuItems = [
             path: '/inspection/configuration/H',
             name: 'H',
             meta: { title: '页面H' },
+          },{
+            path: '/inspection/configuration/PolicyConfig',
+            name: 'PolicyConfig',
+            meta: { title: '点巡检配置' },
           }
         ]
       },
@@ -324,7 +340,19 @@ const menuItems = [
             path: '/inspection/screen/I',
             name: 'I',
             meta: { title: '页面I' },
-          }
+          },{
+            path: '/inspection/screen/Dashboard',
+            name: 'Dashboard',
+            meta: { title: '仪表盘' },
+          },{
+            path: '/inspection/screen/EfficiencyAnalysis',
+            name: 'EfficiencyAnalysis',
+            meta: { title: '分析EFF' },
+          },{
+            path: '/inspection/screen/ExceptionAnalysis',
+            name: 'ExceptionAnalysis',
+            meta: { title: '分析EXC' },
+          },
         ]
       }
     ]
