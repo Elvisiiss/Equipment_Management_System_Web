@@ -2,47 +2,37 @@
   <div class="task-list-container">
     <div class="header">
       <h2>点检任务列表</h2>
-      <div class="actions">
-        <el-button type="primary" @click="handleCreateTask">
-          <el-icon><Plus /></el-icon>
-          创建任务
-        </el-button>
-        <el-button @click="handleExport">
-          <el-icon><Download /></el-icon>
-          导出
-        </el-button>
-      </div>
     </div>
 
     <div class="filter-area">
       <el-form :inline="true" :model="filterForm">
         <el-form-item label="任务状态">
-          <el-select v-model="filterForm.status" placeholder="请选择状态">
+          <el-select v-model="filterForm.status" placeholder="请选择状态" style="width: 180px">
             <el-option
-              v-for="item in statusOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+                v-for="item in statusOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
             />
           </el-select>
         </el-form-item>
         <el-form-item label="设备类型">
-          <el-select v-model="filterForm.deviceType" placeholder="请选择设备类型">
+          <el-select v-model="filterForm.deviceType" placeholder="请选择设备类型" style="width: 180px">
             <el-option
-              v-for="item in deviceTypeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+                v-for="item in deviceTypeOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
             />
           </el-select>
         </el-form-item>
         <el-form-item label="任务日期">
           <el-date-picker
-            v-model="filterForm.dateRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
+              v-model="filterForm.dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
           />
         </el-form-item>
         <el-form-item>
@@ -53,10 +43,10 @@
     </div>
 
     <el-table
-      :data="taskList"
-      border
-      style="width: 100%"
-      v-loading="loading"
+        :data="taskList"
+        border
+        style="width: 100%"
+        v-loading="loading"
     >
       <el-table-column prop="taskNo" label="任务编号" width="120" />
       <el-table-column prop="taskName" label="任务名称" width="150" />
@@ -77,31 +67,23 @@
         </template>
       </el-table-column>
       <el-table-column prop="operator" label="执行人" width="100" />
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="120" fixed="right">
         <template #default="{row}">
           <el-button
-            v-if="row.status === 'PENDING'"
-            type="primary"
-            size="small"
-            @click="handleExecute(row)"
+              v-if="row.status === 'PENDING'"
+              type="primary"
+              size="small"
+              @click="handleExecute(row)"
           >
             执行
           </el-button>
           <el-button
-            v-else
-            type="info"
-            size="small"
-            @click="handleViewDetail(row)"
+              v-else
+              type="info"
+              size="small"
+              @click="handleViewDetail(row)"
           >
             详情
-          </el-button>
-          <el-button
-            v-if="row.status === 'PENDING'"
-            type="danger"
-            size="small"
-            @click="handleCancel(row)"
-          >
-            取消
           </el-button>
         </template>
       </el-table-column>
@@ -109,21 +91,21 @@
 
     <div class="pagination">
       <el-pagination
-        v-model:current-page="pagination.current"
-        v-model:page-size="pagination.size"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
       />
     </div>
 
     <!-- 任务详情对话框 -->
     <el-dialog
-      v-model="detailDialogVisible"
-      :title="`任务详情 - ${currentTask.taskNo}`"
-      width="70%"
+        v-model="detailDialogVisible"
+        :title="`任务详情 - ${currentTask.taskNo}`"
+        width="70%"
     >
       <el-descriptions :column="2" border>
         <el-descriptions-item label="任务编号">
@@ -183,9 +165,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Plus, Download } from '@element-plus/icons-vue'
-import { getTaskList, executeTask, cancelTask } from '@/api/inspection'
+import { useRouter } from 'vue-router'
+import { getTaskList, executeTask } from '@/api/inspection'
 
+const router = useRouter()
 const loading = ref(false)
 const taskList = ref([])
 const filterForm = ref({
@@ -300,23 +283,20 @@ const handleCurrentChange = (current) => {
   fetchTaskList()
 }
 
-// 创建任务
-const handleCreateTask = () => {
-  // TODO: 实现创建任务逻辑
-  console.log('创建任务')
-}
-
-// 导出
-const handleExport = () => {
-  // TODO: 实现导出逻辑
-  console.log('导出任务')
-}
-
-// 执行任务
+// 执行任务 - 跳转到执行页面
 const handleExecute = async (row) => {
   try {
+    // 调用执行任务API，将任务状态改为执行中
     await executeTask(row.taskNo)
-    await fetchTaskList()
+    // 跳转到任务执行页面
+    router.push({
+      path: '/inspection/inspectionAction',
+      query: {
+        taskId: row.taskNo,
+        deviceId: row.deviceId,
+        deviceName: row.deviceName
+      }
+    })
   } catch (error) {
     console.error('执行任务失败:', error)
   }
@@ -326,16 +306,6 @@ const handleExecute = async (row) => {
 const handleViewDetail = (row) => {
   currentTask.value = { ...row }
   detailDialogVisible.value = true
-}
-
-// 取消任务
-const handleCancel = async (row) => {
-  try {
-    await cancelTask(row.taskNo)
-    await fetchTaskList()
-  } catch (error) {
-    console.error('取消任务失败:', error)
-  }
 }
 
 onMounted(() => {

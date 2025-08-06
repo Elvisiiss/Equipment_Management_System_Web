@@ -279,6 +279,12 @@ const routes = [
         meta: { title: '任务列表' },
     },
     {
+        path: '/inspection/inspectionAction',
+        name: 'inspectionAction',
+        component: () => import('@/views/inspection/inspectionAction.vue'),
+        meta: { title: '任务列表' },
+    },
+    {
         path: '/inspection/configuration',
         name: 'inspection-configuration',
         component: () => import('@/views/inspection/configuration.vue'),
