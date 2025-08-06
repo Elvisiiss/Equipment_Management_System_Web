@@ -81,21 +81,87 @@ export const getPlanList = async (params) => {
         {
           planNo: 'PLAN-001',
           planName: 'CNC日常点检',
+          startDate: '2024-05-01',      // 仅日期
+          endDate: '2024-12-31',        // 仅日期
+          dailyStartTime: '08:00',      // 开始时段
+          dailyEndTime: '18:00',        // 结束时段
           policyName: '设备日常点检策略',
           type: 'DAILY',
           frequency: '1|DAY',
+          regionName: '华东区',
+          executor: '张三',
+          cycleType: 'DAILY',
+          startTime: '2024-05-01 08:00:00',
+          endTime: '2024-12-31 18:00:00',
           nextTime: '2024-05-10 08:00:00',
           status: 1,
-          devices: [
-            { deviceName: 'CNC-001', deviceType: 'CNC', location: 'A区' },
-            { deviceName: 'CNC-002', deviceType: 'CNC', location: 'B区' }
+          // 更新点检项结构
+          items: [
+            {
+              name: '主轴温度',
+              category: '温度检测',
+              standard: '≤45°C',
+              method: '红外测温',
+              problemHandling: '停机冷却后报告',
+              handlingMethod: '停机冷却',
+              tools: '红外测温仪'
+            },
+            {
+              name: '润滑油位',
+              category: '液位检查',
+              standard: '在刻度范围内',
+              method: '目视检查',
+              problemHandling: '补充润滑油',
+              handlingMethod: '补充润滑油',
+              tools: '润滑油,油壶'
+            }
+          ]
+        },
+        {
+          planNo: 'PLAN-002',
+          planName: '设备月度维护',
+          startDate: '2024-05-01',      // 仅日期
+          endDate: '2024-12-31',        // 仅日期
+          dailyStartTime: '08:00',      // 开始时段
+          dailyEndTime: '18:00',        // 结束时段
+          policyName: '设备月度维护策略',
+          type: 'MONTHLY',
+          frequency: '1|MONTH',
+          regionName: '华南区',
+          executor: '李四',
+          cycleType: 'MONTHLY',
+          startTime: '2024-04-01 08:00:00',
+          endTime: '2024-12-31 18:00:00',
+          nextTime: '2024-06-01 08:00:00',
+          status: 1,
+          // 更新点检项结构
+          items: [
+            {
+              name: '皮带张力',
+              category: '机械检查',
+              standard: '符合张力标准',
+              method: '张力计测量',
+              problemHandling: '调整皮带松紧度',
+              handlingMethod: '调整皮带',
+              tools: '张力计,扳手'
+            },
+            {
+              name: '液压油清洁度',
+              category: '油品检测',
+              standard: 'NAS 7级',
+              method: '取样检测',
+              problemHandling: '更换液压油',
+              handlingMethod: '更换油品',
+              tools: '取样瓶,检测仪'
+            }
           ]
         }
       ],
-      total: 1
+      total: 2
     }
   }
 }
+
 
 export const updatePlanStatus = async (planNo, status) => {
   return { code: 'success' }
@@ -124,6 +190,10 @@ export const getTaskList = async (params) => {
           deviceName: 'CNC-001',
           deviceType: 'CNC',
           planName: 'CNC日常点检',
+          startDate: '2024-05-01',      // 仅日期
+          endDate: '2024-12-31',        // 仅日期
+          dailyStartTime: '08:00',      // 开始时段
+          dailyEndTime: '18:00',        // 结束时段
           operator: '张三',
           startTime: '2024-05-01 08:00:00',
           endTime: '2024-05-01 10:00:00',
