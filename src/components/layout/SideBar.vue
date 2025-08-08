@@ -419,7 +419,7 @@ const menuItems = [
           {
             path: '/mold/manage/storage',
             name: 'ToolStorage',
-            meta: { title: '存储与权限' },
+            meta: { title: '全生命周期2.0' },
           },
         ]
       }
