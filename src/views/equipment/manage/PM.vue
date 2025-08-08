@@ -38,7 +38,7 @@
 import { ref } from 'vue'
 import MonitorPanel from '@/components/equip/MonitorPanel.vue'
 import LocationPanel from '@/components/equip/LocationPanel.vue'
-import PmCheckPanel from '@/components/equip/ PmCheckPanel.vue'
+import PmCheckPanel from '@/components/equip/PmCheckPanel.vue'
 
 const activeMenu = ref('monitor')
 const handleMenuSelect = (index) => (activeMenu.value = index)
