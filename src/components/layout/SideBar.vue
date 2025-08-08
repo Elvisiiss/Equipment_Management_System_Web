@@ -361,18 +361,6 @@ const menuItems = [
             meta: {title: 'PM工单'},
             permissionId: 38
           },
-          {
-            path: '/equipment/location/recover',
-            name: 'Recover',
-            meta: {title: '复机管理'},
-            permissionId: 39
-          },
-          {
-            path: '/equipment/location/logic',
-            name: 'Logic',
-            meta: {title: '逻辑位置'},
-            permissionId: 40
-          }
         ]
       },
       {
