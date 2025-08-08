@@ -28,7 +28,7 @@ export default {
 
     // 更新用户状态
     updateUserStatus(userId, statusData) {
-        return request.put(`/system/menu-permission/users/${userId}/status`, statusData)
+        return request.put(`/system/menu-permission/users/${userId}/status?status=${statusData.status}`)
     },
 
     // 重置用户密码
@@ -56,9 +56,14 @@ export default {
         return request.put(`/system/menu-permission/roles/${roleId}`, roleData)
     },
 
+    //获取角色权限
+    getRolePermissions(roleId){
+        return request.get(`/system/menu-permission/roles/${roleId}/permissions`)
+    },
+
     // 更新角色权限
     updateRolePermissions(roleId, permissionData) {
-        return request.put(`/system/menu-permission/roles/${roleId}/permissions`, permissionData)
+        return request.put(`/system/menu-permission/${roleId}/permissions`, permissionData)
     },
 
     // 删除角色

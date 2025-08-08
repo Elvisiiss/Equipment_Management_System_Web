@@ -16,6 +16,10 @@
             <el-icon><UserFilled /></el-icon>
             <span>角色列表</span>
           </el-menu-item>
+          <el-menu-item index="role-sidebar-list">
+            <el-icon><Menu /></el-icon>
+            <span>角色-侧边栏列表</span>
+          </el-menu-item>
           <el-menu-item index="permission-management">
             <el-icon><Lock /></el-icon>
             <span>权限管理</span>
@@ -61,8 +65,8 @@
                 class="status-filter"
                 clearable
             >
-              <el-option label="启用" value="1"></el-option>
-              <el-option label="禁用" value="0"></el-option>
+              <el-option label="启用" value="0"></el-option>
+              <el-option label="禁用" value="1"></el-option>
             </el-select>
           </div>
 
@@ -91,8 +95,8 @@
               <template #default="scope">
                 <el-switch
                     v-model="scope.row.status"
-                    :active-value="1"
-                    :inactive-value="0"
+                    :active-value="0"
+                    :inactive-value="1"
                     @change="handleUserStatusChange(scope.row)"
                 ></el-switch>
               </template>
@@ -139,7 +143,7 @@
         <div v-if="activeMenu === 'role-list'" class="content-wrapper">
           <div class="content-header">
             <h2>角色列表</h2>
-            <el-button type="primary" @click="showAddRoleDialog = true">
+            <el-button type="primary" @click="handleShowAddRoleDialog(false)">
               <el-icon><Plus /></el-icon>
               新增角色
             </el-button>
@@ -183,7 +187,7 @@
                 <el-button
                     size="small"
                     type="primary"
-                    @click="handleRolePermissions(scope.row)"
+                    @click="handleRolePermissions(scope.row, false)"
                 >
                   权限配置
                 </el-button>
@@ -207,6 +211,82 @@
               :page-size="rolePageSize"
               layout="total, sizes, prev, pager, next, jumper"
               :total="filteredRoles.length"
+              class="pagination"
+          ></el-pagination>
+        </div>
+
+        <!-- 角色-侧边栏列表页面 -->
+        <div v-if="activeMenu === 'role-sidebar-list'" class="content-wrapper">
+          <div class="content-header">
+            <h2>角色-侧边栏列表</h2>
+            <el-button type="primary" @click="handleShowAddRoleDialog(true)">
+              <el-icon><Plus /></el-icon>
+              新增角色
+            </el-button>
+          </div>
+
+          <div class="search-bar">
+            <el-input
+                v-model="sidebarRoleSearchQuery"
+                placeholder="搜索角色"
+                prefix-icon="Search"
+                class="search-input"
+            ></el-input>
+          </div>
+
+          <el-table
+              :data="paginatedSidebarRoles"
+              border
+              style="width: 100%; margin-top: 16px;"
+          >
+            <el-table-column prop="id" label="ID" width="80"></el-table-column>
+            <el-table-column prop="roleName" label="角色名称"></el-table-column>
+            <el-table-column prop="description" label="角色描述"></el-table-column>
+            <el-table-column label="侧边栏权限数量">
+              <template #default="scope">
+                {{ getSidebarPermissionCount(scope.row.permissionIds) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="用户数量">
+              <template #default="scope">
+                {{ getUserCountByRole(scope.row.id) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="200">
+              <template #default="scope">
+                <el-button
+                    size="small"
+                    @click="handleEditSidebarRole(scope.row)"
+                >
+                  编辑
+                </el-button>
+                <el-button
+                    size="small"
+                    type="primary"
+                    @click="handleRolePermissions(scope.row, true)"
+                >
+                  侧边栏权限配置
+                </el-button>
+                <el-button
+                    size="small"
+                    type="danger"
+                    @click="handleDeleteRole(scope.row.id)"
+                    :disabled="scope.row.id === 1"
+                >
+                  删除
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <el-pagination
+              @size-change="handleSidebarRoleSizeChange"
+              @current-change="handleSidebarRoleCurrentChange"
+              :current-page="sidebarRoleCurrentPage"
+              :page-sizes="[10, 20, 50]"
+              :page-size="sidebarRolePageSize"
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="filteredSidebarRoles.length"
               class="pagination"
           ></el-pagination>
         </div>
@@ -289,8 +369,8 @@
         <el-form-item label="状态">
           <el-switch
               v-model="formUser.status"
-              :active-value="1"
-              :inactive-value="0"
+              :active-value="0"
+              :inactive-value="1"
           ></el-switch>
         </el-form-item>
       </el-form>
@@ -337,9 +417,9 @@
 
     <!-- 新增/编辑角色对话框 -->
     <el-dialog
-        title="角色信息"
+        :title="isEditRole ? '编辑角色' : '新增角色'"
         v-model="showAddRoleDialog"
-        width="500px"
+        width="600px"
     >
       <el-form
           :model="formRole"
@@ -357,6 +437,16 @@
               :rows="3"
           ></el-input>
         </el-form-item>
+        <el-form-item label="权限设置" prop="permissionIds">
+          <el-tree
+              :data="isSidebarRole ? sidebarPermissionTree : nonSidebarPermissionTree"
+              show-checkbox
+              node-key="id"
+              :default-checked-keys="formRole.permissionIds"
+              @check="handleRoleFormPermissionCheck"
+              class="permission-tree"
+          ></el-tree>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showAddRoleDialog = false">取消</el-button>
@@ -371,7 +461,7 @@
 
     <!-- 角色权限配置对话框 -->
     <el-dialog
-        title="角色权限配置"
+        :title="isSidebarPermission ? '角色侧边栏权限配置' : '角色权限配置'"
         v-model="showRolePermissionsDialog"
         width="600px"
     >
@@ -380,7 +470,7 @@
       </div>
 
       <el-tree
-          :data="permissionTree"
+          :data="isSidebarPermission ? sidebarPermissionTree : nonSidebarPermissionTree"
           show-checkbox
           node-key="id"
           :default-checked-keys="currentRolePermissions"
@@ -437,7 +527,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import {
-  User, UserFilled, Lock,
+  User, UserFilled, Lock, Menu,
   Plus,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -470,7 +560,7 @@ const formUser = ref({
   password: '',
   email: '',
   roleIds: [],
-  status: 1
+  status: 0
 });
 const userRules = ref({
   userName: [
@@ -497,17 +587,29 @@ const showAddRoleDialog = ref(false);
 const formRole = ref({
   id: undefined,
   roleName: '',
-  description: ''
+  description: '',
+  permissionIds: []
 });
 const roleRules = ref({
   roleName: [{required: true, message: '请输入角色名称', trigger: 'blur'}],
-  description: [{required: true, message: '请输入角色描述', trigger: 'blur'}]
+  description: [{required: true, message: '请输入角色描述', trigger: 'blur'}],
+  permissionIds: [{required: true, message: '请至少选择一个权限', trigger: 'change'}]
 });
 const roleFormRef = ref(null);
+const isSidebarRole = ref(false); // 标识当前是侧边栏角色还是普通角色
+const isEditRole = ref(false); // 标识当前是编辑还是新增角色
+
+// 角色-侧边栏管理相关状态
+const sidebarRoleSearchQuery = ref('');
+const sidebarRoleCurrentPage = ref(1);
+const sidebarRolePageSize = ref(10);
+
+// 权限配置相关状态
 const showRolePermissionsDialog = ref(false);
 const currentRoleForPermissions = ref(null);
 const currentRolePermissions = ref([]);
 const selectedPermissions = ref([]);
+const isSidebarPermission = ref(false); // 标识当前配置的是侧边栏权限还是普通权限
 
 // 权限管理相关状态
 const showEditPermissionDialog = ref(false);
@@ -545,8 +647,8 @@ const resetPasswordRules = ref({
 const resetPasswordFormRef = ref(null);
 const userIdToReset = ref(null);
 
-// 权限树形结构数据
-const permissionTree = ref([
+// 权限树形结构数据 - 所有权限
+const allPermissionTree = ref([
   {
     id: 'user',
     label: '用户权限',
@@ -575,8 +677,439 @@ const permissionTree = ref([
       {id: 10, label: '分配设备 (device:assign)'},
       {id: 11, label: '设备维护管理 (device:maintenance)'}
     ]
+  },
+  {
+    id: 'sidebar',
+    label: '侧边栏权限',
+    children: [
+      {
+        id: 16,
+        label: '首页 (side:)'
+      },
+      {
+        id: 'side:asset',
+        label: '资产管理',
+        children: [
+          {
+            id: 'side:asset:manage',
+            label: '管理',
+            children: [
+              {
+                id: 'side:asset:manage:life',
+                label: '全生命周期管理',
+                children: [
+                  {
+                    id: 24,
+                    label: '资产转移 (side:asset:manage:life:transfer)'
+                  }
+                ]
+              },
+              {
+                id: 21,
+                label: '资产索引 (side:asset:manage:index)'
+              },
+              {
+                id: 19,
+                label: '设备台账 (side:asset:manage:ledger)'
+              },
+              {
+                id: 20,
+                label: '主数据管理 (side:asset:manage:master)'
+              },
+              {
+                id: 22,
+                label: '资产入库 (side:asset:manage:import)'
+              }
+            ]
+          },
+          {
+            id: 'side:asset:screen',
+            label: '大屏',
+            children: [
+              {
+                id: 28,
+                label: '页面C (side:asset:screen:C)'
+              }
+            ]
+          },
+          {
+            id: 'side:asset:configuration',
+            label: '配置',
+            children: [
+              {
+                id: 26,
+                label: '页面B (side:asset:configuration:B)'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'side:equipment',
+        label: '设备实时监控',
+        children: [
+          {
+            id: 'side:equipment:status',
+            label: '设备状态管理',
+            children: [
+              {
+                id: 35,
+                label: '状态维护 (side:equipment:status:log)'
+              },
+              {
+                id: 34,
+                label: '状态规则与策略 (side:equipment:status:policies)'
+              }
+            ]
+          },
+          {
+            id: 'side:equipment:screen',
+            label: '大屏',
+            children: [
+              {
+                id: 43,
+                label: 'OEE管理看板 (side:equipment:screen:oee)'
+              },
+              {
+                id: 45,
+                label: 'IOT管理看板 (side:equipment:screen:iot)'
+              },
+              {
+                id: 44,
+                label: '设备状态看板 (side:equipment:screen:status)'
+              }
+            ]
+          },
+          {
+            id: 'side:equipment:location',
+            label: '布局管理',
+            children: [
+              {
+                id: 38,
+                label: 'PM工单 (side:equipment:location:pm)'
+              },
+              {
+                id: 40,
+                label: '逻辑位置 (side:equipment:location:logic)'
+              },
+              {
+                id: 39,
+                label: '复机管理 (side:equipment:location:recover)'
+              },
+              {
+                id: 37,
+                label: '设备转机 (side:equipment:location:transfer)'
+              }
+            ]
+          },
+          {
+            id: 'side:equipment:monitoring',
+            label: '实时状态监控',
+            children: [
+              {
+                id: 31,
+                label: '设备SPC监控 (side:equipment:monitoring:spc)'
+              },
+              {
+                id: 32,
+                label: '异常与阈值 (side:equipment:monitoring:exception)'
+              }
+            ]
+          },
+          {
+            id: 46,
+            label: '配置 (side:equipment:configuration)'
+          },
+          {
+            id: 41,
+            label: '设备管理 (side:equipment:EquipmentManage)'
+          }
+        ]
+      },
+      {
+        id: 'side:inspection',
+        label: '点巡检管理',
+        children: [
+          {
+            id: 'side:inspection:manage',
+            label: '管理',
+            children: [
+              {
+                id: 50,
+                label: '计划列表 (side:inspection:manage:PlanList)'
+              },
+              {
+                id: 51,
+                label: '任务列表 (side:inspection:manage:TaskList)'
+              },
+              {
+                id: 49,
+                label: '异常列表 (side:inspection:manage:ExceptionList)'
+              }
+            ]
+          },
+          {
+            id: 'side:inspection:screen',
+            label: '大屏',
+            children: [
+              {
+                id: 55,
+                label: '仪表盘 (side:inspection:screen:Dashboard)'
+              },
+              {
+                id: 57,
+                label: '异常分析 (side:inspection:screen:ExceptionAnalysis)'
+              },
+              {
+                id: 56,
+                label: '效率分析 (side:inspection:screen:EfficiencyAnalysis)'
+              }
+            ]
+          },
+          {
+            id: 'side:inspection:configuration',
+            label: '配置',
+            children: [
+              {
+                id: 53,
+                label: '点巡检配置 (side:inspection:configuration:PolicyConfig)'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'side:maintenance',
+        label: '保养管理',
+        children: [
+          {
+            id: 'side:maintenance:manage',
+            label: '管理',
+            children: [
+              {
+                id: 61,
+                label: '我的审批结果 (side:maintenance:manage:MyApprovals)'
+              },
+              {
+                id: 60,
+                label: '审批列表页面 (side:maintenance:manage:ApprovalList)'
+              }
+            ]
+          },
+          {
+            id: 'side:maintenance:screen',
+            label: '大屏',
+            children: [
+              {
+                id: 65,
+                label: '页面L (side:maintenance:screen:L)'
+              }
+            ]
+          },
+          {
+            id: 'side:maintenance:configuration',
+            label: '配置',
+            children: [
+              {
+                id: 63,
+                label: '页面K (side:maintenance:configuration:K)'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'side:mold',
+        label: '模具/治工具管理',
+        children: [
+          {
+            id: 'side:mold:manage',
+            label: '管理',
+            children: [
+              {
+                id: 68,
+                label: '全生命周期管理 (side:mold:manage:life)'
+              },
+              {
+                id: 71,
+                label: '全生命周期2.0 (side:mold:manage:storage)'
+              },
+              {
+                id: 69,
+                label: '防用错处理 (side:mold:manage:operation)'
+              },
+              {
+                id: 70,
+                label: '维护与点检 (side:mold:manage:maintenance)'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'side:parts',
+        label: '备件管理',
+        children: [
+          {
+            id: 'side:parts:manage',
+            label: '管理',
+            children: [
+              {
+                id: 77,
+                label: '设备BOM管理 (side:parts:manage:EquipmentBOM)'
+              },
+              {
+                id: 79,
+                label: '表单-不要的 (side:parts:manage:LocationForm)'
+              },
+              {
+                id: 74,
+                label: '备件编码管理 (side:parts:manage:SparePartCode)'
+              },
+              {
+                id: 76,
+                label: '线边库存管理 (side:parts:manage:EdgeInventory)'
+              },
+              {
+                id: 78,
+                label: '设备详情-不要的 (side:parts:manage:EquipmentDetail)'
+              },
+              {
+                id: 75,
+                label: '备品备件台账 (side:parts:manage:SparePartInventory)'
+              },
+              {
+                id: 80,
+                label: '库位管理 (side:parts:manage:LocationManagement)'
+              }
+            ]
+          },
+          {
+            id: 'side:parts:screen',
+            label: '大屏',
+            children: [
+              {
+                id: 84,
+                label: '页面R (side:parts:screen:R)'
+              }
+            ]
+          },
+          {
+            id: 'side:parts:configuration',
+            label: '配置',
+            children: [
+              {
+                id: 82,
+                label: '页面Q (side:parts:configuration:Q)'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'side:repair',
+        label: '维修管理',
+        children: [
+          {
+            id: 'side:repair:manage',
+            label: '管理',
+            children: [
+              {
+                id: 88,
+                label: '维修工单管理 (side:repair:manage:RepairOrder)'
+              },
+              {
+                id: 87,
+                label: '维修知识库 (side:repair:manage:KnowledgeBase)'
+              }
+            ]
+          },
+          {
+            id: 'side:repair:screen',
+            label: '大屏',
+            children: [
+              {
+                id: 92,
+                label: '数据展示 (side:repair:screen:RepairDashboard)'
+              }
+            ]
+          },
+          {
+            id: 'side:repair:configuration',
+            label: '配置',
+            children: [
+              {
+                id: 90,
+                label: '维修配置管理 (side:repair:configuration:RepairConfig)'
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 94,
+        label: '待维修设备 (side:repair:admin:list)'
+      },
+      {
+        id: 93,
+        label: '我的工单 (side:repair:worker:list)'
+      },
+      {
+        id: 'side:system',
+        label: '系统管理',
+        children: [
+          {
+            id: 'side:system:manage',
+            label: '管理',
+            children: [
+              {
+                id: 98,
+                label: '区域管理 (side:system:manage:regionManagement)'
+              },
+              {
+                id: 97,
+                label: '用户管理 (side:system:manage:users_roles_permissions)'
+              }
+            ]
+          },
+          {
+            id: 'side:system:screen',
+            label: '大屏',
+            children: [
+              {
+                id: 102,
+                label: '页面X (side:system:screen:X)'
+              }
+            ]
+          },
+          {
+            id: 'side:system:configuration',
+            label: '配置',
+            children: [
+              {
+                id: 100,
+                label: '审批设置 (side:system:configuration:DepartmentApproval)'
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]);
+
+// 侧边栏权限树（只包含侧边栏相关权限）
+const sidebarPermissionTree = computed(() => {
+  // 找到侧边栏权限节点
+  const sidebarNode = allPermissionTree.value.find(node => node.id === 'sidebar');
+  return sidebarNode ? [sidebarNode] : [];
+});
+
+// 非侧边栏权限树（不包含侧边栏相关权限）
+const nonSidebarPermissionTree = computed(() => {
+  // 过滤掉侧边栏权限节点
+  return allPermissionTree.value.filter(node => node.id !== 'sidebar');
+});
 
 // 计算属性 - 筛选用户
 const filteredUsers = computed(() => {
@@ -612,6 +1145,21 @@ const paginatedRoles = computed(() => {
   return filteredRoles.value.slice(start, end);
 });
 
+// 计算属性 - 筛选角色-侧边栏
+const filteredSidebarRoles = computed(() => {
+  return roles.value.filter(role => {
+    return role.roleName.toLowerCase().includes(sidebarRoleSearchQuery.value.toLowerCase()) ||
+        role.description.toLowerCase().includes(sidebarRoleSearchQuery.value.toLowerCase());
+  });
+});
+
+// 分页后的角色-侧边栏数据
+const paginatedSidebarRoles = computed(() => {
+  const start = (sidebarRoleCurrentPage.value - 1) * sidebarRolePageSize.value;
+  const end = start + sidebarRolePageSize.value;
+  return filteredSidebarRoles.value.slice(start, end);
+});
+
 // 生命周期钩子
 onMounted(() => {
   fetchUsers();
@@ -627,7 +1175,22 @@ const handleMenuSelect = (index) => {
     userCurrentPage.value = 1;
   } else if (index === 'role-list') {
     roleCurrentPage.value = 1;
+  } else if (index === 'role-sidebar-list') {
+    sidebarRoleCurrentPage.value = 1;
   }
+};
+
+// 方法 - 显示新增角色对话框
+const handleShowAddRoleDialog = (isSidebar) => {
+  isSidebarRole.value = isSidebar;
+  isEditRole.value = false;
+  formRole.value = {
+    id: undefined,
+    roleName: '',
+    description: '',
+    permissionIds: []
+  };
+  showAddRoleDialog.value = true;
 };
 
 // 方法 - 用户管理
@@ -674,7 +1237,7 @@ const handleUserStatusChange = async (user) => {
       status: user.status
     });
     fetchUsers();
-    const statusText = user.status === 1 ? '启用' : '禁用';
+    const statusText = user.status === 0 ? '启用' : '禁用';
     ElMessage.success(`用户已${statusText}`);
   } catch (error) {
     ElMessage.error('状态更新失败');
@@ -744,21 +1307,46 @@ const handleRoleCurrentChange = (val) => {
 };
 
 const handleEditRole = (role) => {
+  isEditRole.value = true;
+  isSidebarRole.value = false;
   formRole.value = {...role};
   showAddRoleDialog.value = true;
+};
+
+const handleEditSidebarRole = (role) => {
+  isEditRole.value = true;
+  isSidebarRole.value = true;
+  formRole.value = {...role};
+  showAddRoleDialog.value = true;
+};
+
+const handleRoleFormPermissionCheck = (data, checked) => {
+  // 过滤掉非数字的ID（只保留数字类型的权限ID）
+  const validPermissionIds = checked.checkedKeys.filter(id => {
+    return !isNaN(Number(id));
+  }).map(id => Number(id));
+
+  formRole.value.permissionIds = validPermissionIds;
 };
 
 const submitRoleForm = async () => {
   try {
     await roleFormRef.value.validate();
 
+    // 准备提交的数据，包含permissionIds
+    const roleData = {
+      roleName: formRole.value.roleName,
+      description: formRole.value.description,
+      permissionIds: formRole.value.permissionIds
+    };
+
     if (formRole.value.id) {
       // 编辑现有角色
-      await AuthAPI.updateRole(formRole.value.id, formRole.value);
+      await AuthAPI.updateRole(formRole.value.id, roleData);
       ElMessage.success('角色编辑成功');
     } else {
       // 创建新角色
-      await AuthAPI.createRole(formRole.value);
+      await AuthAPI.createRole(roleData);
       ElMessage.success('角色创建成功');
     }
 
@@ -771,11 +1359,56 @@ const submitRoleForm = async () => {
   }
 };
 
-const handleRolePermissions = (role) => {
-  currentRoleForPermissions.value = {...role};
-  currentRolePermissions.value = [...(role.permissionIds || [])];
-  selectedPermissions.value = [...(role.permissionIds || [])];
-  showRolePermissionsDialog.value = true;
+// 方法 - 角色-侧边栏管理
+const handleSidebarRoleSizeChange = (val) => {
+  sidebarRolePageSize.value = val;
+  sidebarRoleCurrentPage.value = 1;
+};
+
+const handleSidebarRoleCurrentChange = (val) => {
+  sidebarRoleCurrentPage.value = val;
+};
+
+// 权限配置相关方法
+const handleRolePermissions = async (role, isSidebar) => {
+  try {
+    currentRoleForPermissions.value = {...role};
+    isSidebarPermission.value = isSidebar;
+
+    // 调用API获取角色的所有权限
+    const response = await AuthAPI.getRolePermissions(role.id);
+    let permissionIds = response.data.data || [];
+
+    // 收集所有侧边栏权限ID
+    const sidebarPermissionIds = [];
+    const collectSidebarPermissionIds = (nodes) => {
+      nodes.forEach(node => {
+        if (typeof node.id === 'number') {
+          sidebarPermissionIds.push(node.id);
+        }
+        if (node.children && node.children.length) {
+          collectSidebarPermissionIds(node.children);
+        }
+      });
+    };
+    collectSidebarPermissionIds(sidebarPermissionTree.value);
+
+    // 根据是否是侧边栏权限配置进行过滤
+    if (isSidebar) {
+      // 侧边栏页只保留侧边栏权限
+      permissionIds = permissionIds.filter(id => sidebarPermissionIds.includes(id));
+    } else {
+      // 角色页排除侧边栏权限
+      permissionIds = permissionIds.filter(id => !sidebarPermissionIds.includes(id));
+    }
+
+    currentRolePermissions.value = [...permissionIds];
+    selectedPermissions.value = [...permissionIds];
+    showRolePermissionsDialog.value = true;
+  } catch (error) {
+    ElMessage.error('获取角色权限失败');
+    console.error(error);
+  }
 };
 
 const handlePermissionCheck = (data, checked, indeterminate) => {
@@ -786,8 +1419,14 @@ const saveRolePermissions = async () => {
   if (!currentRoleForPermissions.value) return;
 
   try {
+    // 过滤掉非数字的ID（只保留数字类型的权限ID）
+    const validPermissionIds = selectedPermissions.value.filter(id => {
+      // 检查是否为数字（包括字符串形式的数字，如"1"需转为数字）
+      return !isNaN(Number(id));
+    }).map(id => Number(id)); // 确保最终都是数字类型
+
     await AuthAPI.updateRolePermissions(currentRoleForPermissions.value.id, {
-      permissionIds: selectedPermissions.value
+      permissionIds: validPermissionIds // 发送过滤后的ID数组
     });
     ElMessage.success('权限配置保存成功');
     fetchRoles();
@@ -899,8 +1538,31 @@ const getUserCountByRole = (roleId) => {
   return users.value.filter(u => u.roleIds.includes(roleId)).length;
 };
 
+// 计算侧边栏权限数量
+const getSidebarPermissionCount = (permissionIds) => {
+  if (!permissionIds || !permissionIds.length) return 0;
+
+  // 收集所有侧边栏权限ID
+  const sidebarPermissionIds = [];
+  const collectSidebarPermissionIds = (nodes) => {
+    nodes.forEach(node => {
+      if (typeof node.id === 'number') {
+        sidebarPermissionIds.push(node.id);
+      }
+      if (node.children && node.children.length) {
+        collectSidebarPermissionIds(node.children);
+      }
+    });
+  };
+
+  collectSidebarPermissionIds(sidebarPermissionTree.value);
+
+  // 计算交集数量
+  return permissionIds.filter(id => sidebarPermissionIds.includes(id)).length;
+};
+
 const tableRowClassName = ({row}) => {
-  return row.status === 0 ? 'row-disabled' : '';
+  return row.status === 1 ? 'row-disabled' : '';
 };
 
 // 获取用户列表
