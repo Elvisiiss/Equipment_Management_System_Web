@@ -236,24 +236,24 @@ const menuItems = [
             meta: {title: '设备台账'},
             permissionId: 19
           },
-          {
-            path: '/asset/manage/master',
-            name: 'AssetMaster',
-            meta: {title: '主数据管理'},
-            permissionId: 20
-          },
+          // {
+          //   path: '/asset/manage/master',
+          //   name: 'AssetMaster',
+          //   meta: {title: '主数据管理'},
+          //   permissionId: 20
+          // },
           {
             path: '/asset/manage/index',
             name: 'AssetIndex',
             meta: {title: '资产索引'},
             permissionId: 21
           },
-          {
-            path: '/asset/manage/import',
-            name: 'AssetImport',
-            meta: {title: '资产入库'},
-            permissionId: 22
-          },
+          // {
+          //   path: '/asset/manage/import',
+          //   name: 'AssetImport',
+          //   meta: {title: '资产入库'},
+          //   permissionId: 22
+          // },
           {
             path: '/asset/manage/life',
             name: 'AssetLifecycle',
