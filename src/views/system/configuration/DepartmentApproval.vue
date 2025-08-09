@@ -44,13 +44,14 @@
                 class="status-filter"
                 clearable
             >
-              <el-option label="启用" value="1"></el-option>
-              <el-option label="禁用" value="0"></el-option>
+              <!-- 修改点1：状态值调整 -->
+              <el-option label="启用" value="0"></el-option>
+              <el-option label="禁用" value="1"></el-option>
             </el-select>
           </div>
 
           <el-table
-              :data="departments"
+              :data="filteredDepartments"
               border
               style="width: 100%; margin-top: 16px;"
               :row-class-name="tableRowClassName"
@@ -65,10 +66,11 @@
             <el-table-column prop="description" label="部门描述"></el-table-column>
             <el-table-column label="状态">
               <template #default="scope">
+                <!-- 修改点2：开关状态值调整 -->
                 <el-switch
                     v-model="scope.row.status"
-                    :active-value="1"
-                    :inactive-value="0"
+                    :active-value="0"
+                    :inactive-value="1"
                     @change="handleDeptStatusChange(scope.row)"
                 ></el-switch>
               </template>
@@ -207,10 +209,11 @@
           ></el-input>
         </el-form-item>
         <el-form-item label="状态">
+          <!-- 修改点3：对话框开关状态值调整 -->
           <el-switch
               v-model="formDepartment.status"
-              :active-value="1"
-              :inactive-value="0"
+              :active-value="0"
+              :inactive-value="1"
           ></el-switch>
         </el-form-item>
       </el-form>
@@ -321,9 +324,10 @@ const showAddDepartmentDialog = ref(false);
 const formDepartment = ref({
   id: undefined,
   name: '',
-  parentId: 0,
+  parentId: null,
   description: '',
-  status: 1
+  // 修改点4：初始状态设置为启用(0)
+  status: 0
 });
 const departmentRules = ref({
   name: [
@@ -344,7 +348,7 @@ const formApproval = ref({
   id: undefined,
   name: '',
   level: 1,
-  departmentId: 0,
+  departmentId: null,
   approverIds: [],
   description: ''
 });
@@ -367,12 +371,23 @@ const approvalRules = ref({
 });
 const approvalFormRef = ref(null);
 
+// 计算属性 - 筛选部门
+const filteredDepartments = computed(() => {
+  return departments.value.filter(dept => {
+    const matchesSearch = dept.name.toLowerCase().includes(deptSearchQuery.value.toLowerCase()) ||
+        dept.description.toLowerCase().includes(deptSearchQuery.value.toLowerCase());
+    const matchesStatus = !deptStatusFilter.value || dept.status === Number(deptStatusFilter.value);
+
+    return matchesSearch && matchesStatus;
+  });
+});
+
 // 计算属性 - 筛选审批层级
 const filteredApprovals = computed(() => {
   return approvals.value.filter(approval => {
     const matchesSearch = approval.name.toLowerCase().includes(approvalSearchQuery.value.toLowerCase()) ||
         approval.description.toLowerCase().includes(approvalSearchQuery.value.toLowerCase());
-    const matchesDept = !approvalDeptFilter.value || approval.approval.departmentId === Number(approvalDeptFilter.value);
+    const matchesDept = !approvalDeptFilter.value || approval.departmentId === Number(approvalDeptFilter.value);
 
     return matchesSearch && matchesDept;
   });
@@ -432,6 +447,7 @@ const submitDepartmentForm = async () => {
   }
 };
 
+// 修改点5：状态改变处理
 const handleDeptStatusChange = async (dept) => {
   try {
     await DepartmentApprovalAPI.updateDepartment(dept.id, {
@@ -439,7 +455,8 @@ const handleDeptStatusChange = async (dept) => {
       status: dept.status
     });
     fetchDepartments();
-    const statusText = dept.status === 1 ? '启用' : '禁用';
+    // 修改点6：状态提示语调整
+    const statusText = dept.status === 0 ? '启用' : '禁用';
     ElMessage.success(`部门已${statusText}`);
   } catch (error) {
     ElMessage.error('状态更新失败');
@@ -465,12 +482,14 @@ const handleDeleteDepartment = (deptId) => {
     try {
       await DepartmentApprovalAPI.deleteDepartment(deptId);
       ElMessage.success('部门删除成功');
-      fetchDepartments();
+      fetchDepartments(); // 刷新部门列表
     } catch (error) {
       ElMessage.error(error.response?.data?.message || '删除失败');
+      console.error('删除部门失败', error);
     }
   }).catch(() => {
     // 取消删除
+    ElMessage.info('已取消删除操作');
   });
 };
 
@@ -505,7 +524,7 @@ const handleEditApproval = (approval) => {
 
 const submitApprovalForm = async () => {
   try {
-    await approvalFormRef.value.validate();
+    await approvalForm极.value.validate();
 
     if (formApproval.value.id) {
       // 编辑现有审批层级
@@ -553,7 +572,7 @@ const handleDeleteApproval = (approvalId) => {
 
 // 辅助方法
 const getParentDeptName = (parentId) => {
-  if (parentId === 0) return '';
+  if (!parentId) return '';
   const dept = departments.value.find(d => d.id === parentId);
   return dept ? dept.name : '未知部门';
 };
@@ -562,8 +581,9 @@ const hasChildren = (deptId) => {
   return departments.value.some(d => d.parentId === deptId);
 };
 
+// 修改点7：行样式调整
 const tableRowClassName = ({ row }) => {
-  return row.status === 0 ? 'row-disabled' : '';
+  return row.status === 1 ? 'row-disabled' : '';
 };
 </script>
 
@@ -629,6 +649,7 @@ const tableRowClassName = ({ row }) => {
   text-align: right;
 }
 
+/* 修改点8：样式调整 */
 ::v-deep .row-disabled {
   background-color: #f5f5f5;
   color: #999;

@@ -41,11 +41,10 @@
           <el-card class="knowledge-card" shadow="hover">
             <div class="card-header">
               <span class="type-tag">{{ item.type }}</span>
-              <span class="view-count">{{ item.viewCount }}次浏览</span>
             </div>
             <h3 class="title">{{ item.title }}</h3>
-            <p class="device">设备: {{ item.deviceCode }}</p>
-            <p class="time">创建时间: {{ item.createTime }}</p>
+            <p class="device">设备: {{ item.deviceName }}</p>
+            <p class="time">创建时间: {{ item.createdTime }}</p>
             <div class="actions">
               <el-button type="primary" size="small" @click="handleView(item)">
                 查看详情
@@ -78,10 +77,10 @@
       <div class="knowledge-detail">
         <h2>{{ currentKnowledge.title }}</h2>
         <div class="meta-info">
-          <span>设备: {{ currentKnowledge.deviceCode }}</span>
+          <span>设备: {{ currentKnowledge.deviceName }}</span>
           <span>类型: {{ currentKnowledge.type }}</span>
-          <span>创建时间: {{ currentKnowledge.createTime }}</span>
-          <span>浏览次数: {{ currentKnowledge.viewCount }}</span>
+          <span>创建时间: {{ currentKnowledge.createdTime }}</span>
+          <span>浏览次数: {{ currentKnowledge.viewCount || 0 }}</span>
         </div>
         <div class="content" v-html="currentKnowledge.content"></div>
       </div>
@@ -106,10 +105,10 @@
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="knowledgeForm.type" style="width: 100%">
-            <el-option label="故障案例" value="故障案例" />
-            <el-option label="SOP" value="SOP" />
-            <el-option label="技术资料" value="技术资料" />
-            <el-option label="维修经验" value="维修经验" />
+            <el-option label="故障案例" value="FAULT_ANALYSIS" />
+            <el-option label="SOP" value="MAINTENANCE_GUIDE" />
+            <el-option label="技术资料" value="TECHNICAL_DOCS" />
+            <el-option label="维修经验" value="REPAIR_EXPERIENCE" />
           </el-select>
         </el-form-item>
         <el-form-item label="内容">
@@ -128,10 +127,12 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import repairAPI from '@/api/repairB.js'
+import dayjs from 'dayjs' // 确保正确导入 dayjs
 
 const loading = ref(false)
 const knowledgeList = ref([])
@@ -158,24 +159,49 @@ const knowledgeForm = reactive({
 })
 
 const loadData = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const res = await repairAPI.getKnowledgeBase(
         currentPage.value - 1,
         pageSize.value,
         searchForm.keyword,
         searchForm.deviceCode
-    )
-    if (res.success) {
-      knowledgeList.value = res.data.content
-      total.value = res.data.totalElements
+    );
+    console.log('API返回的完整响应:', res); // 打印完整响应
+    if (res.code === "success") {
+      const typeMapping = {
+        FAULT_ANALYSIS: "故障案例",
+        MAINTENANCE_GUIDE: "SOP",
+        TECHNICAL_DOCS: "技术资料",
+        REPAIR_EXPERIENCE: "维修经验"
+      };
+
+      knowledgeList.value = res.data.records.map(item => ({
+        ...item,
+        type: typeMapping[item.type] || item.type,
+        createdTime: dayjs(item.createdTime).format('YYYY-MM-DD HH:mm:ss'),
+        viewCount: item.viewCount || 0
+      }));
+
+      total.value = res.data.total || 0;
+      console.log('更新后的 knowledgeList:', knowledgeList.value);
+    } else {
+      ElMessage.error(res.msg || '加载数据失败');
     }
   } catch (error) {
-    ElMessage.error('加载数据失败')
+    ElMessage.error('加载数据失败');
+    console.error('加载知识库失败', error);
+    if (error.response) {
+      console.error('接口返回错误:', error.response.data);
+    } else if (error.request) {
+      console.error('请求未发出:', error.request);
+    } else {
+      console.error('其他错误:', error.message);
+    }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handleSearch = () => {
   currentPage.value = 1
@@ -226,6 +252,11 @@ const handleSubmit = async () => {
 
 const handleEditClose = () => {
   Object.keys(knowledgeForm).forEach(key => knowledgeForm[key] = '')
+}
+
+const handlePageChange = (newPage) => {
+  currentPage.value = newPage
+  loadData()
 }
 
 onMounted(() => {

@@ -17,6 +17,7 @@
               placeholder="搜索区域"
               prefix-icon="Search"
               class="search-input"
+              @keyup.enter="fetchRegions"
           ></el-input>
         </div>
 
@@ -26,8 +27,8 @@
             style="width: 100%; margin-top: 16px;"
         >
           <el-table-column prop="id" label="ID" width="80"></el-table-column>
-          <el-table-column prop="name" label="区域名称"></el-table-column>
-          <el-table-column prop="description" label="区域描述"></el-table-column>
+          <el-table-column prop="areaName" label="区域名称"></el-table-column>
+          <el-table-column prop="areaDesc" label="区域描述"></el-table-column>
           <el-table-column label="操作" width="200">
             <template #default="scope">
               <el-button
@@ -54,7 +55,7 @@
             :page-sizes="[10, 20, 50]"
             :page-size="pageSize"
             layout="total, sizes, prev, pager, next, jumper"
-            :total="filteredRegions.length"
+            :total="total"
             class="pagination"
         ></el-pagination>
       </div>
@@ -72,12 +73,12 @@
           ref="regionFormRef"
           label-width="100px"
       >
-        <el-form-item label="区域名称" prop="name">
-          <el-input v-model="formRegion.name"></el-input>
+        <el-form-item label="区域名称" prop="areaName">
+          <el-input v-model="formRegion.areaName"></el-input>
         </el-form-item>
-        <el-form-item label="区域描述" prop="description">
+        <el-form-item label="区域描述" prop="areaDesc">
           <el-input
-              v-model="formRegion.description"
+              v-model="formRegion.areaDesc"
               type="textarea"
               :rows="3"
           ></el-input>
@@ -100,10 +101,11 @@
 import { ref, computed, onMounted } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import RegionAPI from '@/api/RegionAPI.js';
+import areaAPI from '@/api/setting/Area.js';
 
 // 区域数据
 const regions = ref([]);
+const total = ref(0);
 const loadingRegions = ref(false);
 
 // 区域管理相关状态
@@ -113,15 +115,15 @@ const pageSize = ref(10);
 const showAddRegionDialog = ref(false);
 const formRegion = ref({
   id: undefined,
-  name: '',
-  description: ''
+  areaName: '',
+  areaDesc: ''
 });
 const regionRules = ref({
-  name: [
+  areaName: [
     {required: true, message: '请输入区域名称', trigger: 'blur'},
     {min: 2, max: 50, message: '区域名称长度在 2 到 50 个字符', trigger: 'blur'}
   ],
-  description: [
+  areaDesc: [
     {required: true, message: '请输入区域描述', trigger: 'blur'},
     {max: 200, message: '区域描述不能超过 200 个字符', trigger: 'blur'}
   ]
@@ -136,8 +138,8 @@ const filteredRegions = computed(() => {
 
   return regionsList.filter(region => {
     return (
-        (region.name && region.name.toLowerCase().includes(searchQuery)) ||
-        (region.description && region.description.toLowerCase().includes(searchQuery))
+        (region.areaName && region.areaName.toLowerCase().includes(searchQuery)) ||
+        (region.areaDesc && region.areaDesc.toLowerCase().includes(searchQuery))
     );
   });
 });
@@ -176,11 +178,11 @@ const submitRegionForm = async () => {
 
     if (formRegion.value.id) {
       // 编辑现有区域
-      await RegionAPI.updateRegion(formRegion.value.id, formRegion.value);
+      await areaAPI.update(formRegion.value.id, formRegion.value);
       ElMessage.success('区域编辑成功');
     } else {
       // 创建新区域
-      await RegionAPI.createRegion(formRegion.value);
+      await areaAPI.add(formRegion.value);
       ElMessage.success('区域创建成功');
     }
 
@@ -198,7 +200,7 @@ const handleDeleteRegion = (regionId) => {
   if (!region) return;
 
   ElMessageBox.confirm(
-      `确定要删除区域 "${region.name}" 吗？此操作不可恢复！`,
+      `确定要删除区域 "${region.areaName}" 吗？此操作不可恢复！`,
       '删除确认',
       {
         confirmButtonText: '确定',
@@ -207,7 +209,7 @@ const handleDeleteRegion = (regionId) => {
       }
   ).then(async () => {
     try {
-      await RegionAPI.deleteRegion(regionId);
+      await areaAPI.delete(regionId);
       ElMessage.success('区域删除成功');
       fetchRegions();
     } catch (error) {
@@ -222,9 +224,9 @@ const handleDeleteRegion = (regionId) => {
 const fetchRegions = async () => {
   try {
     loadingRegions.value = true;
-    const response = await RegionAPI.getRegionList();
-    regions.value = response.data.content;
-    console.log(response.data.content)
+    const response = await areaAPI.page(currentPage.value, pageSize.value, regionSearchQuery.value);
+    regions.value = response.data.data.content; // 从正确的路径提取区域列表
+    total.value = response.data.data.totalElements; // 从正确的路径提取总记录数
   } catch (error) {
     ElMessage.error('获取区域列表失败');
     console.error(error);
