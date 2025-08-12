@@ -1,8 +1,9 @@
 <template>
   <div class="device-detail">
-    <!-- 第一行：查询条件 + 说明书/图纸 -->
+    <!-- 第一行：查询条件 + 功能按钮 + 说明书/图纸 -->
     <el-row justify="space-between" align="middle" class="top-bar">
-      <el-col :span="12">
+      <!-- 查询 -->
+      <el-col :span="8">
         <el-form inline>
           <el-form-item label="车间">
             <el-select v-model="query.workshop" placeholder="全部车间" clearable>
@@ -18,7 +19,17 @@
         </el-form>
       </el-col>
 
-      <el-col :span="12" style="text-align:right">
+      <!-- 功能按钮 -->
+      <el-col :span="8" style="text-align:center">
+        <el-button type="success" @click="openAcceptDialog">验收</el-button>
+        <el-button type="warning" @click="openRepairDialog">维修</el-button>
+        <el-button type="primary" @click="openTransferDialog">转移</el-button>
+        <el-button @click="setIdle">闲置</el-button>
+        <el-button type="danger" @click="setScrap">报废</el-button>
+      </el-col>
+
+      <!-- 说明书/图纸 -->
+      <el-col :span="8" style="text-align:right">
         <el-button circle @click="showDoc('manual')">
           <el-icon :size="18"><Document /></el-icon>
         </el-button>
@@ -31,7 +42,7 @@
       </el-col>
     </el-row>
 
-    <!-- 第二行：设备主信息卡片 -->
+    <!-- 第二行：设备主信息 -->
     <el-card class="full-width-card">
       <el-row :gutter="20" align="middle">
         <el-col :span="6">
@@ -44,9 +55,7 @@
         <el-col :span="12">
           <el-descriptions :column="2" border>
             <el-descriptions-item label="状态">
-              <el-tag :type="device.status==='运行中'?'success':'info'">
-                {{ device.status }}
-              </el-tag>
+              <el-tag :type="statusTagType">{{ device.status }}</el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="设备编码">{{ device.code }}</el-descriptions-item>
             <el-descriptions-item label="车间">{{ device.workshop }}</el-descriptions-item>
@@ -66,20 +75,29 @@
       </el-row>
     </el-card>
 
-    <!-- 第三行：BOM 清单 -->
-    <el-card class="full-width-card" header="BOM 清单（含备件/模具追溯）">
+    <!-- 第三行：BOM 备件清单 -->
+    <el-card class="full-width-card" header="BOM 清单（备件）">
       <el-table :data="bomList" stripe style="width:100%">
         <el-table-column prop="deviceCode" label="设备编码" />
         <el-table-column prop="deviceName" label="设备名称" />
         <el-table-column prop="areaId" label="区域ID" />
         <el-table-column prop="spareCode" label="备件编码" />
         <el-table-column prop="spareName" label="备件名称" />
+      </el-table>
+    </el-card>
+
+    <!-- 第四行：模治具清单 -->
+    <el-card class="full-width-card" header="模治具清单">
+      <el-table :data="mouldList" stripe style="width:100%">
+        <el-table-column prop="deviceCode" label="设备编码" />
+        <el-table-column prop="deviceName" label="设备名称" />
+        <el-table-column prop="areaId" label="区域ID" />
         <el-table-column prop="mouldCode" label="模具编码" />
         <el-table-column prop="mouldName" label="模具名称" />
       </el-table>
     </el-card>
 
-    <!-- 第四行：全生命周期履历 -->
+    <!-- 第五行：生命周期履历 -->
     <el-card class="full-width-card" header="设备全生命周期履历">
       <el-table :data="lifeCycleList" stripe style="width:100%">
         <el-table-column prop="time" label="时间" sortable />
@@ -91,7 +109,7 @@
       </el-table>
     </el-card>
 
-    <!-- 第五行：维修信息 -->
+    <!-- 第六行：维修信息 -->
     <el-card class="full-width-card" header="维修信息">
       <el-table :data="repairList" stripe style="width:100%">
         <el-table-column prop="date" label="日期" sortable />
@@ -103,7 +121,7 @@
       </el-table>
     </el-card>
 
-    <!-- 第六行：当天点检任务 -->
+    <!-- 第七行：点检任务 -->
     <el-card class="full-width-card" header="今日点检任务">
       <div style="margin-bottom:8px">
         <el-button @click="refreshCheck">刷新</el-button>
@@ -118,16 +136,14 @@
         <el-table-column prop="period" label="时段" />
         <el-table-column prop="status" label="状态">
           <template #default="{row}">
-            <el-tag :type="row.status==='已执行'?'success':'warning'">
-              {{ row.status }}
-            </el-tag>
+            <el-tag :type="row.status==='已执行'?'success':'warning'">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
       </el-table>
       <div v-else>今日无点检计划</div>
     </el-card>
 
-    <!-- 第七行：当天保养信息 -->
+    <!-- 第八行：保养信息 -->
     <el-card class="full-width-card" header="今日保养信息">
       <div style="margin-bottom:8px">
         <el-button @click="refreshMaintain">刷新</el-button>
@@ -150,22 +166,98 @@
 
     <!-- 弹窗：说明书/图纸 -->
     <el-dialog
-        v-model="dialogVisible"
+        v-model="docVisible"
         width="70%"
-        :title="dialogTitle"
+        :title="docTitle"
         destroy-on-close
     >
-      <img v-if="dialogType==='drawing'" :src="dialogImage" style="width:100%" />
-      <div v-else v-html="dialogContent" />
+      <img v-if="docType==='drawing'" :src="docImage" style="width:100%" />
+      <div v-else v-html="docContent" />
+    </el-dialog>
+
+    <!-- 验收弹窗 -->
+    <el-dialog v-model="acceptVisible" title="验收" width="500">
+      <el-form>
+        <el-form-item label="验收结果">
+          <el-radio-group v-model="acceptForm.result">
+            <el-radio label="合格">合格</el-radio>
+            <el-radio label="不合格">不合格</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="验收意见">
+          <el-input type="textarea" v-model="acceptForm.opinion" />
+        </el-form-item>
+        <el-form-item label="发起人">
+          <el-input v-model="acceptForm.initiator" disabled />
+        </el-form-item>
+        <el-form-item label="日期">
+          <el-input v-model="acceptForm.date" disabled />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="acceptVisible=false">取消</el-button>
+        <el-button type="primary" @click="submitAccept">提交</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 转移弹窗 -->
+    <el-dialog v-model="transferVisible" title="转移" width="500">
+      <el-form>
+        <el-form-item label="目标区域">
+          <el-input v-model="transferForm.targetArea" placeholder="请输入区域ID" />
+        </el-form-item>
+        <el-form-item label="转移原因">
+          <el-input type="textarea" v-model="transferForm.reason" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="transferVisible=false">取消</el-button>
+        <el-button type="primary" @click="submitTransfer">提交</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 维修弹窗 -->
+    <el-dialog v-model="repairVisible" title="维修" width="600">
+      <el-form>
+        <el-form-item label="设备名称/编号">
+          <el-input :value="`${device.model} / ${device.code}`" disabled />
+        </el-form-item>
+        <el-form-item label="发起人">
+          <el-input :value="loginUser" disabled />
+        </el-form-item>
+        <el-form-item label="日期">
+          <el-input :value="today" disabled />
+        </el-form-item>
+        <el-form-item label="故障类型">
+          <el-input v-model="repairForm.faultType" />
+        </el-form-item>
+        <el-form-item label="故障图片">
+          <el-upload
+              v-model:file-list="repairForm.images"
+              list-type="picture-card"
+              multiple
+              :limit="5"
+              accept="image/*"
+              :before-upload="beforeImg"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="repairVisible=false">取消</el-button>
+        <el-button type="primary" @click="submitRepair">提交</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import vueQr from 'vue-qr/src/packages/vue-qr.vue'
-import { Document, Picture } from '@element-plus/icons-vue'
 import html2canvas from 'html2canvas'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Document, Picture, Plus } from '@element-plus/icons-vue'
 
 /* 查询条件 */
 const query = reactive({
@@ -189,29 +281,62 @@ const device = reactive({
 
 /* 表格数据 */
 const bomList = ref([])
+const mouldList = ref([])
 const lifeCycleList = ref([])
 const repairList = ref([])
 const checkList = ref([])
 const maintainList = ref([])
 
-/* 弹窗相关 */
-const dialogVisible = ref(false)
-const dialogTitle = ref('')
-const dialogType = ref('')
-const dialogImage = ref('')
-const dialogContent = ref('')
+/* 说明书/图纸弹窗 */
+const docVisible = ref(false)
+const docTitle = ref('')
+const docType = ref('')
+const docImage = ref('')
+const docContent = ref('')
+
+/* 验收弹窗 */
+const acceptVisible = ref(false)
+const acceptForm = reactive({
+  result: '合格',
+  opinion: '',
+  initiator: '',
+  date: ''
+})
+
+/* 转移弹窗 */
+const transferVisible = ref(false)
+const transferForm = reactive({
+  targetArea: '',
+  reason: ''
+})
+
+/* 维修弹窗 */
+const repairVisible = ref(false)
+const repairForm = reactive({
+  faultType: '',
+  images: []
+})
 
 /* 二维码 ref */
 const qrRef = ref()
+
+/* 静态信息 */
+const loginUser = 'admin'
+const today = new Date().toLocaleDateString()
+
+/* 状态 tag 颜色 */
+const statusTagType = computed(() => {
+  const map = { 运行中: 'success', 待机: 'info', 闲置: 'warning', 报废: 'danger' }
+  return map[device.status] || ''
+})
 
 /* 搜索设备 */
 function searchDevice () {
   loadDeviceDetail(query.code)
 }
 
-/* 加载设备详情（mock） */
+/* 加载详情（mock） */
 function loadDeviceDetail (code) {
-  /* 这里可以换成 axios 真实调用 */
   Object.assign(device, {
     code,
     workshop: 'C4车间',
@@ -224,10 +349,14 @@ function loadDeviceDetail (code) {
     qrText: `http://asset.example.com/device/${code}`
   })
 
-  /* 以下为 mock 数据 */
   bomList.value = [
-    { deviceCode: code, deviceName: '盖板全自动', areaId: 'A01', spareCode: 'SP001', spareName: '电机', mouldCode: 'M001', mouldName: '上模' },
-    { deviceCode: code, deviceName: '盖板全自动', areaId: 'A01', spareCode: 'SP002', spareName: '轴承', mouldCode: 'M002', mouldName: '下模' }
+    { deviceCode: code, deviceName: '盖板全自动', areaId: 'A01', spareCode: 'SP001', spareName: '电机' },
+    { deviceCode: code, deviceName: '盖板全自动', areaId: 'A01', spareCode: 'SP002', spareName: '轴承' }
+  ]
+
+  mouldList.value = [
+    { deviceCode: code, deviceName: '盖板全自动', areaId: 'A01', mouldCode: 'M001', mouldName: '上模' },
+    { deviceCode: code, deviceName: '盖板全自动', areaId: 'A01', mouldCode: 'M002', mouldName: '下模' }
   ]
 
   lifeCycleList.value = [
@@ -248,25 +377,24 @@ function loadDeviceDetail (code) {
   ]
 }
 
-/* 展示说明书/图纸 */
+/* 说明书/图纸弹窗 */
 function showDoc (type) {
-  dialogType.value = type
-  dialogTitle.value = type === 'manual' ? '设备说明书' : '设备图纸'
+  docType.value = type
+  docTitle.value = type === 'manual' ? '设备说明书' : '设备图纸'
   if (type === 'drawing') {
-    dialogImage.value = 'https://via.placeholder.com/800x600?text=Drawing'
+    docImage.value = 'https://via.placeholder.com/800x600?text=Drawing'
   } else {
-    dialogContent.value = `
+    docContent.value = `
       <h3>设备说明书</h3>
       <p>设备编码：${device.code}</p>
       <p>型号：${device.model}</p>
       <p>厂商：${device.vendor}</p>
-      <p>更多内容请下载 PDF...</p>
     `
   }
-  dialogVisible.value = true
+  docVisible.value = true
 }
 
-/* 下载二维码 */
+/* 导出二维码 */
 function downloadQR () {
   html2canvas(qrRef.value).then(canvas => {
     const a = document.createElement('a')
@@ -276,16 +404,85 @@ function downloadQR () {
   })
 }
 
-/* 刷新点检 & 保养（模拟） */
+/* 打开弹窗 */
+function openAcceptDialog () {
+  Object.assign(acceptForm, {
+    result: '合格',
+    opinion: '',
+    initiator: loginUser,
+    date: today
+  })
+  acceptVisible.value = true
+}
+function openTransferDialog () {
+  transferForm.targetArea = ''
+  transferForm.reason = ''
+  transferVisible.value = true
+}
+function openRepairDialog () {
+  repairForm.faultType = ''
+  repairForm.images = []
+  repairVisible.value = true
+}
+
+/* 图片上传限制 */
+function beforeImg (file) {
+  const max = 2 * 1024 * 1024
+  if (file.size > max) {
+    ElMessage.error('图片不能大于2M')
+    return false
+  }
+  return true
+}
+
+/* 状态变更 */
+function setIdle () {
+  device.status = '闲置'
+  createAuditTask('闲置申请')
+}
+function setScrap () {
+  device.status = '报废'
+  createAuditTask('报废申请')
+}
+
+/* 提交事件 */
+function submitAccept () {
+  createAuditTask('验收任务')
+  acceptVisible.value = false
+}
+function submitTransfer () {
+  createAuditTask('转移申请')
+  transferVisible.value = false
+}
+function submitRepair () {
+  createAuditTask('维修申请')
+  repairVisible.value = false
+}
+
+/* 创建审核任务（本地存储模拟） */
+function createAuditTask (taskName) {
+  const id = 'T' + Date.now()
+  const list = JSON.parse(localStorage.getItem('checkTask') || '[]')
+  list.unshift({
+    id,
+    deviceCode: device.code,
+    deviceName: device.model,
+    taskName,
+    auditor: '待分配',
+    auditTime: '',
+    status: '待审核'
+  })
+  localStorage.setItem('checkTask', JSON.stringify(list))
+  ElMessage.success('已提交审核任务')
+}
+
+/* 刷新点检/保养（演示用） */
 function refreshCheck () {
-  // 随机切换状态
   checkList.value.forEach(r => {
     r.status = Math.random() > 0.5 ? '已执行' : '待执行'
   })
 }
-
 function refreshMaintain () {
-  // 模拟随机有无保养
   if (Math.random() > 0.5) {
     maintainList.value = []
   } else {
@@ -295,7 +492,6 @@ function refreshMaintain () {
   }
 }
 
-/* 初始化 */
 onMounted(() => {
   loadDeviceDetail(query.code)
 })

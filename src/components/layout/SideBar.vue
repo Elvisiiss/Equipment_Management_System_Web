@@ -700,50 +700,58 @@ const menuItems = [
     path: '/system',
     name: 'system',
     meta: {title: '系统管理', icon: User},
-    permissionId: 95,
+    permissionId:1,
     children: [
       {
         path: '/system/manage',
         name: 'manage',
         meta: {title: '管理'},
-        permissionId: 96,
+        permissionId: 1,
         children: [
           {
             path: '/system/manage/users_roles_permissions',
             name: 'users_roles_permissions',
             meta: {title: '用户管理'},
-            permissionId: 97
-          }, {
+            permissionId: 1
+          },
+          {
             path: '/system/manage/regionManagement',
             name: 'regionManagement',
             meta: {title: '区域管理'},
-            permissionId: 98
-          }
+            permissionId: 1,
+          },
+          {
+            path: '/system/manage/region',
+            name: 'region',
+            component: () => import('@/views/system/manage/Region.vue'),
+            meta: { title: '区域管理2' },
+            permissionId: 1,
+          },
         ]
       }, {
         path: '/system/configuration',
         name: 'configuration',
         meta: {title: '配置'},
-        permissionId: 99,
+        permissionId: 1,
         children: [
           {
             path: '/system/configuration/DepartmentApproval',
             name: 'DepartmentApproval',
             meta: {title: '审批设置'},
-            permissionId: 100
+            permissionId: 1
           }
         ]
       }, {
         path: '/system/screen',
         name: 'screen',
         meta: {title: '大屏'},
-        permissionId: 101,
+        permissionId: 1,
         children: [
           {
             path: '/system/screen/X',
             name: 'X',
             meta: {title: '页面X'},
-            permissionId: 102
+            permissionId: 1
           }
         ]
       }

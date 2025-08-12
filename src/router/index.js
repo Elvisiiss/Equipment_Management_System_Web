@@ -563,6 +563,12 @@ const routes = [
         meta: { title: '区域管理' },
     },
     {
+        path: '/system/manage/region',
+        name: 'region',
+        component: () => import('@/views/system/manage/Region.vue'),
+        meta: { title: '区域管理2' },
+    },
+    {
         path: '/system/configuration',
         name: 'system-configuration',
         component: () => import('@/views/system/configuration.vue'),
