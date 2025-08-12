@@ -1,330 +1,218 @@
 <template>
-  <el-container>
-    <el-header class="header">资产数字化运营看板</el-header>
-
-    <el-main class="main">
-      <!-- 第一行：资产新增 / 报废 -->
-      <el-row :gutter="16">
-        <el-col :span="24">
-          <el-card shadow="hover">
-            <template #header>
-              <span>资产新增 / 报废情况</span>
-            </template>
-            <v-chart
-                autoresize
-                :option="addScrapOption"
-                style="height: 300px"
-            />
-          </el-card>
-        </el-col>
-      </el-row>
-
-      <!-- 第二行：台账类型 + 寿命分布 -->
-      <el-row :gutter="16" style="margin-top: 16px">
-        <el-col :span="12">
-          <el-card shadow="hover">
-            <template #header>
-              <span>台账类型分布</span>
-            </template>
-            <v-chart :option="ledgerPieOption" autoresize style="height: 300px" />
-          </el-card>
-        </el-col>
-        <el-col :span="12">
-          <el-card shadow="hover">
-            <template #header>
-              <span>寿命分布</span>
-            </template>
-            <v-chart :option="lifeBarOption" autoresize style="height: 300px" />
-          </el-card>
-        </el-col>
-      </el-row>
-
-      <!-- 第三行：车间布局 -->
-      <el-row :gutter="16" style="margin-top: 16px">
-        <el-col :span="24">
-          <el-card shadow="hover">
-            <template #header>
-              <span>车间布局</span>
-            </template>
-            <div class="workshop-wrapper">
-              <!-- SVG 点位图示例 -->
-              <svg viewBox="0 0 800 400" class="workshop-svg">
-                <rect
-                    v-for="r in workshopRects"
-                    :key="r.id"
-                    :x="r.x"
-                    :y="r.y"
-                    :width="r.w"
-                    :height="r.h"
-                    :class="{ active: r.id === activeRect }"
-                    @click="onRectClick(r)"
-                />
-                <text
-                    v-for="r in workshopRects"
-                    :key="'t' + r.id"
-                    :x="r.x + r.w / 2"
-                    :y="r.y + r.h / 2"
-                    text-anchor="middle"
-                    dominant-baseline="middle"
-                    class="rect-text"
-                >
-                  {{ r.name }}
-                </text>
-              </svg>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-
-      <!-- 第四行：业务模块使用统计 -->
-      <el-row :gutter="16" style="margin-top: 16px">
-        <el-col
-            v-for="mod in moduleUsage"
-            :key="mod.name"
-            :span="6"
+  <div class="asset-screen">
+    <!-- 第一行：5 张统计卡片（占满一行） -->
+    <el-row :gutter="16">
+      <el-col v-for="(c, i) in statCards" :key="i" :span="20 / statCards.length">
+        <div
+            class="stat-card"
+            :style="{ backgroundColor: c.color }"
+            @click="goToAssetList"
         >
-          <el-card shadow="hover" class="module-card">
-            <div class="module-title">{{ mod.name }}</div>
-            <v-chart
-                :option="getGaugeOption(mod.value)"
-                autoresize
-                style="height: 160px"
-            />
-            <div class="module-desc">日活：{{ mod.dau }}</div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </el-main>
-  </el-container>
+          <div class="stat-title">{{ c.title }}</div>
+          <div class="stat-value">{{ c.value }}</div>
+        </div>
+      </el-col>
+    </el-row>
+
+    <!-- 第二行：饼图 -->
+    <el-row :gutter="16" style="margin-top: 16px">
+      <el-col :span="12">
+        <el-card>
+          <template #header> 台账类型分布 </template>
+          <div ref="typeChartRef" style="height: 300px" />
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card>
+          <template #header> 寿命上限分布 </template>
+          <div ref="lifeChartRef" style="height: 300px" />
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 第三行：折线图 & 消息卡片（各占 50%） -->
+    <el-row :gutter="16" style="margin-top: 16px">
+      <el-col :span="12">
+        <el-card>
+          <template #header> 资产新增/报废趋势（近 6 个月） </template>
+          <div ref="trendChartRef" style="height: 300px" />
+        </el-card>
+      </el-col>
+
+      <el-col :span="12">
+        <el-card>
+          <template #header>
+            <div class="msg-header">
+              <el-tabs v-model="activeMsgTab" class="msg-tabs">
+                <el-tab-pane label="审核" name="audit" />
+                <el-tab-pane label="寿命" name="life" />
+              </el-tabs>
+              <el-link
+                  type="primary"
+                  :underline="false"
+                  @click="handleDetailClick"
+              >详情</el-link
+              >
+            </div>
+          </template>
+
+          <div class="msg-list">
+            <div
+                v-for="(msg, i) in currentMsgs"
+                :key="i"
+                class="msg-item"
+                @click="handleDetailClick"
+            >
+              <span class="msg-text">{{ msg }}</span>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
 </template>
 
 <script setup>
-/* ========= 依赖 ========= */
-import { ref, reactive, onMounted } from 'vue'
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import {
-  LineChart,
-  PieChart,
-  BarChart,
-  GaugeChart
-} from 'echarts/charts'
-import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  TitleComponent,
-  ToolboxComponent
-} from 'echarts/components'
-import VChart from 'vue-echarts'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import * as echarts from 'echarts'
 
-use([
-  CanvasRenderer,
-  LineChart,
-  PieChart,
-  BarChart,
-  GaugeChart,
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
-  TitleComponent,
-  ToolboxComponent
+const router = useRouter()
+
+/* ------------------ 路由 ------------------ */
+const goToAssetList = () => router.push('/asset/manage/list')
+const handleDetailClick = () => router.push('/check/list')
+
+/* ------------------ 卡片 ------------------ */
+const statCards = ref([
+  { title: '设备总数', value: 521, color: '#409EFF' },
+  { title: '已验收设备', value: 432, color: '#67C23A' },
+  { title: '待验收设备', value: 42, color: '#E6A23C' },
+  { title: '设备样机', value: 15, color: '#909399' },
+  { title: '设备闲置', value: 32, color: '#F56C6C' }
 ])
 
-/* ========= 模拟接口 ========= */
-const mockApi = () =>
-    new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          addScrap: {
-            months: ['1月', '2月', '3月', '4月', '5月', '6月'],
-            add: [120, 132, 101, 134, 90, 230],
-            scrap: [20, 32, 21, 54, 30, 80]
-          },
-          ledgerType: [
-            { name: '生产设备', value: 45 },
-            { name: '测试设备', value: 25 },
-            { name: '办公设备', value: 15 },
-            { name: 'IT 设备', value: 15 }
-          ],
-          lifeDist: {
-            x: ['<1年', '1-3年', '3-5年', '5-10年', '>10年'],
-            y: [40, 120, 90, 70, 60]
-          },
-          modules: [
-            { name: '资产台账', value: 78, dau: 345 },
-            { name: '维保管理', value: 65, dau: 210 },
-            { name: '备件管理', value: 52, dau: 156 },
-            { name: '报表中心', value: 88, dau: 421 }
-          ]
-        })
-      }, 300)
-    })
+/* ------------------ 消息 ------------------ */
+const activeMsgTab = ref('audit')
+const auditMsgs = ref([
+  '设备编号 EQ-20240512 从 A 车间转移到 B 车间未审批',
+  '设备编号 EQ-20240601 从 C 产线转移到 D 产线未审批'
+])
+const lifeMsgs = ref([
+  '设备编号 EQ-20230501 即将到达寿命上限',
+  '设备编号 EQ-20230615 预计 30 天后到寿命上限'
+])
+const currentMsgs = computed(() =>
+    activeMsgTab.value === 'audit' ? auditMsgs.value : lifeMsgs.value
+)
 
-/* ========= 资产新增 / 报废 ========= */
-const addScrapOption = reactive({
-  title: { text: '近 6 个月趋势', left: 'center' },
-  tooltip: { trigger: 'axis' },
-  legend: { data: ['新增', '报废'], bottom: 0 },
-  xAxis: { type: 'category', data: [] },
-  yAxis: { type: 'value' },
-  series: [
-    { name: '新增', type: 'line', smooth: true, data: [] },
-    { name: '报废', type: 'line', smooth: true, data: [] }
-  ]
-})
+/* ------------------ 图表 ------------------ */
+const typeChartRef = ref()
+const lifeChartRef = ref()
+const trendChartRef = ref()
 
-/* ========= 台账类型饼图 ========= */
-const ledgerPieOption = reactive({
-  tooltip: { trigger: 'item' },
-  legend: { orient: 'vertical', left: 'left' },
-  series: [
-    {
-      type: 'pie',
-      radius: '60%',
-      center: ['50%', '50%'],
-      data: [],
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
+const initChart = (dom, option) => {
+  const chart = echarts.init(dom)
+  chart.setOption(option)
+  chart.on('click', goToAssetList)
+  return chart
+}
+
+onMounted(() => {
+  initChart(typeChartRef.value, {
+    tooltip: { trigger: 'item' },
+    series: [
+      {
+        type: 'pie',
+        radius: '60%',
+        data: [
+          { name: '已验收', value: 432 },
+          { name: '待验收', value: 42 },
+          { name: '样机', value: 15 },
+          { name: '闲置', value: 32 }
+        ]
       }
-    }
-  ]
-})
+    ]
+  })
 
-/* ========= 寿命柱状图 ========= */
-const lifeBarOption = reactive({
-  tooltip: {},
-  xAxis: { type: 'category', data: [] },
-  yAxis: { type: 'value' },
-  series: [{ type: 'bar', data: [], itemStyle: { color: '#91cc75' } }]
-})
+  initChart(lifeChartRef.value, {
+    tooltip: { trigger: 'item' },
+    series: [
+      {
+        type: 'pie',
+        radius: '60%',
+        data: [
+          { name: '1 年', value: 80 },
+          { name: '2 年', value: 150 },
+          { name: '3 年', value: 200 },
+          { name: '4 年', value: 70 },
+          { name: '5 年及以上', value: 21 }
+        ]
+      }
+    ]
+  })
 
-/* ========= 车间布局 ========= */
-const workshopRects = ref([
-  { id: 1, name: 'CNC 区', x: 50, y: 50, w: 160, h: 120 },
-  { id: 2, name: '装配区', x: 250, y: 50, w: 160, h: 120 },
-  { id: 3, name: '质检区', x: 450, y: 50, w: 160, h: 120 },
-  { id: 4, name: '仓储区', x: 650, y: 50, w: 100, h: 120 },
-  { id: 5, name: '办公区', x: 50, y: 200, w: 700, h: 100 }
-])
-const activeRect = ref(null)
-const onRectClick = rect => (activeRect.value = rect.id)
-
-/* ========= 业务模块使用 ========= */
-const moduleUsage = ref([])
-const getGaugeOption = value => ({
-  series: [
-    {
-      type: 'gauge',
-      radius: '100%',
-      startAngle: 180,
-      endAngle: 0,
-      min: 0,
-      max: 100,
-      axisLine: {
-        lineStyle: {
-          width: 12,
-          color: [[1, '#E6EBF8']]
-        }
-      },
-      progress: {
-        show: true,
-        width: 12,
-        itemStyle: { color: '#5470c6' }
-      },
-      pointer: { show: false },
-      axisTick: { show: false },
-      splitLine: { show: false },
-      axisLabel: { show: false },
-      detail: {
-        valueAnimation: true,
-        offsetCenter: [0, '70%'],
-        fontSize: 20,
-        formatter: '{value}%'
-      },
-      data: [{ value }]
-    }
-  ]
-})
-
-/* ========= 初始化 ========= */
-onMounted(async () => {
-  const data = await mockApi()
-
-  // 新增 / 报废
-  addScrapOption.xAxis.data = data.addScrap.months
-  addScrapOption.series[0].data = data.addScrap.add
-  addScrapOption.series[1].data = data.addScrap.scrap
-
-  // 台账类型
-  ledgerPieOption.series[0].data = data.ledgerType
-
-  // 寿命分布
-  lifeBarOption.xAxis.data = data.lifeDist.x
-  lifeBarOption.series[0].data = data.lifeDist.y
-
-  // 业务模块
-  moduleUsage.value = data.modules
+  initChart(trendChartRef.value, {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['新增', '报废'] },
+    xAxis: { type: 'category', data: ['1月', '2月', '3月', '4月', '5月', '6月'] },
+    yAxis: { type: 'value' },
+    series: [
+      { name: '新增', type: 'line', smooth: true, data: [120, 200, 150, 80, 70, 110] },
+      { name: '报废', type: 'line', smooth: true, data: [30, 40, 50, 60, 70, 90] }
+    ]
+  })
 })
 </script>
 
 <style scoped>
-.header {
-  background: #001529;
+.asset-screen {
+  padding: 16px;
+}
+
+/* 卡片占满一行 */
+.stat-card {
+  height: 100px;
+  border-radius: 8px;
   color: #fff;
-  font-size: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.stat-title {
+  font-size: 14px;
+}
+.stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* 消息卡片 */
+.msg-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 }
-.main {
-  padding: 16px;
-  background: #f0f2f5;
+.msg-tabs {
+  flex: 1;
 }
-
-/* 车间布局 */
-.workshop-wrapper {
-  display: flex;
-  justify-content: center;
-  background: #fafafa;
+.msg-list {
+  max-height: 240px;
+  overflow-y: auto;
 }
-.workshop-svg {
-  width: 100%;
-  max-width: 800px;
-  height: 300px;
-}
-.workshop-svg rect {
-  fill: #5470c6;
-  stroke: #fff;
-  stroke-width: 2;
+.msg-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #ebeef5;
   cursor: pointer;
-  transition: fill 0.3s;
 }
-.workshop-svg rect.active,
-.workshop-svg rect:hover {
-  fill: #91cc75;
+.msg-item:last-child {
+  border-bottom: none;
 }
-.rect-text {
-  fill: #fff;
-  font-size: 14px;
-  pointer-events: none;
-}
-
-/* 业务模块卡片 */
-.module-card {
-  text-align: center;
-}
-.module-title {
-  font-size: 16px;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-.module-desc {
-  color: #666;
+.msg-text {
+  color: #606266;
   font-size: 14px;
 }
 </style>

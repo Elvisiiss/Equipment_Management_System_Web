@@ -231,9 +231,9 @@ const menuItems = [
         permissionId: 18,
         children: [
           {
-            path: '/asset/manage/ledger',
+            path: '/asset/manage/list',
             name: 'EquipmentLedger',
-            meta: {title: '设备台账'},
+            meta: {title: '设备清单'},
             permissionId: 19
           },
           // {

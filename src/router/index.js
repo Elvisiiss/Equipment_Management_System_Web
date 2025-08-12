@@ -28,10 +28,10 @@ const routes = [
         meta: { title: '管理' },
     },
     {
-        path: '/asset/manage/ledger',
+        path: '/asset/manage/list',
         name: 'EquipmentLedger',
         component: () => import('@/views/asset/manage/EquipmentLedger.vue'),
-        meta: { title: '设备台账' },
+        meta: { title: '设备清单' },
     },
     // {
     //     path: '/asset/manage/master',
@@ -113,22 +113,10 @@ const routes = [
         meta: { title: '配置' },
     },
     {
-        path: '/asset/configuration/B',
-        name: 'B',
-        component: () => import('@/views/asset/configuration/B.vue'),
-        meta: { title: '页面B' },
-    },
-    {
         path: '/asset/screen',
         name: 'asset-screen',
         component: () => import('@/views/asset/screen.vue'),
         meta: { title: '大屏' },
-    },
-    {
-        path: '/asset/screen/C',
-        name: 'C',
-        component: () => import('@/views/asset/screen/C.vue'),
-        meta: { title: '页面C' },
     },
     // Equipment Monitoring
     {
