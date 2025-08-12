@@ -124,7 +124,7 @@ const permissionMap = {
   16: '/',
   17: '/asset',
   18: '/asset/manage',
-  19: '/asset/manage/ledger',
+  19: '/asset/manage/list',
   20: '/asset/manage/master',
   21: '/asset/manage/index',
   22: '/asset/manage/import',
@@ -218,82 +218,64 @@ const menuItems = [
     meta: {title: '首页', icon: HomeFilled},
     permissionId: 16
   },
+  //Check Management
+  {
+    path: '/check',
+    name: 'check',
+    meta: { title: '审核管理', icon: HomeFilled },
+    permissionId: 1,
+    children: [
+      {
+        path: '/check/list',
+        name: 'CheckList',
+        meta: { title: '审核任务列表' },
+        permissionId: 1,
+      },
+      {
+        path: '/asset/result',
+        name: 'CheckResult',
+        meta: { title: '审批结果列表', icon: HomeFilled },
+        permissionId: 1,
+      },
+    ]
+  },
+  // Asset Management
   {
     path: '/asset',
     name: 'asset',
     meta: {title: '资产管理', icon: Connection},
-    permissionId: 17,
+    permissionId: 1,
     children: [
       {
         path: '/asset/manage',
         name: 'manage',
         meta: {title: '管理'},
-        permissionId: 18,
+        permissionId: 1,
         children: [
           {
             path: '/asset/manage/list',
             name: 'EquipmentLedger',
             meta: {title: '设备清单'},
-            permissionId: 19
+            permissionId: 1
           },
-          // {
-          //   path: '/asset/manage/master',
-          //   name: 'AssetMaster',
-          //   meta: {title: '主数据管理'},
-          //   permissionId: 20
-          // },
           {
             path: '/asset/manage/index',
             name: 'AssetIndex',
-            meta: {title: '资产索引'},
-            permissionId: 21
+            meta: {title: '设备详情页'},
+            permissionId: 1
           },
-          // {
-          //   path: '/asset/manage/import',
-          //   name: 'AssetImport',
-          //   meta: {title: '资产入库'},
-          //   permissionId: 22
-          // },
-          {
-            path: '/asset/manage/life',
-            name: 'AssetLifecycle',
-            meta: {title: '全生命周期管理'},
-            permissionId: 23
-          },
-          {
-            path: '/asset/manage/life/transfer',
-            name: 'AssetTransfer',
-            meta: {title: '资产转移'},
-            permissionId: 24
-          },
-
         ]
       }, {
         path: '/asset/configuration',
         name: 'configuration',
         meta: {title: '配置'},
-        permissionId: 25,
-        children: [
-          {
-            path: '/asset/configuration/B',
-            name: 'B',
-            meta: {title: '页面B'},
-            permissionId: 26
-          }
-        ]
-      }, {
+        permissionId: 1,
+      },
+      {
         path: '/asset/screen',
         name: 'screen',
         meta: {title: '大屏'},
-        permissionId: 27,
-        children: [
-          {
-            path: '/asset/screen/C',
-            name: 'C',
-            meta: {title: '页面C'},
-            permissionId: 28
-          }
-        ]
+        permissionId: 1,
       }
     ]
   },
