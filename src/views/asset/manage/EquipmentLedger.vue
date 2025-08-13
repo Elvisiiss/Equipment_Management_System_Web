@@ -1,14 +1,5 @@
 <template>
   <div class="app-container">
-    <!-- 头部标题 -->
-    <div class="header">
-      <div class="title">
-        <i class="el-icon-s-management"></i>
-        <span>设备清单管理系统</span>
-      </div>
-      <el-button type="primary" icon="el-icon-plus" @click="dialogVisible = true">新增设备</el-button>
-    </div>
-
     <!-- 过滤条件 -->
     <div class="filter-container">
       <el-form :model="filterForm" class="filter-form">
@@ -82,6 +73,7 @@
           <el-button type="warning" icon="el-icon-upload2">导入数据</el-button>
         </el-upload>
         <el-button type="info" icon="el-icon-upload" @click="exportData">导出数据</el-button>
+        <el-button type="primary" icon="el-icon-plus" @click="dialogVisible = true">新增设备</el-button>
       </div>
     </div>
 
@@ -148,10 +140,11 @@
         <el-table-column prop="inCharge" label="入库负责人" width="120"></el-table-column>
         <el-table-column prop="acceptTime" label="验收时间" width="120" sortable></el-table-column>
         <el-table-column prop="acceptor" label="验收人" width="120"></el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button v-if="row.type === 'device'" type="text" size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="row.type === 'device'" type="text" size="small" @click="handleDetail(row)">详情</el-button>
+            <el-button v-if="row.type === 'device'" type="text" size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -384,6 +377,9 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 // 控制新增设备弹窗显示
 const dialogVisible = ref(false);
@@ -684,8 +680,26 @@ const handleEdit = (row) => {
 
 // 查看详情
 const handleDetail = (row) => {
-  console.log('查看设备详情:', row);
-  ElMessage.info(`查看设备详情: ${row.name}`);
+  router.push({
+    path: '/asset/manage/index',
+    query: { deviceCode: row.deviceCode }
+  });
+};
+
+// 删除设备
+const handleDelete = (row) => {
+  ElMessageBox.confirm(`确定要删除设备 ${row.name} 吗?`, '删除确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    deviceList.value = deviceList.value.filter(d => d.id !== row.id);
+    tableData.value = buildTreeData(deviceList.value);
+    pagination.total = deviceList.value.length;
+    ElMessage.success('设备删除成功');
+  }).catch(() => {
+    ElMessage.info('已取消删除');
+  });
 };
 
 // 下载模板
@@ -1009,26 +1023,6 @@ body {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #409EFF 0%, #337ecc 100%);
-  color: white;
-  border-radius: 8px 8px 0 0;
-}
-.title {
-  font-size: 24px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-.title i {
-  margin-right: 10px;
-  font-size: 28px;
-}
 .filter-container {
   background: #fff;
   padding: 20px;
@@ -1043,12 +1037,23 @@ body {
 }
 .operation-buttons {
   display: flex;
-  gap: 13px;
-  margin-top: 10px;
+  gap: 10px;
+  margin-top: 15px;
   flex-wrap: wrap;
+  align-items: center;
+}
+.operation-buttons .el-button {
+  height: 32px;
+  line-height: 32px;
+  padding: 0 15px;
+  display: flex;
+  align-items: center;
+}
+.operation-buttons .el-button i {
+  margin-right: 5px;
 }
 .upload-demo {
-  display: inline-block;
+  display: inline-flex;
 }
 .table-container {
   padding: 0 20px 20px;
