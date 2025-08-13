@@ -4,9 +4,9 @@
     <div class="header">
       <div class="title">
         <i class="el-icon-s-management"></i>
-        <span>设备清单</span>
+        <span>设备清单管理系统</span>
       </div>
-      <el-button type="primary" icon="el-icon-plus" @click="handleAdd">新增设备</el-button>
+      <el-button type="primary" icon="el-icon-plus" @click="dialogVisible = true">新增设备</el-button>
     </div>
 
     <!-- 过滤条件 -->
@@ -169,6 +169,213 @@
         ></el-pagination>
       </div>
     </div>
+
+    <!-- 新增设备弹窗 -->
+    <el-dialog
+        v-model="dialogVisible"
+        title="新增设备"
+        width="900px"
+        class="add-device-dialog"
+        :close-on-click-modal="false"
+    >
+      <div class="dialog-header">
+        <i class="el-icon-cpu"></i>
+        <h2>新增设备信息</h2>
+      </div>
+
+      <div class="dialog-body">
+        <div class="form-section">
+          <div class="section-title">
+            <i class="el-icon-document"></i>
+            <span>设备基本信息</span>
+          </div>
+
+          <div class="form-grid">
+            <el-form :model="newDeviceForm" label-width="100px" label-position="top">
+              <el-form-item label="区域ID" required>
+                <el-input v-model="newDeviceForm.regionId" placeholder="请输入区域ID"></el-input>
+                <div class="el-form-item__tip">关联区域表中的区域ID</div>
+              </el-form-item>
+
+              <el-form-item label="设备/产线/车间" required>
+                <el-input v-model="newDeviceForm.name" placeholder="请输入设备名称"></el-input>
+              </el-form-item>
+
+              <el-form-item label="设备编码" required>
+                <el-input v-model="newDeviceForm.deviceCode" placeholder="请输入设备唯一编码"></el-input>
+              </el-form-item>
+
+              <el-form-item label="资产编码">
+                <el-input v-model="newDeviceForm.assetCode" placeholder="请输入资产编码"></el-input>
+              </el-form-item>
+            </el-form>
+
+            <el-form :model="newDeviceForm" label-width="100px" label-position="top">
+              <el-form-item label="厂商" required>
+                <el-input v-model="newDeviceForm.manufacturer" placeholder="请输入厂商名称"></el-input>
+              </el-form-item>
+
+              <el-form-item label="类别">
+                <el-select v-model="newDeviceForm.category" placeholder="请选择设备类别">
+                  <el-option label="清洗机" value="清洗机"></el-option>
+                  <el-option label="COG机" value="COG机"></el-option>
+                  <el-option label="FOG机" value="FOG机"></el-option>
+                  <el-option label="AOI机" value="AOI机"></el-option>
+                  <el-option label="组装机" value="组装机"></el-option>
+                </el-select>
+              </el-form-item>
+
+              <el-form-item label="型号">
+                <el-input v-model="newDeviceForm.model" placeholder="请输入设备型号"></el-input>
+              </el-form-item>
+
+              <el-form-item label="状态">
+                <el-select v-model="newDeviceForm.status" placeholder="请选择状态">
+                  <el-option label="已验收" value="已验收"></el-option>
+                  <el-option label="待验收" value="待验收"></el-option>
+                  <el-option label="样机" value="样机"></el-option>
+                  <el-option label="闲置" value="闲置"></el-option>
+                </el-select>
+              </el-form-item>
+            </el-form>
+
+            <el-form :model="newDeviceForm" label-width="100px" label-position="top">
+              <el-form-item label="寿命上限">
+                <el-select v-model="newDeviceForm.lifespan" placeholder="请选择寿命上限">
+                  <el-option label="1年" value="1"></el-option>
+                  <el-option label="2年" value="2"></el-option>
+                  <el-option label="3年" value="3"></el-option>
+                  <el-option label="4年" value="4"></el-option>
+                  <el-option label="5年及以上" value="5"></el-option>
+                </el-select>
+              </el-form-item>
+
+              <el-form-item label="入库时间">
+                <el-date-picker
+                    v-model="newDeviceForm.inTime"
+                    type="date"
+                    placeholder="选择日期"
+                    value-format="YYYY-MM-DD"
+                ></el-date-picker>
+              </el-form-item>
+
+              <el-form-item label="入库负责人">
+                <el-input v-model="newDeviceForm.inCharge" placeholder="请输入负责人姓名"></el-input>
+              </el-form-item>
+
+              <el-form-item label="验收时间">
+                <el-date-picker
+                    v-model="newDeviceForm.acceptTime"
+                    type="date"
+                    placeholder="选择日期"
+                    value-format="YYYY-MM-DD"
+                ></el-date-picker>
+              </el-form-item>
+
+              <el-form-item label="验收人">
+                <el-input v-model="newDeviceForm.acceptor" placeholder="请输入验收人姓名"></el-input>
+              </el-form-item>
+            </el-form>
+          </div>
+        </div>
+
+        <!-- 设备说明书管理 -->
+        <div class="form-section">
+          <div class="section-title">
+            <i class="el-icon-document-copy"></i>
+            <span>设备说明书</span>
+          </div>
+
+          <div class="file-manager">
+            <div class="file-section">
+              <el-upload
+                  action=""
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="handleManualUpload"
+                  accept=".pdf,.doc,.docx"
+              >
+                <div class="upload-area">
+                  <i class="el-icon-upload upload-icon"></i>
+                  <div class="upload-text">点击上传设备说明书</div>
+                  <div class="upload-hint">支持PDF、Word文档格式</div>
+                </div>
+              </el-upload>
+            </div>
+
+            <div v-if="instructionManualList.length > 0">
+              <div class="file-list">
+                <div v-for="(file, index) in instructionManualList" :key="file.id" class="file-card">
+                  <div class="file-preview">
+                    <i v-if="file.type === 'pdf'" class="el-icon-document pdf-icon"></i>
+                    <i v-else class="el-icon-document word-icon"></i>
+                  </div>
+                  <div class="file-info">
+                    <div class="file-name">{{ file.name }}</div>
+                    <div class="file-meta">{{ file.size }} KB</div>
+                    <div class="file-actions">
+                      <el-button type="text" @click="downloadFile(file)">下载</el-button>
+                      <el-button type="text" @click="editFile(file, 'manual', index)">编辑</el-button>
+                      <el-button type="text" @click="deleteFile(file, 'manual', index)">删除</el-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 设备图纸管理 -->
+        <div class="form-section">
+          <div class="section-title">
+            <i class="el-icon-picture-outline"></i>
+            <span>设备图纸</span>
+          </div>
+
+          <div class="file-manager">
+            <div class="file-section">
+              <el-upload
+                  action=""
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="handleDrawingUpload"
+                  accept=".jpg,.jpeg,.png,.gif"
+              >
+                <div class="upload-area">
+                  <i class="el-icon-upload upload-icon"></i>
+                  <div class="upload-text">点击上传设备图纸</div>
+                  <div class="upload-hint">支持JPG、PNG、GIF格式</div>
+                </div>
+              </el-upload>
+            </div>
+
+            <div v-if="drawingList.length > 0">
+              <div class="file-list">
+                <div v-for="(file, index) in drawingList" :key="file.id" class="file-card">
+                  <div class="file-preview">
+                    <img :src="file.preview" alt="设备图纸预览">
+                  </div>
+                  <div class="file-info">
+                    <div class="file-name">{{ file.name }}</div>
+                    <div class="file-meta">{{ file.size }} KB</div>
+                    <div class="file-actions">
+                      <el-button type="text" @click="downloadFile(file)">下载</el-button>
+                      <el-button type="text" @click="editFile(file, 'drawing', index)">编辑</el-button>
+                      <el-button type="text" @click="deleteFile(file, 'drawing', index)">删除</el-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitNewDevice">确认添加</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -177,6 +384,9 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+
+// 控制新增设备弹窗显示
+const dialogVisible = ref(false);
 
 // 过滤表单
 const filterForm = reactive({
@@ -200,6 +410,32 @@ const tableData = ref([]);
 
 // 设备列表数据
 const deviceList = ref([]);
+
+// 新增设备表单
+const newDeviceForm = reactive({
+  regionId: '',
+  name: '',
+  deviceCode: '',
+  assetCode: '',
+  manufacturer: '',
+  category: '',
+  model: '',
+  status: '',
+  lifespan: '',
+  inTime: '',
+  inCharge: '',
+  acceptTime: '',
+  acceptor: ''
+});
+
+// 说明书文件列表
+const instructionManualList = ref([]);
+
+// 图纸文件列表
+const drawingList = ref([]);
+
+// 文件ID计数器
+let fileIdCounter = 1;
 
 // 计算总设备数
 const totalDevices = computed(() => {
@@ -440,11 +676,6 @@ const handleCurrentChange = (page) => {
   pagination.page = page;
 };
 
-// 新增设备
-const handleAdd = () => {
-  ElMessage.info('新增设备');
-};
-
 // 编辑设备
 const handleEdit = (row) => {
   console.log('编辑设备:', row);
@@ -576,6 +807,183 @@ const exportData = () => {
   saveAs(blob, `设备清单_${new Date().toLocaleDateString()}.xlsx`);
 };
 
+// 处理说明书上传
+const handleManualUpload = (file) => {
+  const fileType = file.name.split('.').pop().toLowerCase();
+  if (!['pdf', 'doc', 'docx'].includes(fileType)) {
+    ElMessage.error('只支持上传PDF或Word文档');
+    return false;
+  }
+
+  const newFile = {
+    id: fileIdCounter++,
+    name: file.name,
+    type: fileType === 'pdf' ? 'pdf' : 'word',
+    size: Math.round(file.size / 1024),
+    file: file.raw,
+    uploadTime: new Date().toLocaleString()
+  };
+
+  instructionManualList.value.push(newFile);
+  ElMessage.success('说明书上传成功');
+};
+
+// 处理图纸上传
+const handleDrawingUpload = (file) => {
+  const fileType = file.name.split('.').pop().toLowerCase();
+  if (!['jpg', 'jpeg', 'png', 'gif'].includes(fileType)) {
+    ElMessage.error('只支持上传图片文件');
+    return false;
+  }
+
+  // 生成预览图
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const newFile = {
+      id: fileIdCounter++,
+      name: file.name,
+      type: 'image',
+      size: Math.round(file.size / 1024),
+      preview: e.target.result,
+      file: file.raw,
+      uploadTime: new Date().toLocaleString()
+    };
+
+    drawingList.value.push(newFile);
+    ElMessage.success('图纸上传成功');
+  };
+  reader.readAsDataURL(file.raw);
+};
+
+// 下载文件
+const downloadFile = (file) => {
+  if (!file.file) {
+    ElMessage.warning('无法下载该文件');
+    return;
+  }
+
+  const url = URL.createObjectURL(file.file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  ElMessage.success(`开始下载: ${file.name}`);
+};
+
+// 编辑文件
+const editFile = (file, type, index) => {
+  ElMessageBox.confirm('确定要替换此文件吗?', '编辑文件', {
+    confirmButtonText: '替换',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    // 创建隐藏的文件输入元素
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = type === 'manual' ? '.pdf,.doc,.docx' : '.jpg,.jpeg,.png,.gif';
+    input.onchange = (e) => {
+      const newFile = e.target.files[0];
+      if (!newFile) return;
+
+      if (type === 'manual') {
+        handleManualUpload({ raw: newFile, name: newFile.name });
+        instructionManualList.value.splice(index, 1);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          drawingList.value[index] = {
+            ...file,
+            name: newFile.name,
+            size: Math.round(newFile.size / 1024),
+            preview: event.target.result,
+            file: newFile
+          };
+          ElMessage.success('图纸已更新');
+        };
+        reader.readAsDataURL(newFile);
+      }
+    };
+    input.click();
+  }).catch(() => {
+    // 取消操作
+  });
+};
+
+// 删除文件
+const deleteFile = (file, type, index) => {
+  ElMessageBox.confirm('确定要删除此文件吗?', '删除文件', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    if (type === 'manual') {
+      instructionManualList.value.splice(index, 1);
+    } else {
+      drawingList.value.splice(index, 1);
+    }
+    ElMessage.success('文件已删除');
+  }).catch(() => {
+    // 取消操作
+  });
+};
+
+// 提交新增设备
+const submitNewDevice = () => {
+  // 简单表单验证
+  if (!newDeviceForm.regionId || !newDeviceForm.name || !newDeviceForm.deviceCode || !newDeviceForm.manufacturer) {
+    ElMessage.error('请填写必填字段');
+    return;
+  }
+
+  // 检查设备编码是否唯一
+  const isCodeExist = deviceList.value.some(device =>
+      device.deviceCode === newDeviceForm.deviceCode
+  );
+
+  if (isCodeExist) {
+    ElMessage.error('设备编码已存在，请使用唯一编码');
+    return;
+  }
+
+  // 创建新设备对象
+  const newDevice = {
+    id: deviceList.value.length > 0 ? Math.max(...deviceList.value.map(d => d.id)) + 1 : 1,
+    ...newDeviceForm,
+    workshop: 'C2', // 模拟车间
+    line: '31',    // 模拟产线
+    type: 'device',
+    // 添加文件信息（实际应用中应为文件路径）
+    manuals: instructionManualList.value.map(f => f.name),
+    drawings: drawingList.value.map(f => f.name)
+  };
+
+  // 添加到设备列表
+  deviceList.value.push(newDevice);
+  tableData.value = buildTreeData(deviceList.value);
+  pagination.total = deviceList.value.length;
+
+  // 重置表单
+  resetNewDeviceForm();
+
+  // 关闭弹窗
+  dialogVisible.value = false;
+
+  ElMessage.success('设备添加成功');
+};
+
+// 重置新增设备表单
+const resetNewDeviceForm = () => {
+  Object.keys(newDeviceForm).forEach(key => {
+    newDeviceForm[key] = '';
+  });
+  instructionManualList.value = [];
+  drawingList.value = [];
+};
+
 onMounted(() => {
   initData();
 });
@@ -586,39 +994,47 @@ onMounted(() => {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+body {
+  background-color: #f5f7fa;
+  color: #333;
+  padding: 20px;
 }
 .app-container {
-  padding: 20px;
   max-width: 1600px;
   margin: 0 auto;
-  background-color: #f5f7fa;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: #333;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #409EFF 0%, #337ecc 100%);
+  color: white;
+  border-radius: 8px 8px 0 0;
 }
 .title {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2f3d;
   display: flex;
   align-items: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 .title i {
   margin-right: 10px;
   font-size: 28px;
-  color: #409EFF;
 }
 .filter-container {
   background: #fff;
   padding: 20px;
+  margin: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
 }
 .filter-form {
   display: grid;
@@ -629,16 +1045,13 @@ onMounted(() => {
   display: flex;
   gap: 13px;
   margin-top: 10px;
+  flex-wrap: wrap;
 }
 .upload-demo {
   display: inline-block;
 }
 .table-container {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  padding: 20px;
-  overflow: hidden;
+  padding: 0 20px 20px;
 }
 .status-tag {
   border-radius: 4px;
@@ -689,11 +1102,163 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
 }
-::v-deep .el-table .el-table__row--level-0 {
-  background-color: #f5f7fa;
+.el-table .el-table__row--level-0 {
+  background-color: #f5f7fa !important;
   font-weight: 600;
 }
-::v-deep .el-table .el-table__row--level-1 {
-  background-color: #fafafa;
+.el-table .el-table__row--level-1 {
+  background-color: #fafafa !important;
+}
+
+/* 新增设备弹窗样式 */
+.add-device-dialog {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  padding: 20px 20px 10px;
+  border-bottom: 1px solid #eee;
+}
+.dialog-header i {
+  margin-right: 10px;
+  font-size: 24px;
+  color: #409EFF;
+}
+.dialog-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2f3d;
+}
+.dialog-body {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.form-section {
+  margin-bottom: 25px;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #409EFF;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e4e7ed;
+  display: flex;
+  align-items: center;
+}
+.section-title i {
+  margin-right: 8px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.file-manager {
+  background: #f8f9fc;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 10px;
+}
+.file-section {
+  margin-bottom: 20px;
+}
+.file-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 10px;
+}
+.file-card {
+  width: 200px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+.file-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+.file-preview {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f7fa;
+}
+.file-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.file-preview i {
+  font-size: 48px;
+  color: #409EFF;
+}
+.pdf-icon {
+  color: #e74c3c;
+}
+.word-icon {
+  color: #2b579a;
+}
+.file-info {
+  padding: 12px;
+}
+.file-name {
+  font-weight: 500;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-meta {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+.file-actions {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #ebeef5;
+  padding-top: 8px;
+}
+.dialog-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  text-align: right;
+}
+.upload-area {
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  background: #fafafa;
+}
+.upload-area:hover {
+  border-color: #409EFF;
+}
+.upload-icon {
+  font-size: 40px;
+  color: #c0c4cc;
+  margin-bottom: 10px;
+}
+.upload-text {
+  color: #606266;
+}
+.upload-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 5px;
+}
+.file-type-tabs {
+  margin-bottom: 15px;
 }
 </style>
