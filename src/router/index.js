@@ -50,7 +50,7 @@ const routes = [
     {
         path: '/asset/manage/index',
         name: 'AssetIndex',
-        component: () => import('@/views/asset/manage/AssetIndex.vue'),
+        component: () => import('@/views/asset/manage/EquipmentDetail.vue'),
         meta: { title: '设备详情页' },
     },
 

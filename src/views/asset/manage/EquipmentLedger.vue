@@ -46,6 +46,26 @@
               clearable
           ></el-input>
         </el-form-item>
+        <el-form-item label="寿命上限">
+          <el-select
+              v-model="filterForm.lifespan"
+              placeholder="请选择寿命上限"
+              clearable
+          >
+            <el-option label="1年" value="1"></el-option>
+            <el-option label="2年" value="2"></el-option>
+            <el-option label="3年" value="3"></el-option>
+            <el-option label="4年" value="4"></el-option>
+            <el-option label="5年及以上" value="5"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="区域ID">
+          <el-input
+              v-model="filterForm.regionId"
+              placeholder="请输入区域ID"
+              clearable
+          ></el-input>
+        </el-form-item>
       </el-form>
       <div class="operation-buttons">
         <el-button type="primary" icon="el-icon-search" @click="handleSearch">查询</el-button>
@@ -112,6 +132,18 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column prop="regionId" label="区域ID" width="120">
+          <template #default="{ row }">
+            <span v-if="row.type === 'device'">{{ row.regionId || '-' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="lifespan" label="寿命上限" width="120">
+          <template #default="{ row }">
+            <span v-if="row.type === 'device'">
+              {{ row.lifespan ? `${row.lifespan}年` : '-' }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="inTime" label="入库时间" width="120" sortable></el-table-column>
         <el-table-column prop="inCharge" label="入库负责人" width="120"></el-table-column>
         <el-table-column prop="acceptTime" label="验收时间" width="120" sortable></el-table-column>
@@ -151,7 +183,9 @@ const filterForm = reactive({
   deviceCode: '',
   status: [],
   inCharge: '',
-  manufacturer: ''
+  manufacturer: '',
+  lifespan: '',
+  regionId: ''
 });
 
 // 分页配置
@@ -191,6 +225,9 @@ const generateMockData = () => {
   const models = ['X-2000', 'ProMax 3000', 'Ultra 5', 'SuperClean', 'Fusion-X', 'Quantum'];
   const names = ['精密清洗设备', '全自动COG机', '高精度FOG机', '视觉检测设备', '智能组装机', '高速贴片机'];
   const people = ['张三', '李四', '王五', '赵六', '钱七', '孙八'];
+  const lifespans = [1, 2, 3, 4, 5];
+  // 模拟区域ID，关联Region.vue中的区域ID
+  const regionIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
   const workshops = ['C2', 'C3', 'C4', 'C5', 'C6'];
   const lines = {
@@ -219,6 +256,8 @@ const generateMockData = () => {
         category: categories[Math.floor(Math.random() * categories.length)],
         model: models[Math.floor(Math.random() * models.length)],
         status: statuses[Math.floor(Math.random() * statuses.length)],
+        regionId: regionIds[Math.floor(Math.random() * regionIds.length)],
+        lifespan: lifespans[Math.floor(Math.random() * lifespans.length)],
         inTime: `2023-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
         inCharge: people[Math.floor(Math.random() * people.length)],
         acceptTime: Math.random() > 0.3 ? `2023-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}` : '',
@@ -242,6 +281,8 @@ const generateMockData = () => {
           category: categories[Math.floor(Math.random() * categories.length)],
           model: models[Math.floor(Math.random() * models.length)],
           status: statuses[Math.floor(Math.random() * statuses.length)],
+          regionId: regionIds[Math.floor(Math.random() * regionIds.length)],
+          lifespan: lifespans[Math.floor(Math.random() * lifespans.length)],
           inTime: `2023-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
           inCharge: people[Math.floor(Math.random() * people.length)],
           acceptTime: Math.random() > 0.3 ? `2023-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}` : '',
@@ -328,7 +369,7 @@ const initData = () => {
 
 // 查询处理
 const handleSearch = () => {
-  const { deviceCode, status, inCharge, manufacturer } = filterForm;
+  const { deviceCode, status, inCharge, manufacturer, lifespan, regionId } = filterForm;
   let filteredDevices = [...deviceList.value];
 
   if (deviceCode) {
@@ -355,6 +396,18 @@ const handleSearch = () => {
     );
   }
 
+  if (lifespan) {
+    filteredDevices = filteredDevices.filter(d =>
+        String(d.lifespan) === lifespan
+    );
+  }
+
+  if (regionId) {
+    filteredDevices = filteredDevices.filter(d =>
+        String(d.regionId) === regionId
+    );
+  }
+
   tableData.value = buildTreeData(filteredDevices);
   pagination.total = filteredDevices.length;
 };
@@ -365,6 +418,8 @@ const resetFilter = () => {
   filterForm.status = [];
   filterForm.inCharge = '';
   filterForm.manufacturer = '';
+  filterForm.lifespan = '';
+  filterForm.regionId = '';
   tableData.value = buildTreeData(deviceList.value);
   pagination.total = deviceList.value.length;
 };
@@ -405,7 +460,7 @@ const handleDetail = (row) => {
 // 下载模板
 const downloadTemplate = () => {
   const templateData = [
-    ['车间', '产线', '设备', '设备编码', '资产编码', '厂商', '类别', '型号', '状态', '入库时间', '入库负责人', '验收时间', '验收人']
+    ['车间', '产线', '设备', '设备编码', '资产编码', '厂商', '类别', '型号', '状态', '区域ID', '寿命上限(年)', '入库时间', '入库负责人', '验收时间', '验收人']
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(templateData);
@@ -461,10 +516,12 @@ const handleImport = (file) => {
           category: row[6] || '',
           model: row[7] || '',
           status: row[8] || '待验收',
-          inTime: row[9] || '',
-          inCharge: row[10] || '',
-          acceptTime: row[11] || '',
-          acceptor: row[12] || '',
+          regionId: row[9] || null,
+          lifespan: row[10] || null,
+          inTime: row[11] || '',
+          inCharge: row[12] || '',
+          acceptTime: row[13] || '',
+          acceptor: row[14] || '',
           type: 'device'
         };
         importedDevices.push(device);
@@ -502,6 +559,8 @@ const exportData = () => {
     类别: device.category,
     型号: device.model,
     状态: device.status,
+    区域ID: device.regionId,
+    寿命上限: device.lifespan ? `${device.lifespan}年` : '',
     入库时间: device.inTime,
     入库负责人: device.inCharge,
     验收时间: device.acceptTime,
