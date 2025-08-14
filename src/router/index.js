@@ -583,11 +583,18 @@ const routes = [
     },
     {
         path: '/system/data/dict',
-        name: 'diction',
+        name: 'dictionary',
         meta: {title: '字典管理'},
-        component: () => import('@/views/system/data/Diction.vue'),
+        component: () => import('@/views/system/data/Dictionary.vue'),
         permissionId: 1
-    }
+    },
+    {
+        path: '/system/data/log',
+        name: 'log',
+        meta: {title: '日志管理'},
+        component: () => import('@/views/system/data/Log.vue'),
+        permissionId: 1
+    },
 
 ]
 
