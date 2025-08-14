@@ -1,10 +1,9 @@
 <template>
   <el-container style="height:100vh">
     <!-- 顶部标题 -->
-    <el-header class="header">
-      <h2>动态车间设备整体布局</h2>
-    </el-header>
-
+<!--    <el-header class="header">-->
+<!--      <h2>动态车间设备整体布局</h2>-->
+<!--    </el-header>-->
     <!-- 主体内容 -->
     <el-main>
       <!-- 1. 实时监控 -->

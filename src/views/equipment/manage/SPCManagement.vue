@@ -3,7 +3,7 @@
 <!--  │　│　├─ 1.4.2 X-R监控图-->
 <template>
   <el-container style="height:100vh;">
-    <el-header style="line-height:60px;font-size:20px;">SPC 监控页面</el-header>
+<!--    <el-header style="line-height:60px;font-size:20px;">SPC 监控页面</el-header>-->
 
     <el-main>
       <el-row :gutter="20" style="height:100%">
@@ -11,7 +11,7 @@
         <el-col :span="8" style="display:flex;flex-direction:column;">
           <!-- 上传 -->
           <el-card shadow="hover" style="margin-bottom:10px;">
-            <template #header>上传 SPC 文件</template>
+            <template #header>SPC监控图</template>
             <el-upload
                 ref="upload"
                 accept=".csv"

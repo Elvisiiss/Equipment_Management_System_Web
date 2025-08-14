@@ -39,7 +39,7 @@ const routes = [
         path: '/asset/manage',
         name: 'asset-manage',
         component: () => import('@/views/asset/manage.vue'),
-        meta: { title: '管理' },
+        meta: { title: '设备台账' },
     },
     {
         path: '/asset/manage/list',
@@ -54,17 +54,17 @@ const routes = [
         meta: { title: '设备详情页' },
     },
 
-    {
-        path: '/asset/configuration',
-        name: 'asset-configuration',
-        component: () => import('@/views/asset/configuration.vue'),
-        meta: { title: '配置' },
-    },
+    // {
+    //     path: '/asset/configuration',
+    //     name: 'asset-configuration',
+    //     component: () => import('@/views/asset/configuration.vue'),
+    //     meta: { title: '配置' },
+    // },
     {
         path: '/asset/screen',
         name: 'asset-screen',
         component: () => import('@/views/asset/screen.vue'),
-        meta: { title: '大屏' },
+        meta: { title: '资产看板' },
     },
     // Equipment Monitoring
     {
@@ -77,7 +77,7 @@ const routes = [
         path: '/equipment/monitoring',
         name: 'Monitoring',
         component: () => import('@/views/equipment/Monitoring.vue'),
-        meta: { title: '实时状态监控' }
+        meta: { title: '管理' }
     },
     {
         path: '/equipment/monitoring/spc',
@@ -125,7 +125,7 @@ const routes = [
         path: '/equipment/location/pm',
         name: 'PM',
         component: () => import('@/views/equipment/manage/PM.vue'),
-        meta: { title: 'PM工单' },
+        meta: { title: '布局管理' },
     },
 
 
@@ -294,30 +294,30 @@ const routes = [
         component: () => import('@/views/maintenance/manage/ResubmitTask.vue'),
         meta: { title: '重新提交页面' },
     },
-    {
-        path: '/maintenance/configuration',
-        name: 'maintenance-configuration',
-        component: () => import('@/views/maintenance/configuration.vue'),
-        meta: { title: '配置' },
-    },
-    {
-        path: '/maintenance/configuration/K',
-        name: 'K',
-        component: () => import('@/views/maintenance/configuration/K.vue'),
-        meta: { title: '页面K' },
-    },
-    {
-        path: '/maintenance/screen',
-        name: 'maintenance-screen',
-        component: () => import('@/views/maintenance/screen.vue'),
-        meta: { title: '大屏' },
-    },
-    {
-        path: '/maintenance/screen/L',
-        name: 'L',
-        component: () => import('@/views/maintenance/screen/L.vue'),
-        meta: { title: '页面L' },
-    },
+    // {
+    //     path: '/maintenance/configuration',
+    //     name: 'maintenance-configuration',
+    //     component: () => import('@/views/maintenance/configuration.vue'),
+    //     meta: { title: '配置' },
+    // },
+    // {
+    //     path: '/maintenance/configuration/K',
+    //     name: 'K',
+    //     component: () => import('@/views/maintenance/configuration/K.vue'),
+    //     meta: { title: '页面K' },
+    // },
+    // {
+    //     path: '/maintenance/screen',
+    //     name: 'maintenance-screen',
+    //     component: () => import('@/views/maintenance/screen.vue'),
+    //     meta: { title: '大屏' },
+    // },
+    // {
+    //     path: '/maintenance/screen/L',
+    //     name: 'L',
+    //     component: () => import('@/views/maintenance/screen/L.vue'),
+    //     meta: { title: '页面L' },
+    // },
     // Mold Management
     {
         path: '/mold',
@@ -548,7 +548,7 @@ const routes = [
         path: '/system/manage',
         name: 'system-manage',
         component: () => import('@/views/system/manage.vue'),
-        meta: { title: '管理' },
+        meta: { title: '用户管理' },
     },
     {
         path: '/system/manage/users_roles_permissions',
@@ -563,35 +563,32 @@ const routes = [
         meta: { title: '区域管理' },
     },
     {
-        path: '/system/manage/region',
+        path: '/system/data/region',
         name: 'region',
-        component: () => import('@/views/system/manage/Region.vue'),
+        component: () => import('@/views/system/data/Region.vue'),
         meta: { title: '区域管理2' },
     },
     {
-        path: '/system/configuration',
-        name: 'system-configuration',
-        component: () => import('@/views/system/configuration.vue'),
-        meta: { title: '配置' },
+        path: '/system/data/product',
+        name: 'regionManagement',
+        meta: {title: '产品型号管理'},
+        component:()=>import('@/views/system/data/Product.vue'),
+        permissionId: 1,
     },
     {
-        path: '/system/configuration/DepartmentApproval',
+        path: '/system/data/DepartmentApproval',
         name: 'DepartmentApproval',
-        component: () => import('@/views/system/configuration/DepartmentApproval.vue'),
+        component: () => import('@/views/system/data/DepartmentApproval.vue'),
         meta: { title: '审批设置' },
     },
     {
-        path: '/system/screen',
-        name: 'system-screen',
-        component: () => import('@/views/system/screen.vue'),
-        meta: { title: '大屏' },
-    },
-    {
-        path: '/system/screen/X',
-        name: 'X',
-        component: () => import('@/views/system/screen/X.vue'),
-        meta: { title: '页面X' },
+        path: '/system/data/dict',
+        name: 'diction',
+        meta: {title: '字典管理'},
+        component: () => import('@/views/system/data/Diction.vue'),
+        permissionId: 1
     }
+
 ]
 
 const router = createRouter({

@@ -249,7 +249,7 @@ const menuItems = [
       {
         path: '/asset/manage',
         name: 'manage',
-        meta: {title: '管理'},
+        meta: {title: '设备台账'},
         permissionId: 1,
         children: [
           {
@@ -265,16 +265,17 @@ const menuItems = [
             permissionId: 1
           },
         ]
-      }, {
-        path: '/asset/configuration',
-        name: 'configuration',
-        meta: {title: '配置'},
-        permissionId: 1,
       },
+      // {
+      //   path: '/asset/configuration',
+      //   name: 'configuration',
+      //   meta: {title: '配置'},
+      //   permissionId: 1,
+      // },
       {
         path: '/asset/screen',
         name: 'screen',
-        meta: {title: '大屏'},
+        meta: {title: '资产看板'},
         permissionId: 1,
       }
     ]
@@ -283,54 +284,32 @@ const menuItems = [
     path: '/equipment',
     name: 'equipment',
     meta: {title: '设备实时监控', icon: Monitor},
-    permissionId: 29,
+    permissionId: 1,
     children: [
       {
         path: '/equipment/monitoring',
         name: 'Monitoring',
-        meta: {title: '实时状态监控'},
-        permissionId: 30,
+        meta: {title: '管理'},
+        permissionId: 1,
         children: [
           {
             path: '/equipment/monitoring/spc',
             name: 'SPCManagement',
             meta: {title: '设备SPC监控'},
-            permissionId: 31
+            permissionId: 1
           },
           {
             path: '/equipment/monitoring/exception',
             name: 'Exception',
             meta: {title: '异常与阈值'},
-            permissionId: 32
+            permissionId: 1
           },
-        ]
-      },
-      {
-        path: '/equipment/status',
-        name: 'Status',
-        meta: {title: '设备状态管理'},
-        permissionId: 33,
-        children: [
           {
             path: '/equipment/status/policies',
             name: 'Policies',
             meta: {title: '状态规则与策略'},
-            permissionId: 34
+            permissionId: 1
           },
-          {
-            path: '/equipment/status/log',
-            name: 'Log',
-            meta: {title: '状态维护'},
-            permissionId: 35
-          },
-        ]
-      },
-      {
-        path: '/equipment/location',
-        name: 'Location',
-        meta: {title: '布局管理'},
-        permissionId: 36,
-        children: [
           {
             path: '/equipment/location/transfer',
             name: 'Transfer',
@@ -340,17 +319,57 @@ const menuItems = [
           {
             path: '/equipment/location/pm',
             name: 'PM',
-            meta: {title: 'PM工单'},
+            meta: {title: '布局管理'},
             permissionId: 38
+          },
+          {
+            path: '/equipment/EquipmentManage',
+            name: 'EquipmentManage',
+            meta: {title: '设备管理'},
+            permissionId: 41
           },
         ]
       },
-      {
-        path: '/equipment/EquipmentManage',
-        name: 'EquipmentManage',
-        meta: {title: '设备管理'},
-        permissionId: 41
-      },
+      // {
+      //   path: '/equipment/status',
+      //   name: 'Status',
+      //   meta: {title: '设备状态管理'},
+      //   permissionId: 33,
+      //   children: [
+      //     {
+      //       path: '/equipment/status/policies',
+      //       name: 'Policies',
+      //       meta: {title: '状态规则与策略'},
+      //       permissionId: 34
+      //     },
+      //     {
+      //       path: '/equipment/status/log',
+      //       name: 'Log',
+      //       meta: {title: '状态维护'},
+      //       permissionId: 35
+      //     },
+      //   ]
+      // },
+      // {
+      //   path: '/equipment/location',
+      //   name: 'Location',
+      //   meta: {title: '布局管理'},
+      //   permissionId: 36,
+      //   children: [
+      //     {
+      //       path: '/equipment/location/transfer',
+      //       name: 'Transfer',
+      //       meta: {title: '设备转机'},
+      //       permissionId: 37
+      //     },
+      //     {
+      //       path: '/equipment/location/pm',
+      //       name: 'PM',
+      //       meta: {title: 'PM工单'},
+      //       permissionId: 38
+      //     },
+      //   ]
+      // },
       {
         path: '/equipment/screen',
         name: 'screen',
@@ -479,70 +498,72 @@ const menuItems = [
             permissionId: 61
           }
         ]
-      }, {
-        path: '/maintenance/configuration',
-        name: 'configuration',
-        meta: {title: '配置'},
-        permissionId: 62,
-        children: [
-          {
-            path: '/maintenance/configuration/K',
-            name: 'K',
-            meta: {title: '页面K'},
-            permissionId: 63
-          }
-        ]
-      }, {
-        path: '/maintenance/screen',
-        name: 'screen',
-        meta: {title: '大屏'},
-        permissionId: 64,
-        children: [
-          {
-            path: '/maintenance/screen/L',
-            name: 'L',
-            meta: {title: '页面L'},
-            permissionId: 65
-          }
-        ]
-      }
+      },
+      // {
+      //   path: '/maintenance/configuration',
+      //   name: 'configuration',
+      //   meta: {title: '配置'},
+      //   permissionId: 62,
+      //   children: [
+      //     {
+      //       path: '/maintenance/configuration/K',
+      //       name: 'K',
+      //       meta: {title: '页面K'},
+      //       permissionId: 63
+      //     }
+      //   ]
+      // },
+      // {
+      //   path: '/maintenance/screen',
+      //   name: 'screen',
+      //   meta: {title: '大屏'},
+      //   permissionId: 1,
+      //   children: [
+      //     {
+      //       path: '/maintenance/screen/L',
+      //       name: 'L',
+      //       meta: {title: '页面L'},
+      //       permissionId: 1
+      //     }
+      //   ]
+      // }
     ]
   },
   {
     path: '/mold',
     name: 'mold',
     meta: {title: '模具/治工具管理', icon: HomeFilled},
-    permissionId: 66,
+    permissionId: 1,
     children: [
       {
         path: '/mold/manage',
         name: 'manage',
         meta: {title: '管理'},
-        permissionId: 67,
+        permissionId: 1,
         children: [
           {
             path: '/mold/manage/life',
             name: 'MoldLifecycle',
             meta: {title: '全生命周期管理'},
-            permissionId: 68
+            permissionId: 1
           },
           {
             path: '/mold/manage/operation',
             name: 'ToolErrorProof',
             meta: {title: '防用错处理'},
-            permissionId: 69
+            permissionId: 1
           },
           {
             path: '/mold/manage/maintenance',
             name: 'ToolMaintenance',
             meta: {title: ' 维护与点检'},
-            permissionId: 70
+            permissionId: 1
           },
           {
             path: '/mold/manage/storage',
             name: 'ToolStorage',
             meta: {title: '全生命周期2.0'},
-            permissionId: 71
+            permissionId: 1
           },
         ]
       }
@@ -552,147 +573,150 @@ const menuItems = [
     path: '/parts',
     name: 'parts',
     meta: {title: '备件管理', icon: Box},
-    permissionId: 72,
+    permissionId: 1,
     children: [
       {
         path: '/parts/manage',
         name: 'manage',
         meta: {title: '管理'},
-        permissionId: 73,
+        permissionId: 1,
         children: [
           {
             path: '/parts/manage/SparePartCode',
             name: 'SparePartCode',
             meta: {title: '备件编码管理'},
-            permissionId: 74
+            permissionId: 1
           },
           {
             path: '/parts/manage/SparePartInventory',
             name: 'SparePartInventory',
             meta: {title: '备品备件台账'},
-            permissionId: 75
+            permissionId: 1
           },
           {
             path: '/parts/manage/EdgeInventory',
             name: 'EdgeInventory',
             meta: {title: '线边库存管理'},
-            permissionId: 76
+            permissionId: 1
           },
           {
             path: '/parts/manage/EquipmentBOM',
             name: 'EquipmentBOM',
             meta: {title: '设备BOM管理'},
-            permissionId: 77
+            permissionId: 1
           },
-          {
-            path: '/parts/manage/EquipmentDetail',
-            name: 'EquipmentDetail',
-            meta: {title: '设备详情-不要的'},
-            permissionId: 78
-          },
-          {
-            path: '/parts/manage/LocationForm',
-            name: 'LocationForm',
-            meta: {title: '表单-不要的'},
-            permissionId: 79
-          },
+          // {
+          //   path: '/parts/manage/EquipmentDetail',
+          //   name: 'EquipmentDetail',
+          //   meta: {title: '设备详情-不要的'},
+          //   permissionId: 1
+          // },
+          // {
+          //   path: '/parts/manage/LocationForm',
+          //   name: 'LocationForm',
+          //   meta: {title: '表单-不要的'},
+          //   permissionId: 1
+          // },
           {
             path: '/parts/manage/LocationManagement',
             name: 'LocationManagement',
             meta: {title: '库位管理'},
-            permissionId: 80
+            permissionId: 1
           },
         ]
-      }, {
-        path: '/parts/configuration',
-        name: 'configuration',
-        meta: {title: '配置'},
-        permissionId: 81,
-        children: [
-          {
-            path: '/parts/configuration/Q',
-            name: 'Q',
-            meta: {title: '页面Q'},
-            permissionId: 82
-          }
-        ]
-      }, {
-        path: '/parts/screen',
-        name: 'screen',
-        meta: {title: '大屏'},
-        permissionId: 83,
-        children: [
-          {
-            path: '/parts/screen/R',
-            name: 'R',
-            meta: {title: '页面R'},
-            permissionId: 84
-          }
-        ]
-      }
+      },
+      // {
+      //   path: '/parts/configuration',
+      //   name: 'configuration',
+      //   meta: {title: '配置'},
+      //   permissionId: 1,
+      //   children: [
+      //     {
+      //       path: '/parts/configuration/Q',
+      //       name: 'Q',
+      //       meta: {title: '页面Q'},
+      //       permissionId: 1
+      //     }
+      //   ]
+      // },
+      // {
+      //   path: '/parts/screen',
+      //   name: 'screen',
+      //   meta: {title: '大屏'},
+      //   permissionId: 1,
+      //   children: [
+      //     {
+      //       path: '/parts/screen/R',
+      //       name: 'R',
+      //       meta: {title: '页面R'},
+      //       permissionId: 1
+      //     }
+      //   ]
+      // }
     ]
   },
   {
     path: '/repair',
     name: 'repair',
     meta: {title: '维修管理', icon: Tools},
-    permissionId: 85,
+    permissionId: 1,
     children: [
       {
         path: '/repair/manage',
         name: 'manage',
         meta: {title: '管理'},
-        permissionId: 86,
+        permissionId: 1,
         children: [
           {
             path: '/repair/manage/KnowledgeBase',
             name: 'KnowledgeBase',
             meta: {title: '维修知识库'},
-            permissionId: 87
+            permissionId: 1
           },
           {
             path: '/repair/manage/RepairOrder',
             name: 'RepairOrder',
             meta: {title: '维修工单管理'},
-            permissionId: 88
+            permissionId: 1
           }
         ]
       }, {
         path: '/repair/configuration',
         name: 'configuration',
         meta: {title: '配置'},
-        permissionId: 89,
+        permissionId: 1,
         children: [
           {
             path: '/repair/configuration/RepairConfig',
             name: 'RepairConfig',
             meta: {title: '维修配置管理'},
-            permissionId: 90
+            permissionId: 1
           }
         ]
-      }, {
+      },
+      {
         path: '/repair/screen',
         name: 'screen',
         meta: {title: '大屏'},
-        permissionId: 91,
+        permissionId: 1,
         children: [
           {
             path: '/repair/screen/RepairDashboard',
             name: 'RepairDashboard',
             meta: {title: '数据展示'},
-            permissionId: 92
+            permissionId: 1
           }
         ]
       }, {
         path: '/repair/worker/list',
         name: 'repair-worker-list',
         meta: {title: '我的工单'},
-        permissionId: 93
+        permissionId: 1
       }, {
         path: '/repair/admin/list',
         name: 'repair-admin-list',
         meta: {title: '待维修设备'},
-        permissionId: 94
+        permissionId: 1
       }
     ]
   },
@@ -705,7 +729,7 @@ const menuItems = [
       {
         path: '/system/manage',
         name: 'manage',
-        meta: {title: '管理'},
+        meta: {title: '用户管理'},
         permissionId: 1,
         children: [
           {
@@ -720,41 +744,56 @@ const menuItems = [
             meta: {title: '区域管理'},
             permissionId: 1,
           },
+
+        ]
+      },
+      {
+        path: '/system/data',
+        name: 'manage',
+        meta: {title: '基础数据管理'},
+        permissionId: 1,
+        children: [
           {
-            path: '/system/manage/region',
+            path: '/system/data/region',
             name: 'region',
-            component: () => import('@/views/system/manage/Region.vue'),
+            component: () => import('@/views/system/data/Region.vue'),
             meta: { title: '区域管理2' },
             permissionId: 1,
           },
-        ]
-      }, {
-        path: '/system/configuration',
-        name: 'configuration',
-        meta: {title: '配置'},
-        permissionId: 1,
-        children: [
           {
-            path: '/system/configuration/DepartmentApproval',
+            path: '/system/data/product',
+            name: 'regionManagement',
+            meta: {title: '产品型号管理'},
+            permissionId: 1,
+          },
+          {
+            path: '/system/data/DepartmentApproval',
             name: 'DepartmentApproval',
             meta: {title: '审批设置'},
             permissionId: 1
-          }
-        ]
-      }, {
-        path: '/system/screen',
-        name: 'screen',
-        meta: {title: '大屏'},
-        permissionId: 1,
-        children: [
+          },
           {
-            path: '/system/screen/X',
-            name: 'X',
-            meta: {title: '页面X'},
+            path: '/system/data/dict',
+            name: 'diction',
+            meta: {title: '字典管理'},
             permissionId: 1
           }
         ]
-      }
+      },
+      // {
+      //   path: '/system/configuration',
+      //   name: 'configuration',
+      //   meta: {title: '配置'},
+      //   permissionId: 1,
+      //   children: [
+      //     {
+      //       path: '/system/configuration/DepartmentApproval',
+      //       name: 'DepartmentApproval',
+      //       meta: {title: '审批设置'},
+      //       permissionId: 1
+      //     }
+      //   ]
+      // },
     ]
   }
 ]

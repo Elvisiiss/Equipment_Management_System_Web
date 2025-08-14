@@ -2,7 +2,7 @@
 <template>
   <div class="dashboard">
     <!-- 顶部标题 -->
-    <h1 class="title">设备状态看板</h1>
+<!--    <h1 class="title">设备状态看板</h1>-->
 
     <!-- 第一行：实时监控 -->
     <el-row :gutter="16">
