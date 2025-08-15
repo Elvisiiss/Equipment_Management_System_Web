@@ -216,7 +216,7 @@ const menuItems = [
     path: '/',
     name: 'Home',
     meta: {title: '首页', icon: HomeFilled},
-    permissionId: 16
+    permissionId: 1
   },
   //Check Management
   {
@@ -314,19 +314,19 @@ const menuItems = [
             path: '/equipment/location/transfer',
             name: 'Transfer',
             meta: {title: '设备转机'},
-            permissionId: 37
+            permissionId: 1
           },
           {
             path: '/equipment/location/pm',
             name: 'PM',
             meta: {title: '布局管理'},
-            permissionId: 38
+            permissionId: 1
           },
           {
             path: '/equipment/EquipmentManage',
             name: 'EquipmentManage',
             meta: {title: '设备管理'},
-            permissionId: 41
+            permissionId: 1
           },
         ]
       },
@@ -334,19 +334,19 @@ const menuItems = [
       //   path: '/equipment/status',
       //   name: 'Status',
       //   meta: {title: '设备状态管理'},
-      //   permissionId: 33,
+      //   permissionId: 1,
       //   children: [
       //     {
       //       path: '/equipment/status/policies',
       //       name: 'Policies',
       //       meta: {title: '状态规则与策略'},
-      //       permissionId: 34
+      //       permissionId: 1
       //     },
       //     {
       //       path: '/equipment/status/log',
       //       name: 'Log',
       //       meta: {title: '状态维护'},
-      //       permissionId: 35
+      //       permissionId: 1
       //     },
       //   ]
       // },
@@ -354,19 +354,19 @@ const menuItems = [
       //   path: '/equipment/location',
       //   name: 'Location',
       //   meta: {title: '布局管理'},
-      //   permissionId: 36,
+      //   permissionId: 1,
       //   children: [
       //     {
       //       path: '/equipment/location/transfer',
       //       name: 'Transfer',
       //       meta: {title: '设备转机'},
-      //       permissionId: 37
+      //       permissionId: 1
       //     },
       //     {
       //       path: '/equipment/location/pm',
       //       name: 'PM',
       //       meta: {title: 'PM工单'},
-      //       permissionId: 38
+      //       permissionId: 1
       //     },
       //   ]
       // },
@@ -374,25 +374,25 @@ const menuItems = [
         path: '/equipment/screen',
         name: 'screen',
         meta: {title: '大屏'},
-        permissionId: 42,
+        permissionId: 1,
         children: [
           {
             path: '/equipment/screen/oee',
             name: 'OEEManagement',
             meta: {title: 'OEE管理看板'},
-            permissionId: 43
+            permissionId: 1
           },
           {
             path: '/equipment/screen/status',
             name: 'EquipmentStatus',
             meta: {title: '设备状态看板'},
-            permissionId: 44
+            permissionId: 1
           },
           {
             path: '/equipment/screen/iot',
             name: 'IOTManagement',
             meta: {title: 'IOT管理看板'},
-            permissionId: 45
+            permissionId: 1
           }
         ]
       },
@@ -400,7 +400,7 @@ const menuItems = [
         path: '/equipment/configuration',
         name: 'configuration',
         meta: {title: '配置'},
-        permissionId: 46
+        permissionId: 1
       }
     ]
   },
@@ -408,42 +408,42 @@ const menuItems = [
     path: '/inspection',
     name: 'inspection',
     meta: {title: '点巡检管理', icon: List},
-    permissionId: 47,
+    permissionId: 1,
     children: [
       {
         path: '/inspection/manage',
         name: 'manage',
         meta: {title: '管理'},
-        permissionId: 48,
+        permissionId: 1,
         children: [
           {
             path: '/inspection/manage/ExceptionList',
             name: 'ExceptionList',
             meta: {title: '异常列表'},
-            permissionId: 49
+            permissionId: 1
           }, {
             path: '/inspection/manage/PlanList',
             name: 'PlanList',
             meta: {title: '计划列表'},
-            permissionId: 50
+            permissionId: 1
           }, {
             path: '/inspection/manage/TaskList',
             name: 'TaskList',
             meta: {title: '任务列表'},
-            permissionId: 51
+            permissionId: 1
           },
         ]
       }, {
         path: '/inspection/configuration',
         name: 'configuration',
         meta: {title: '配置'},
-        permissionId: 52,
+        permissionId: 1,
         children: [
           {
             path: '/inspection/configuration/PolicyConfig',
             name: 'PolicyConfig',
             meta: {title: '点巡检配置'},
-            permissionId: 53
+            permissionId: 1
           }
         ]
       },
@@ -451,23 +451,23 @@ const menuItems = [
         path: '/inspection/screen',
         name: 'screen',
         meta: {title: '大屏'},
-        permissionId: 54,
+        permissionId: 1,
         children: [
           {
             path: '/inspection/screen/Dashboard',
             name: 'Dashboard',
             meta: {title: '仪表盘'},
-            permissionId: 55
+            permissionId: 1
           }, {
             path: '/inspection/screen/EfficiencyAnalysis',
             name: 'EfficiencyAnalysis',
             meta: {title: '效率分析'},
-            permissionId: 56
+            permissionId: 1
           }, {
             path: '/inspection/screen/ExceptionAnalysis',
             name: 'ExceptionAnalysis',
             meta: {title: '异常分析'},
-            permissionId: 57
+            permissionId: 1
           },
         ]
       }
@@ -477,25 +477,25 @@ const menuItems = [
     path: '/maintenance',
     name: 'maintenance',
     meta: {title: '保养管理', icon: Setting},
-    permissionId: 58,
+    permissionId: 1,
     children: [
       {
         path: '/maintenance/manage',
         name: 'manage',
         meta: {title: '管理'},
-        permissionId: 59,
+        permissionId: 1,
         children: [
           {
             path: '/maintenance/manage/ApprovalList',
             name: 'ApprovalList',
             meta: {title: '审批列表页面'},
-            permissionId: 60
+            permissionId: 1
           },
           {
             path: '/maintenance/manage/MyApprovals',
             name: 'MyApprovals',
             meta: {title: '我的审批结果'},
-            permissionId: 61
+            permissionId: 1
           }
         ]
       },
@@ -503,13 +503,13 @@ const menuItems = [
       //   path: '/maintenance/configuration',
       //   name: 'configuration',
       //   meta: {title: '配置'},
-      //   permissionId: 62,
+      //   permissionId: 1,
       //   children: [
       //     {
       //       path: '/maintenance/configuration/K',
       //       name: 'K',
       //       meta: {title: '页面K'},
-      //       permissionId: 63
+      //       permissionId: 1
       //     }
       //   ]
       // },

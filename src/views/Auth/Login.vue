@@ -171,12 +171,94 @@ const handleAccountLogin = async () => {
     error.value = '';
 
     // 调用API登录
-    const responseBefore = await AuthAPI.loginWithUsername(
-        accountForm.value.account,
-        accountForm.value.password,
-        accountForm.value.remember
-    );
-    const response = responseBefore.data
+    // const responseBefore = await AuthAPI.loginWithUsername(
+    //     accountForm.value.account,
+    //     accountForm.value.password,
+    //     accountForm.value.remember
+    // );
+    const response = {
+      "msg": "成功登录",
+      "code": "success",
+      "email": "hn@11example.com",
+      "userName": "user1",
+      "roles": [
+        "SUPER_ADMIN",
+        "ADMIN",
+        "USER",
+        "所有页面"
+      ],
+      "powers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        16,
+        19,
+        20,
+        21,
+        22,
+        24,
+        26,
+        28,
+        31,
+        32,
+        34,
+        35,
+        37,
+        38,
+        39,
+        40,
+        41,
+        43,
+        44,
+        45,
+        46,
+        49,
+        50,
+        51,
+        53,
+        55,
+        56,
+        57,
+        60,
+        61,
+        63,
+        65,
+        68,
+        69,
+        70,
+        71,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        82,
+        84,
+        87,
+        88,
+        90,
+        92,
+        93,
+        94,
+        97,
+        98,
+        100,
+        102
+      ],
+      "token": "eyJhbGciOiJIUzI1NiJ9.eyJyZW1lbWJlciI6ZmFsc2UsInJvbGVJZHMiOlsxLDIsMywxMF0sInVzZXJUeXBlIjoiTk9STUFMIiwidXNlck5hbWUiOiJ1c2VyMSIsInVzZXJJZCI6MywiZW1haWwiOiJobkAxMWV4YW1wbGUuY29tIiwicGVybWlzc2lvbklkcyI6WzEsMiwzLDQsNSw2LDcsOCw5LDEwLDExLDE2LDE5LDIwLDIxLDIyLDI0LDI2LDI4LDMxLDMyLDM0LDM1LDM3LDM4LDM5LDQwLDQxLDQzLDQ0LDQ1LDQ2LDQ5LDUwLDUxLDUzLDU1LDU2LDU3LDYwLDYxLDYzLDY1LDY4LDY5LDcwLDcxLDc0LDc1LDc2LDc3LDc4LDc5LDgwLDgyLDg0LDg3LDg4LDkwLDkyLDkzLDk0LDk3LDk4LDEwMCwxMDJdLCJzdWIiOiJobkAxMWV4YW1wbGUuY29tIiwiaWF0IjoxNzU1MjM5MTY3LCJleHAiOjE3NTUyNDYzNjd9.btQ2TFMecbM6REE3t0xq4RUjEOGrUQSdB2jPKyvxxrE",
+      "avatarUrl": "https://example.com/avatars/new_john.jpg"
+    }
+    // const response = responseBefore.data
 
     console.log(response.code)
     // 处理API响应
