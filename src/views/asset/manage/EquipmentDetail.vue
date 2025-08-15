@@ -301,7 +301,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import vueQr from 'vue-qr/src/packages/vue-qr.vue'
 import html2canvas from 'html2canvas'
 import { ElMessage } from 'element-plus'
@@ -309,11 +309,12 @@ import { Document, Picture } from '@element-plus/icons-vue'
 import { deviceAPI } from '@/api/ckAPI'
 
 const router = useRouter()
+const route = useRoute()
 
 /* 查询条件 */
 const query = reactive({
-  workshop: 'C4车间',
-  code: 'C4-51-12'
+  workshop: route.query.workshop || 'C4车间', // 从URL参数获取workshop，如果没有则为默认
+  code: route.query.code || 'C4-51-12' // 从URL参数获取code，如果没有则为默认
 })
 
 /* 设备对象 */

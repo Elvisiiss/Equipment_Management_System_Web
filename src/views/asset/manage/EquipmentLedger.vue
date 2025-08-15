@@ -275,6 +275,7 @@
                     placeholder="请选择车间"
                     clearable
                     @change="handleDialogWorkshopChange"
+                    :disabled="isEditMode"
                 >
                   <el-option
                       v-for="ws in workshopOptions"
@@ -288,10 +289,9 @@
               <el-form-item label="产线" required>
                 <el-select
                     v-model="deviceForm.line"
-                    multiple
                     placeholder="请选择产线"
                     clearable
-                    :disabled="!deviceForm.workshop"
+                    :disabled="!deviceForm.workshop || isEditMode"
                 >
                   <el-option
                       v-for="line in dialogLineOptions"
@@ -305,10 +305,9 @@
               <el-form-item label="工段" required>
                 <el-select
                     v-model="deviceForm.segment"
-                    multiple
                     placeholder="请选择工段"
                     clearable
-                    :disabled="!deviceForm.workshop"
+                    :disabled="!deviceForm.workshop || isEditMode"
                 >
                   <el-option
                       v-for="segment in segmentOptions"
@@ -541,8 +540,8 @@ const deviceForm = reactive({
   acceptTime: '',
   acceptor: '',
   workshop: '',
-  line: [],
-  segment: []
+  line: '',
+  segment: ''
 })
 
 // 选项数据
@@ -722,14 +721,20 @@ const handleEdit = async (row) => {
   }
 }
 
+import { useRouter } from 'vue-router'
+
+// 在setup中获取路由实例
+const router = useRouter()
+
 const handleDetail = (row) => {
-  // 模拟路由跳转
-  ElMessage.info(`跳转至设备详情页，编码：${row.deviceCode}`)
-  // 实际项目中使用路由跳转
-  // router.push({
-  //   path: '/asset/manage/index',
-  //   query: { deviceCode: row.deviceCode }
-  // })
+  // 跳转到设备详情页，传递设备编码作为参数
+  router.push({
+    path: '/asset/manage/index',
+    query: {
+      code: row.deviceCode,
+      workshop: row.workshop
+    }
+  })
 }
 
 const handleDelete = async (row) => {
