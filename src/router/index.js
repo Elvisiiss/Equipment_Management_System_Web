@@ -80,6 +80,12 @@ const routes = [
         meta: { title: '管理' }
     },
     {
+        path: '/equipment/monitoring/manage',
+        name: 'Equipment',
+        component: () => import('@/views/equipment/manage/Equipment.vue'),
+        meta: {title: '设备管理2'},
+    },
+    {
         path: '/equipment/monitoring/spc',
         name: 'SPCManagement',
         component: () => import('@/views/equipment/manage/SPCManagement.vue'),

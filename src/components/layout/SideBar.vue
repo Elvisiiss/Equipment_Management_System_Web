@@ -228,13 +228,13 @@ const menuItems = [
       {
         path: '/check/list',
         name: 'CheckList',
-        meta: { title: '审核任务列表' },
+        meta: { title: '审核任务' },
         permissionId: 1,
       },
       {
         path: '/asset/result',
         name: 'CheckResult',
-        meta: { title: '审批结果列表', icon: HomeFilled },
+        meta: { title: '审批配置', icon: HomeFilled },
         permissionId: 1,
       },
     ]
@@ -292,6 +292,12 @@ const menuItems = [
         meta: {title: '管理'},
         permissionId: 1,
         children: [
+          {
+            path: '/equipment/monitoring/manage',
+            name: 'Equipment',
+            meta: {title: '设备管理2'},
+            permissionId: 1
+          },
           {
             path: '/equipment/monitoring/spc',
             name: 'SPCManagement',
