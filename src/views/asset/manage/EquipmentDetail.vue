@@ -5,7 +5,7 @@
       <!-- 查询 -->
       <el-col :span="8">
         <el-form inline>
-          <el-form-item label="车间">
+          <el-form-item label="车间" style="width:100%">
             <el-select v-model="query.workshop" placeholder="全部车间" clearable>
               <el-option label="C4车间" value="C4车间" />
             </el-select>
@@ -523,6 +523,8 @@ function showDoc (type) {
   docVisible.value = true
 }
 
+
+
 /* 导出二维码 */
 function downloadQR () {
   html2canvas(qrRef.value).then(canvas => {
@@ -565,25 +567,26 @@ function openScrapDialog() {
 }
 
 /* 文件上传处理 */
-function beforeUpload(file) {
+const beforeUpload = (file) => {
+  // TODO: 文件上传需要后端的服务器，纯前端是做不到的
   const validTypes = ['image/jpeg', 'image/png', 'image/gif',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/pdf']
-  const isLt10M = file.size / 1024 / 1024 < 10
+    'application/pdf'];
+  const isLt10M = file.size / 1024 / 1024 < 10;
 
   if (!validTypes.includes(file.type)) {
-    ElMessage.error('只能上传图片、Word或PDF文件!')
-    return false
+    ElMessage.error('只能上传图片、Word或PDF文件!');
+    return false;
   }
 
   if (!isLt10M) {
-    ElMessage.error('文件大小不能超过 10MB!')
-    return false
+    ElMessage.error('文件大小不能超过 10MB!');
+    return false;
   }
 
-  return true
-}
+  return true;
+};
 
 /* 跳转到详情页面 */
 function goToInspectionList() {
@@ -595,51 +598,64 @@ function goToMaintenanceList() {
 }
 
 /* 提交事件 */
-async function submitAccept () {
+async function submitAccept() {
   try {
     const params = {
+      taskType: '验收',
+      taskName: '设备验收',
       deviceCode: device.code,
       deviceName: device.name,
-      ...acceptForm
-    }
+      result: acceptForm.result,
+      opinion: acceptForm.opinion,
+      initiator: loginUser,
+      date: today,
+      attachments: acceptForm.attachments.map(file => ({
+        name: file.name,
+        url: URL.createObjectURL(file.raw)
+      }))
+    };
 
-    const res = await deviceAPI.submitAcceptTask(params)
+    const res = await deviceAPI.submitAcceptTask(params);
     if (res.success) {
-      ElMessage.success('验收申请已提交，等待审核')
-      acceptVisible.value = false
+      ElMessage.success('验收申请已提交，等待审核');
+      acceptVisible.value = false;
     }
   } catch (error) {
-    ElMessage.error('提交失败')
-    console.error(error)
+    ElMessage.error('提交失败');
+    console.error(error);
   }
 }
 
-async function submitTransfer () {
+async function submitTransfer() {
   if (!transferForm.targetArea || transferForm.targetArea.length === 0) {
-    ElMessage.warning('请选择目标区域')
-    return
+    ElMessage.warning('请选择目标区域');
+    return;
   }
 
   try {
-    const targetArea = transferForm.targetArea.join(' > ')
+    const targetArea = transferForm.targetArea.join(' > ');
     const params = {
+      taskType: '转移',
+      taskName: '设备转移',
       deviceCode: device.code,
       deviceName: device.name,
       targetArea,
       reason: transferForm.reason,
-      attachments: transferForm.attachments
-    }
+      attachments: transferForm.attachments.map(file => ({
+        name: file.name,
+        url: URL.createObjectURL(file.raw)
+      }))
+    };
 
-    const res = await deviceAPI.submitTransferTask(params)
+    const res = await deviceAPI.submitTransferTask(params);
     if (res.success) {
-      ElMessage.success('转移申请已提交，等待审核')
-      transferVisible.value = false
-      // 刷新设备信息显示转移中状态
-      await loadDeviceDetail(device.code)
+      ElMessage.success('转移申请已提交，等待审核');
+      transferVisible.value = false;
+      await loadDeviceDetail(device.code);
     }
   } catch (error) {
-    ElMessage.error('提交失败')
-    console.error(error)
+    ElMessage.error('提交失败');
+    console.error(error);
   }
 }
 

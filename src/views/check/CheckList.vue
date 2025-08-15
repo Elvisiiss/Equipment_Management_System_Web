@@ -165,14 +165,11 @@
       <template v-if="currentTask.attachments && currentTask.attachments.length">
         <div style="margin-top: 16px;">
           <h4>附件列表：</h4>
-          <el-list>
-            <el-list-item
-                v-for="(file, index) in currentTask.attachments"
-                :key="index"
-            >
+          <ul>
+            <li v-for="(file, index) in currentTask.attachments" :key="index">
               <el-link :href="file.url" target="_blank">{{ file.name }}</el-link>
-            </el-list-item>
-          </el-list>
+            </li>
+          </ul>
         </div>
       </template>
     </el-dialog>

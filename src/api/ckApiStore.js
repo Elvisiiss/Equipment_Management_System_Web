@@ -118,7 +118,9 @@ const ckApiStore = {
             id: 'T' + Date.now(),
             createTime: new Date().toISOString(),
             status: '待审核',
-            ...task
+            initiator: 'admin', // 默认发起人
+            ...task,
+            attachments: task.attachments || [] // 确保附件数组存在
         };
         this.auditTasks.unshift(newTask);
         return newTask;
@@ -177,6 +179,18 @@ const ckApiStore = {
                 }
             }
 
+            return true;
+        }
+        return false;
+    },
+
+    resubmitTask(taskId) {
+        const task = this.auditTasks.find(t => t.id === taskId);
+        if (task) {
+            task.status = '待审核';
+            task.approver = '';
+            task.approveTime = '';
+            task.remark = '';
             return true;
         }
         return false;

@@ -58,7 +58,8 @@ export const deviceAPI = {
                     deviceName: params.deviceName,
                     targetArea: params.targetArea,
                     reason: params.reason,
-                    attachments: params.attachments
+                    attachments: params.attachments,
+                    initiator: 'admin' // 添加发起人
                 });
 
                 resolve({ success: true, data: task });
@@ -155,6 +156,15 @@ export const auditAPI = {
             setTimeout(() => {
                 const success = ckApiStore.auditTask(taskId, result, approver, remark);
                 resolve({ success, data: { taskId, result } });
+            }, 300);
+        });
+    },
+
+    resubmitTask: (taskId) => {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const success = ckApiStore.resubmitTask(taskId);
+                resolve({ success, data: { taskId } });
             }, 300);
         });
     }
