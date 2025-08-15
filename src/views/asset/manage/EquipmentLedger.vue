@@ -1,11 +1,5 @@
 <template>
   <div class="app-container">
-    <!-- 页面标题区 -->
-    <div class="header-title">
-      <h1>设备台账管理系统</h1>
-      <p>全面管理设备信息，实现设备全生命周期管理</p>
-    </div>
-
     <!-- 过滤条件区 -->
     <div class="filter-container">
       <el-form :model="filterForm" class="filter-form">

@@ -136,12 +136,12 @@ const routes = [
         component: () => import('@/views/equipment/configuration.vue'),
         meta: { title: '配置' },
     },
-    {
-        path: '/equipment/configuration/E',
-        name: 'E',
-        component: () => import('@/views/equipment/configuration/E.vue'),
-        meta: { title: '页面E' },
-    },
+    // {
+    //     path: '/equipment/configuration/E',
+    //     name: 'E',
+    //     component: () => import('@/views/equipment/configuration/E.vue'),
+    //     meta: { title: '页面E' },
+    // },
     {
         path: '/equipment/EquipmentManage',
         name: 'EquipmentManage',

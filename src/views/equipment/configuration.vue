@@ -1,233 +1,221 @@
-<!-- DeviceConfig.vue -->
 <template>
-  <div class="device-config">
-    <!-- 顶部操作栏 -->
-    <el-header class="header">
-      <h2>设备监控配置</h2>
-      <el-button type="primary" icon="Plus" @click="openUpload">添加设备</el-button>
-    </el-header>
+  <el-container class="wrap">
+    <!-- 左侧类别树 -->
+    <el-aside width="220px" class="aside">
+      <el-tree
+          :data="treeData"
+          node-key="id"
+          default-expand-all
+          highlight-current
+          @node-click="handleNodeClick"
+      />
+    </el-aside>
 
-    <!-- 产线画布 -->
-    <main ref="canvasRef" class="canvas">
-      <div
-          v-for="dev in devices"
-          :key="dev.id"
-          class="device-item"
-          :style="{ left: dev.x + 'px', top: dev.y + 'px' }"
-          @mousedown="startDrag(dev, $event)"
-          @click="openDetail(dev)"
+    <!-- 右侧参数配置 -->
+    <el-main>
+      <h3>{{ currentTitle }} 重要参数配置</h3>
+
+      <el-button type="primary" @click="addParam">新增参数</el-button>
+
+      <el-table
+          ref="tableRef"
+          :data="paramTable"
+          row-key="id"
+          border
+          style="width: 100%; margin-top: 12px"
       >
-        <img :src="dev.img" alt="设备" />
-        <span>{{ dev.name }}</span>
-        <i class="el-icon-close" @click.stop="removeDevice(dev.id)"></i>
-      </div>
-    </main>
+        <!-- 拖拽手柄 -->
+        <el-table-column width="40" align="center">
+          <template #default>
+            <i class="drag-handle">⋮⋮</i>
+          </template>
+        </el-table-column>
 
-    <!-- 设备详情抽屉 -->
-    <el-drawer
-        v-model="detailVisible"
-        :title="activeDevice?.name"
-        direction="rtl"
-        size="600px"
-    >
-      <el-tabs v-model="activeTab">
-        <el-tab-pane label="报警" name="alarm">
-          <AlarmPanel :device="activeDevice" />
-        </el-tab-pane>
-        <el-tab-pane label="维修" name="repair">
-          <RepairPanel :device="activeDevice" />
-        </el-tab-pane>
-        <el-tab-pane label="保养" name="maintain">
-          <MaintainPanel :device="activeDevice" />
-        </el-tab-pane>
-        <el-tab-pane label="资产管理" name="asset">
-          <AssetPanel :device="activeDevice" />
-        </el-tab-pane>
-        <el-tab-pane label="数据采集" name="data">
-          <DataPanel :device="activeDevice" />
-        </el-tab-pane>
-      </el-tabs>
-    </el-drawer>
+        <el-table-column label="参数名称" width="220">
+          <template #default="{ row }">
+            <el-input v-model="row.name" placeholder="请输入名称" />
+          </template>
+        </el-table-column>
 
-    <!-- 上传设备图片对话框 -->
-    <el-dialog v-model="uploadVisible" title="添加设备" width="400px">
-      <el-form :model="uploadForm" label-width="80">
-        <el-form-item label="名称">
-          <el-input v-model="uploadForm.name" />
-        </el-form-item>
-        <el-form-item label="图片">
-          <el-upload
-              class="avatar-uploader"
-              :show-file-list="false"
-              :before-upload="beforeUpload"
-          >
-            <img v-if="uploadForm.img" :src="uploadForm.img" class="avatar" />
-            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
-          </el-upload>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="uploadVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmUpload">确认</el-button>
-      </template>
-    </el-dialog>
-  </div>
+        <el-table-column label="参数类型" width="140">
+          <template #default="{ row }">
+            <el-select v-model="row.type">
+              <el-option label="数值" value="number" />
+              <el-option label="文本" value="text" />
+              <el-option label="布尔" value="boolean" />
+            </el-select>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="默认值">
+          <template #default="{ row }">
+            <el-input
+                v-if="row.type === 'text'"
+                v-model="row.default"
+                placeholder="默认值"
+            />
+            <el-input-number
+                v-else-if="row.type === 'number'"
+                v-model="row.default"
+                :min="0"
+                :precision="2"
+            />
+            <el-switch v-else v-model="row.default" />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="单位" width="100">
+          <template #default="{ row }">
+            <el-input v-model="row.unit" placeholder="单位" />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="是否必填" width="90" align="center">
+          <template #default="{ row }">
+            <el-checkbox v-model="row.required" />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="操作" width="90" align="center">
+          <template #default="{ $index }">
+            <el-button type="danger" link @click="removeParam($index)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <el-button type="success" style="margin-top: 16px" @click="save">
+        保存配置
+      </el-button>
+    </el-main>
+  </el-container>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
+import Sortable from 'sortablejs'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import AlarmPanel from '../../components/panels/AlarmPanel.vue'
-// import RepairPanel from './panels/RepairPanel.vue'
-// import MaintainPanel from './panels/MaintainPanel.vue'
-// import AssetPanel from './panels/AssetPanel.vue'
-// import DataPanel from './panels/DataPanel.vue'
 
-/* ---------------- 设备画布 ---------------- */
-const devices = reactive([
-  { id: 1, name: '冲压机-01', img: '/img/device1.png', x: 100, y: 120 },
-  { id: 2, name: '注塑机-02', img: '/img/device2.png', x: 300, y: 200 }
-])
+/* ----------------- 树形数据 ----------------- */
+const treeData = [
+  { id: 1, label: '清洗机' },
+  { id: 2, label: 'COG机' },
+  { id: 3, label: 'FOG机' },
+  { id: 4, label: 'AOI机' },
+  { id: 5, label: '组装机' }
+]
 
-let dragging = null
-let offset = { x: 0, y: 0 }
-const canvasRef = ref(null)
-
-function startDrag(dev, e) {
-  dragging = dev
-  offset = { x: e.clientX - dev.x, y: e.clientY - dev.y }
+/* ----------------- 模板 ----------------- */
+const templates = {
+  清洗机: [
+    { name: '清洗时间', type: 'number', default: 30, unit: 's', required: true },
+    { name: '清洗温度', type: 'number', default: 60, unit: '℃', required: true },
+    { name: '喷淋压力', type: 'number', default: 0.3, unit: 'MPa', required: false },
+    { name: '干燥时间', type: 'number', default: 10, unit: 's', required: false }
+  ],
+  COG机: [
+    { name: '压接温度', type: 'number', default: 180, unit: '℃', required: true },
+    { name: '压接时间', type: 'number', default: 8, unit: 's', required: true },
+    { name: '压接压力', type: 'number', default: 80, unit: 'N', required: true },
+    { name: '对位精度', type: 'number', default: 5, unit: 'μm', required: false }
+  ],
+  FOG机: [
+    { name: 'FOG温度', type: 'number', default: 160, unit: '℃', required: true },
+    { name: 'FOG压力', type: 'number', default: 0.2, unit: 'MPa', required: true },
+    { name: '贴合速度', type: 'number', default: 5, unit: 'mm/s', required: false }
+  ],
+  AOI机: [
+    { name: '光源亮度', type: 'number', default: 80, unit: '%', required: true },
+    { name: '检测阈值', type: 'number', default: 0.85, unit: '', required: true },
+    { name: '拍照延时', type: 'number', default: 200, unit: 'ms', required: false }
+  ],
+  组装机: [
+    { name: '组装压力', type: 'number', default: 20, unit: 'N', required: true },
+    { name: '旋转速度', type: 'number', default: 100, unit: 'rpm', required: false },
+    { name: '保压时间', type: 'number', default: 3, unit: 's', required: true }
+  ]
 }
 
-function onMouseMove(e) {
-  if (!dragging) return
-  dragging.x = e.clientX - offset.x
-  dragging.y = e.clientY - offset.y
-}
+/* ----------------- 响应式数据 ----------------- */
+const currentTitle = ref('')
+const paramTable = ref([])
+const store = reactive({})
+const tableRef = ref(null)
 
-function onMouseUp() {
-  dragging = null
-}
-
-function removeDevice(id) {
-  const idx = devices.findIndex(d => d.id === id)
-  devices.splice(idx, 1)
-}
-
-/* ---------------- 设备详情 ---------------- */
-const detailVisible = ref(false)
-const activeDevice = ref(null)
-const activeTab = ref('alarm')
-
-function openDetail(dev) {
-  activeDevice.value = dev
-  detailVisible.value = true
-}
-
-/* ---------------- 上传 ---------------- */
-const uploadVisible = ref(false)
-const uploadForm = reactive({ name: '', img: '' })
-
-function openUpload() {
-  uploadForm.name = ''
-  uploadForm.img = ''
-  uploadVisible.value = true
-}
-function beforeUpload(file) {
-  const reader = new FileReader()
-  reader.onload = e => (uploadForm.img = e.target.result)
-  reader.readAsDataURL(file)
-  return false
-}
-function confirmUpload() {
-  if (!uploadForm.name || !uploadForm.img) {
-    ElMessage.warning('请填写完整')
-    return
+/* ----------------- 方法 ----------------- */
+function handleNodeClick(node) {
+  const label = node.label
+  currentTitle.value = label
+  if (store[label]) {
+    paramTable.value = store[label]
+  } else {
+    paramTable.value = templates[label].map((item, idx) => ({
+      ...item,
+      id: Date.now() + idx
+    }))
+    store[label] = paramTable.value
   }
-  devices.push({
-    id: Date.now(),
-    name: uploadForm.name,
-    img: uploadForm.img,
-    x: 200,
-    y: 200
-  })
-  uploadVisible.value = false
+  nextTick(initDrag)
 }
 
-/* ---------------- 事件绑定 ---------------- */
-onMounted(() => {
-  document.addEventListener('mousemove', onMouseMove)
-  document.addEventListener('mouseup', onMouseUp)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('mousemove', onMouseMove)
-  document.removeEventListener('mouseup', onMouseUp)
-})
+function addParam() {
+  paramTable.value.push({
+    id: Date.now(),
+    name: '',
+    type: 'text',
+    default: '',
+    unit: '',
+    required: false
+  })
+  nextTick(initDrag)
+}
+
+function removeParam(index) {
+  paramTable.value.splice(index, 1)
+  nextTick(initDrag)
+}
+
+function save() {
+  console.log(currentTitle.value, paramTable.value)
+  ElMessage.success('已保存！')
+}
+
+/* --------------- 拖拽指令 --------------- */
+let sortable = null
+function initDrag() {
+  const tbody = tableRef.value?.$el.querySelector('.el-table__body tbody')
+  if (!tbody) return
+  if (sortable) sortable.destroy()
+  sortable = Sortable.create(tbody, {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd({ newIndex, oldIndex }) {
+      const targetRow = paramTable.value.splice(oldIndex, 1)[0]
+      paramTable.value.splice(newIndex, 0, targetRow)
+    }
+  })
+}
+
+/* --------------- 初始化 --------------- */
+nextTick(() => handleNodeClick(treeData[0]))
 </script>
 
 <style scoped>
-.device-config {
+.wrap {
   height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border-bottom: 1px solid #e4e7ed;
-  padding: 0 20px;
+.aside {
+  border-right: 1px solid #e4e7ed;
+  padding: 12px;
 }
-.canvas {
-  flex: 1;
-  position: relative;
-  background: #fafafa url('../../assets/svg.svg');
-  user-select: none;
-}
-.device-item {
-  position: absolute;
-  width: 90px;
+.drag-handle {
   cursor: move;
-  text-align: center;
+  font-size: 16px;
+  color: #909399;
   user-select: none;
 }
-.device-item img {
-  width: 100%;
-  height: auto;
-  border: 2px solid #409eff;
-  border-radius: 4px;
-  background: #fff;
-}
-.device-item span {
-  display: block;
-  font-size: 12px;
-  margin-top: 4px;
-}
-.device-item i {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  cursor: pointer;
-  color: #f56c6c;
-  font-size: 16px;
-  background: #fff;
-  border-radius: 50%;
-}
-.avatar-uploader .avatar {
-  width: 120px;
-  height: 120px;
-  display: block;
-}
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: #8c939d;
-  width: 120px;
-  height: 120px;
-  line-height: 120px;
-  text-align: center;
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
+h3 {
+  margin: 0 0 12px;
 }
 </style>

@@ -2,7 +2,7 @@
   <div class="home-container">
     <h1 class="page-title">设备管理系统</h1>
 
-    <!-- 8 个模块 -->
+    <!-- 9 个模块 -->
     <el-row :gutter="24">
       <el-col
           v-for="item in modules"
@@ -10,8 +10,8 @@
           :xs="24"
           :sm="12"
           :md="8"
-          :lg="6"
-          :xl="6"
+          :lg="8"
+          :xl="8"
           style="margin-bottom: 24px"
       >
         <div class="module-card" @click="$router.push(item.path)">
@@ -34,14 +34,13 @@ import {
   Tools,
   Coin,
   EditPen,
-  Operation
+  Operation,
+  DocumentChecked  // 新增审核管理图标
 } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 const router = useRouter()
 
-// 然后在模板中使用 router.push(item.path)
-
-/* 根据 router/index.js 里的一级路由整理出 8 个模块 */
+// 模块配置
 const modules = [
   { title: '资产管理',     path: '/asset/screen',       icon: HomeFilled },
   { title: '设备实时监控', path: '/equipment/screen',   icon: Monitor },
@@ -50,7 +49,9 @@ const modules = [
   { title: '模具/治工具',  path: '/mold/manage',        icon: Tools },
   { title: '备件管理',     path: '/parts/screen',       icon: Coin },
   { title: '维修管理',     path: '/repair/screen',      icon: EditPen },
-  { title: '系统管理',     path: '/system/screen',      icon: Operation }
+  { title: '系统管理',     path: '/system/screen',      icon: Operation },
+  // 新增审核管理模块
+  { title: '审核管理',     path: '/check/list',         icon: DocumentChecked }
 ]
 </script>
 

@@ -400,7 +400,15 @@ const menuItems = [
         path: '/equipment/configuration',
         name: 'configuration',
         meta: {title: '配置'},
-        permissionId: 1
+        permissionId: 1,
+        // children: [
+        //   {
+        //     path: '/equipment/configuration/E',
+        //     name: 'E',
+        //     meta: { title: '参数配置' },
+        //     permissionId: 1,
+        //   },
+        // ]
       }
     ]
   },
