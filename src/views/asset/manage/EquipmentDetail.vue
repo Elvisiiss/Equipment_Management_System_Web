@@ -300,12 +300,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import vueQr from 'vue-qr/src/packages/vue-qr.vue'
 import html2canvas from 'html2canvas'
 import { ElMessage } from 'element-plus'
 import { Document, Picture } from '@element-plus/icons-vue'
+import { deviceAPI } from '@/api/ckAPI'
 
 const router = useRouter()
 
@@ -317,9 +318,9 @@ const query = reactive({
 
 /* 设备对象 */
 const device = reactive({
-  imageUrl: 'https://via.placeholder.com/300x180?text=C4-51-12',
-  status: '待机',
-  assetCode: 'ASSET-2023-001',
+  imageUrl: '',
+  status: '',
+  assetCode: '',
   code: '',
   name: '',
   workshop: '',
@@ -388,212 +389,121 @@ const today = new Date().toLocaleDateString()
 
 /* 状态 tag 颜色 */
 const statusTagType = computed(() => {
-  const map = { 运行中: 'success', 待机: 'info', 闲置: 'warning', 报废: 'danger' }
+  const map = { 运行中: 'success', 待机: 'info', 闲置: 'warning', 报废: 'danger', '转移中': 'primary' }
   return map[device.status] || ''
 })
 
-/* 区域映射表 */
-const areaMap = {
-  1: 'C2车间',
-  2: 'C2车间31产线',
-  3: 'C2车间31产线CFOG段',
-  4: 'C2车间31产线贴合段',
-  5: 'C2车间31产线组装段',
-  6: 'C2车间31产线30米线段',
-  7: 'C2车间32产线',
-  8: 'C2车间32产线CFOG段',
-  9: 'C2车间32产线贴合段',
-  10: 'C2车间32产线组装段',
-  11: 'C2车间32产线30米线段',
-  12: 'C2车间33产线',
-  13: 'C2车间33产线CFOG段',
-  14: 'C2车间33产线贴合段',
-  15: 'C2车间33产线组装段',
-  16: 'C2车间33产线30米线段',
-  17: 'C2车间34产线',
-  18: 'C2车间34产线CFOG段',
-  19: 'C2车间34产线贴合段',
-  20: 'C2车间34产线组装段',
-  21: 'C2车间34产线30米线段',
-  22: 'C2车间35产线',
-  23: 'C2车间35产线CFOG段',
-  24: 'C2车间35产线贴合段',
-  25: 'C2车间35产线组装段',
-  26: 'C2车间35产线30米线段',
-  27: 'C2车间36产线',
-  28: 'C2车间36产线CFOG段',
-  29: 'C2车间36产线贴合段',
-  30: 'C2车间36产线组装段',
-  31: 'C2车间36产线30米线段',
-  32: 'C3车间',
-  33: 'C3车间41产线',
-  34: 'C3车间41产线CFOG段',
-  35: 'C3车间41产线贴合段',
-  36: 'C3车间41产线组装段',
-  37: 'C3车间41产线30米线段',
-  38: 'C4车间',
-  39: 'C4车间51产线',
-  40: 'C4车间51产线CFOG段',
-  41: 'C4车间51产线贴合段',
-  42: 'C4车间51产线组装段',
-  43: 'C4车间51产线30米线段',
-  44: 'C5车间',
-  45: 'C5车间61产线',
-  46: 'C5车间61产线CFOG段',
-  47: 'C5车间61产线贴合段',
-  48: 'C5车间61产线组装段',
-  49: 'C5车间61产线30米线段',
-  50: 'C6车间',
-  51: 'C6车间71产线',
-  52: 'C6车间71产线CFOG段',
-  53: 'C6车间71产线贴合段',
-  54: 'C6车间71产线组装段',
-  55: 'C6车间71产线30米线段'
-}
-
-/* 区域级联选择器选项 */
+/* 区域级联选择器选项 - 支持选择车间、车间+产线、车间+产线+工段三级 */
 const areaOptions = [
   {
-    value: 'C2',
+    value: 'C2车间',
     label: 'C2车间',
     children: Array.from({ length: 6 }, (_, i) => ({
-      value: `31${i+1}`,
-      label: `3${i+1}产线`,
+      value: `C2车间${31+i}产线`,
+      label: `${31+i}产线`,
       children: [
-        { value: 'CFOG段', label: 'CFOG段' },
-        { value: '贴合段', label: '贴合段' },
-        { value: '组装段', label: '组装段' },
-        { value: '30米线', label: '30米线' }
+        { value: `C2车间${31+i}产线CFOG段`, label: 'CFOG段' },
+        { value: `C2车间${31+i}产线贴合段`, label: '贴合段' },
+        { value: `C2车间${31+i}产线组装段`, label: '组装段' },
+        { value: `C2车间${31+i}产线30米线`, label: '30米线' }
       ]
     }))
   },
   {
-    value: 'C3',
+    value: 'C3车间',
     label: 'C3车间',
     children: Array.from({ length: 6 }, (_, i) => ({
-      value: `41${i+1}`,
-      label: `4${i+1}产线`,
+      value: `C3车间${41+i}产线`,
+      label: `${41+i}产线`,
       children: [
-        { value: 'CFOG段', label: 'CFOG段' },
-        { value: '贴合段', label: '贴合段' },
-        { value: '组装段', label: '组装段' },
-        { value: '30米线', label: '30米线' }
+        { value: `C3车间${41+i}产线CFOG段`, label: 'CFOG段' },
+        { value: `C3车间${41+i}产线贴合段`, label: '贴合段' },
+        { value: `C3车间${41+i}产线组装段`, label: '组装段' },
+        { value: `C3车间${41+i}产线30米线`, label: '30米线' }
       ]
     }))
   },
   {
-    value: 'C4',
+    value: 'C4车间',
     label: 'C4车间',
     children: Array.from({ length: 6 }, (_, i) => ({
-      value: `51${i+1}`,
-      label: `5${i+1}产线`,
+      value: `C4车间${51+i}产线`,
+      label: `${51+i}产线`,
       children: [
-        { value: 'CFOG段', label: 'CFOG段' },
-        { value: '贴合段', label: '贴合段' },
-        { value: '组装段', label: '组装段' },
-        { value: '30米线', label: '30米线' }
+        { value: `C4车间${51+i}产线CFOG段`, label: 'CFOG段' },
+        { value: `C4车间${51+i}产线贴合段`, label: '贴合段' },
+        { value: `C4车间${51+i}产线组装段`, label: '组装段' },
+        { value: `C4车间${51+i}产线30米线`, label: '30米线' }
       ]
     }))
   },
   {
-    value: 'C5',
+    value: 'C5车间',
     label: 'C5车间',
     children: Array.from({ length: 6 }, (_, i) => ({
-      value: `61${i+1}`,
-      label: `6${i+1}产线`,
+      value: `C5车间${61+i}产线`,
+      label: `${61+i}产线`,
       children: [
-        { value: 'CFOG段', label: 'CFOG段' },
-        { value: '贴合段', label: '贴合段' },
-        { value: '组装段', label: '组装段' },
-        { value: '30米线', label: '30米线' }
+        { value: `C5车间${61+i}产线CFOG段`, label: 'CFOG段' },
+        { value: `C5车间${61+i}产线贴合段`, label: '贴合段' },
+        { value: `C5车间${61+i}产线组装段`, label: '组装段' },
+        { value: `C5车间${61+i}产线30米线`, label: '30米线' }
       ]
     }))
   },
   {
-    value: 'C6',
+    value: 'C6车间',
     label: 'C6车间',
     children: Array.from({ length: 6 }, (_, i) => ({
-      value: `71${i+1}`,
-      label: `7${i+1}产线`,
+      value: `C6车间${71+i}产线`,
+      label: `${71+i}产线`,
       children: [
-        { value: 'CFOG段', label: 'CFOG段' },
-        { value: '贴合段', label: '贴合段' },
-        { value: '组装段', label: '组装段' },
-        { value: '30米线', label: '30米线' }
+        { value: `C6车间${71+i}产线CFOG段`, label: 'CFOG段' },
+        { value: `C6车间${71+i}产线贴合段`, label: '贴合段' },
+        { value: `C6车间${71+i}产线组装段`, label: '组装段' },
+        { value: `C6车间${71+i}产线30米线`, label: '30米线' }
       ]
     }))
   }
 ]
 
 const cascaderProps = {
-  expandTrigger: 'hover'
+  expandTrigger: 'hover',
+  checkStrictly: true // 允许选择任意一级选项
 }
 
 /* 搜索设备 */
-function searchDevice () {
-  loadDeviceDetail(query.code)
+async function searchDevice () {
+  if (!query.code) {
+    ElMessage.warning('请输入设备编码')
+    return
+  }
+  await loadDeviceDetail(query.code)
 }
 
-/* 加载详情（mock） */
-function loadDeviceDetail (code) {
-  Object.assign(device, {
-    code,
-    assetCode: `ASSET-${code}`,
-    name: '盖板全自动设备',
-    workshop: 'C4车间',
-    line: '51产线',
-    category: '清洗机',
-    model: '深圳序佑盖板全自动',
-    vendor: '序佑',
-    inDate: '2023-04-12',
-    owner: '李工',
-    section: 'CFOG段',
-    status: '待机',
-    qrText: `http://asset.example.com/device/${code}`
-  })
+/* 加载详情 */
+async function loadDeviceDetail (code) {
+  try {
+    // 获取设备基本信息
+    const deviceRes = await deviceAPI.getDeviceDetail(code)
+    if (deviceRes.success) {
+      Object.assign(device, deviceRes.data)
+    }
 
-  // 模拟设备转移后的区域变化
-  const currentAreaId = device.status === '转移中' ? 42 : 40
-
-  bomList.value = [
-    { areaId: currentAreaId, spareCode: 'SP001', spareName: '电机', usage: 2, stock: 15 },
-    { areaId: currentAreaId, spareCode: 'SP002', spareName: '轴承', usage: 4, stock: 32 }
-  ].map(item => ({
-    ...item,
-    areaName: areaMap[item.areaId] || `未知区域(${item.areaId})`
-  }))
-
-  mouldList.value = [
-    { areaId: currentAreaId, mouldCode: 'M001', mouldName: '上模', usage: 1, stock: 8, productModel: 'P-1001' },
-    { areaId: currentAreaId, mouldCode: 'M002', mouldName: '下模', usage: 1, stock: 6, productModel: 'P-1002' }
-  ].map(item => ({
-    ...item,
-    areaName: areaMap[item.areaId] || `未知区域(${item.areaId})`
-  }))
-
-  lifeCycleList.value = [
-    { stage: '入库', areaId: 38, submitter: '张采购', submitTime: '2025-08-12 09:00',
-      approver: '王经理', approveTime: '2025-08-12 10:00', remark: '新购入库' },
-    { stage: '验收阶段', areaId: currentAreaId, submitter: '李工', submitTime: '2023-04-12 10:30',
-      approver: '王经理', approveTime: '2023-04-12 11:30', remark: '验收合格' }
-  ].map(item => ({
-    ...item,
-    areaName: areaMap[item.areaId] || `未知区域(${item.areaId})`
-  }))
-
-  checkList.value = [
-    { time: '08:00-08:30', areaId: currentAreaId, content: '检查电机温度', checker: '刘工', period: '早班', status: '待执行' }
-  ].map(item => ({
-    ...item,
-    areaName: areaMap[item.areaId] || `未知区域(${item.areaId})`
-  }))
-
-  maintainList.value = [
-    { date: '2023-06-15', areaId: currentAreaId, content: '润滑保养', maintainer: '王技师', status: '已保养' }
-  ].map(item => ({
-    ...item,
-    areaName: areaMap[item.areaId] || `未知区域(${item.areaId})`
-  }))
+    // 获取设备相关列表
+    const listsRes = await deviceAPI.getDeviceLists(code)
+    if (listsRes.success) {
+      const { bomList: bom, mouldList: mould, lifeCycleList: life, checkList: check, maintainList: maintain } = listsRes.data
+      bomList.value = bom
+      mouldList.value = mould
+      lifeCycleList.value = life
+      checkList.value = check
+      maintainList.value = maintain
+    }
+  } catch (error) {
+    ElMessage.error('加载设备信息失败')
+    console.error(error)
+  }
 }
 
 /* 说明书/图纸弹窗 */
@@ -634,17 +544,20 @@ function openAcceptDialog () {
   })
   acceptVisible.value = true
 }
+
 function openTransferDialog () {
   transferForm.targetArea = []
   transferForm.reason = ''
   transferForm.attachments = []
   transferVisible.value = true
 }
+
 function openIdleDialog() {
   idleForm.description = ''
   idleForm.attachments = []
   idleVisible.value = true
 }
+
 function openScrapDialog() {
   scrapForm.description = ''
   scrapForm.attachments = []
@@ -673,87 +586,135 @@ function beforeUpload(file) {
 }
 
 /* 跳转到详情页面 */
-function goToRepairList() {
-  router.push('/repair/manage/KnowledgeBase')
-}
 function goToInspectionList() {
   router.push('/inspection/manage/TaskList')
 }
+
 function goToMaintenanceList() {
   router.push('/maintenance/manage/ApprovalList')
 }
 
 /* 提交事件 */
-function submitAccept () {
-  createAuditTask('验收任务', {
-    attachments: acceptForm.attachments
-  })
-  acceptVisible.value = false
-}
-function submitTransfer () {
-  device.status = '转移中'
-  createAuditTask('转移申请', {
-    targetArea: transferForm.targetArea.join(' > '),
-    attachments: transferForm.attachments
-  })
-  // 刷新设备详情以更新区域信息
-  loadDeviceDetail(device.code)
-  transferVisible.value = false
-}
-function submitIdle() {
-  device.status = '闲置'
-  createAuditTask('闲置申请', {
-    description: idleForm.description,
-    attachments: idleForm.attachments
-  })
-  idleVisible.value = false
-}
-function submitScrap() {
-  device.status = '报废'
-  createAuditTask('报废申请', {
-    description: scrapForm.description,
-    attachments: scrapForm.attachments
-  })
-  scrapVisible.value = false
+async function submitAccept () {
+  try {
+    const params = {
+      deviceCode: device.code,
+      deviceName: device.name,
+      ...acceptForm
+    }
+
+    const res = await deviceAPI.submitAcceptTask(params)
+    if (res.success) {
+      ElMessage.success('验收申请已提交，等待审核')
+      acceptVisible.value = false
+    }
+  } catch (error) {
+    ElMessage.error('提交失败')
+    console.error(error)
+  }
 }
 
-/* 创建审核任务（本地存储模拟） */
-function createAuditTask(taskName, extraData = {}) {
-  const id = 'T' + Date.now()
-  const list = JSON.parse(localStorage.getItem('checkTask') || '[]')
-
-  const task = {
-    id,
-    deviceCode: device.code,
-    deviceName: device.name,
-    taskName,
-    auditor: '待分配',
-    auditTime: '',
-    status: '待审核',
-    ...extraData
+async function submitTransfer () {
+  if (!transferForm.targetArea || transferForm.targetArea.length === 0) {
+    ElMessage.warning('请选择目标区域')
+    return
   }
 
-  list.unshift(task)
-  localStorage.setItem('checkTask', JSON.stringify(list))
-  ElMessage.success('已提交审核任务')
+  try {
+    const targetArea = transferForm.targetArea.join(' > ')
+    const params = {
+      deviceCode: device.code,
+      deviceName: device.name,
+      targetArea,
+      reason: transferForm.reason,
+      attachments: transferForm.attachments
+    }
+
+    const res = await deviceAPI.submitTransferTask(params)
+    if (res.success) {
+      ElMessage.success('转移申请已提交，等待审核')
+      transferVisible.value = false
+      // 刷新设备信息显示转移中状态
+      await loadDeviceDetail(device.code)
+    }
+  } catch (error) {
+    ElMessage.error('提交失败')
+    console.error(error)
+  }
 }
 
-/* 刷新点检/保养（演示用） */
-function refreshCheck () {
-  checkList.value.forEach(r => {
-    r.status = Math.random() > 0.5 ? '已执行' : '待执行'
-  })
+async function submitIdle() {
+  if (!idleForm.description) {
+    ElMessage.warning('请填写申请说明')
+    return
+  }
+
+  try {
+    const params = {
+      deviceCode: device.code,
+      deviceName: device.name,
+      ...idleForm
+    }
+
+    const res = await deviceAPI.submitIdleTask(params)
+    if (res.success) {
+      ElMessage.success('闲置申请已提交，等待审核')
+      idleVisible.value = false
+    }
+  } catch (error) {
+    ElMessage.error('提交失败')
+    console.error(error)
+  }
 }
-function refreshMaintain () {
-  if (Math.random() > 0.5) {
-    maintainList.value = []
-  } else {
-    maintainList.value = [
-      { date: '2023-07-20', areaId: 40, content: '深度清洁', maintainer: '张技师', status: '已保养' }
-    ].map(item => ({
-      ...item,
-      areaName: areaMap[item.areaId] || `未知区域(${item.areaId})`
-    }))
+
+async function submitScrap() {
+  if (!scrapForm.description) {
+    ElMessage.warning('请填写申请说明')
+    return
+  }
+
+  try {
+    const params = {
+      deviceCode: device.code,
+      deviceName: device.name,
+      ...scrapForm
+    }
+
+    const res = await deviceAPI.submitScrapTask(params)
+    if (res.success) {
+      ElMessage.success('报废申请已提交，等待审核')
+      scrapVisible.value = false
+    }
+  } catch (error) {
+    ElMessage.error('提交失败')
+    console.error(error)
+  }
+}
+
+/* 刷新点检/保养 */
+async function refreshCheck () {
+  try {
+    const res = await deviceAPI.refreshCheckTasks(device.code)
+    if (res.success) {
+      checkList.value = res.data
+      ElMessage.success('点检任务已刷新')
+    }
+  } catch (error) {
+    ElMessage.error('刷新失败')
+    console.error(error)
+  }
+}
+
+async function refreshMaintain () {
+  try {
+    const res = await deviceAPI.refreshMaintainTasks(device.code)
+    if (res.success) {
+      maintainList.value = res.data
+      ElMessage.success('保养信息已刷新')
+    }
+  } catch (error) {
+    ElMessage.error('刷新失败')
+    console.error(error)
   }
 }
 
