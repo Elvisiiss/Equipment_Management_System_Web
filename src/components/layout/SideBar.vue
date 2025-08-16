@@ -9,77 +9,77 @@
             :collapse="false"
             @select="handleMenuSelect"
             :unique-opened="true"
-        class="custom-menu"
-        background-color="#121212"
-        text-color="#ccc"
-        active-text-color="#fff"
+            class="custom-menu"
+            background-color="#165DFF"
+            text-color="#e6efff"
+            active-text-color="#fff"
         >
-        <!-- 遍历过滤后的一级菜单 -->
-        <template v-for="item in filteredMenuItems" :key="item.path">
-          <!-- 有子菜单的一级项 -->
-          <el-sub-menu
-              v-if="item.children && item.children.length"
-              :index="item.path"
-              popper-class="menu-popper"
-          >
-            <template #title>
-              <div class="menu-item-content">
+          <!-- 遍历过滤后的一级菜单 -->
+          <template v-for="item in filteredMenuItems" :key="item.path">
+            <!-- 有子菜单的一级项 -->
+            <el-sub-menu
+                v-if="item.children && item.children.length"
+                :index="item.path"
+                popper-class="menu-popper"
+            >
+              <template #title>
+                <div class="menu-item-content">
                   <span class="menu-icon" v-if="item.meta.icon">
                     <el-icon><component :is="item.meta.icon" /></el-icon>
                   </span>
-                <span class="menu-title">{{ item.meta.title }}</span>
-              </div>
-            </template>
+                  <span class="menu-title">{{ item.meta.title }}</span>
+                </div>
+              </template>
 
-            <!-- 遍历二级菜单 -->
-            <template v-for="child in item.children" :key="child.path">
-              <!-- 有三级菜单的二级项 -->
-              <el-sub-menu
-                  v-if="child.children && child.children.length"
-                  :index="child.path"
-              >
-                <template #title>
-                  <div class="submenu-item">
-                    <span class="menu-title">{{ child.meta.title }}</span>
-                  </div>
-                </template>
-
-                <!-- 三级菜单项 -->
-                <el-menu-item
-                    v-for="grandchild in child.children"
-                    :key="grandchild.path"
-                    :index="grandchild.path"
-                    @click="handleMenuClick(grandchild)"
+              <!-- 遍历二级菜单 -->
+              <template v-for="child in item.children" :key="child.path">
+                <!-- 有三级菜单的二级项 -->
+                <el-sub-menu
+                    v-if="child.children && child.children.length"
+                    :index="child.path"
                 >
-                  <span class="submenu-title">{{ grandchild.meta.title }}</span>
+                  <template #title>
+                    <div class="submenu-item">
+                      <span class="menu-title">{{ child.meta.title }}</span>
+                    </div>
+                  </template>
+
+                  <!-- 三级菜单项 -->
+                  <el-menu-item
+                      v-for="grandchild in child.children"
+                      :key="grandchild.path"
+                      :index="grandchild.path"
+                      @click="handleMenuClick(grandchild)"
+                  >
+                    <span class="submenu-title">{{ grandchild.meta.title }}</span>
+                  </el-menu-item>
+                </el-sub-menu>
+
+                <!-- 没有子菜单的二级项 -->
+                <el-menu-item
+                    v-else
+                    :index="child.path"
+                    @click="handleMenuClick(child)"
+                >
+                  <span class="submenu-title">{{ child.meta.title }}</span>
                 </el-menu-item>
-              </el-sub-menu>
+              </template>
+            </el-sub-menu>
 
-              <!-- 没有子菜单的二级项 -->
-              <el-menu-item
-                  v-else
-                  :index="child.path"
-                  @click="handleMenuClick(child)"
-              >
-                <span class="submenu-title">{{ child.meta.title }}</span>
-              </el-menu-item>
-            </template>
-          </el-sub-menu>
-
-          <!-- 没有子菜单的一级项 -->
-          <el-menu-item
-              v-else
-              :index="item.path"
-              @click="handleMenuClick(item)"
-          >
+            <!-- 没有子菜单的一级项 -->
+            <el-menu-item
+                v-else
+                :index="item.path"
+                @click="handleMenuClick(item)"
+            >
               <span class="menu-item-content">
                 <span class="menu-icon" v-if="item.meta.icon">
                   <el-icon><component :is="item.meta.icon" /></el-icon>
                 </span>
                 <span class="menu-title">{{ item.meta.title }}</span>
               </span>
-          </el-menu-item>
-        </template>
+            </el-menu-item>
+          </template>
         </el-menu>
       </el-scrollbar>
     </div>
@@ -765,14 +765,14 @@ const filteredMenuItems = computed(() => {
 <style scoped lang="scss">
 .side-bar {
   width: 240px;
-  background-color: #121212;
-  color: #ccc;
+  background: linear-gradient(to bottom, #1e3c72, #2a5298);
+  color: #e6efff;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.5);
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
-  border-right: 1px solid #1e1e1e;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .system-title {
@@ -782,8 +782,8 @@ const filteredMenuItems = computed(() => {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 1px;
-  background-color: #0a0a0a;
-  border-bottom: 1px solid #1e1e1e;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0 16px;
   color: #fff;
 }
@@ -800,14 +800,14 @@ const filteredMenuItems = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border-top: 1px solid #1e1e1e;
-  background-color: #0a0a0a;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.1);
   padding: 0 20px;
 
   .admin-name {
     font-size: 14px;
     font-weight: 500;
-    color: #ddd;
+    color: #e6efff;
   }
 }
 
@@ -835,14 +835,14 @@ const filteredMenuItems = computed(() => {
   font-size: 18px;
   width: 24px;
   height: 24px;
-  color: #aaa;
+  color: #cce0ff;
 }
 
 .arrow-icon {
   margin-left: auto;
   font-size: 16px;
-  transition: transform 0.3s ease;
-  color: #888;
+  transition: transform 0.1s ease;
+  color: #cce0ff;
 }
 
 /* 手风琴效果 - 展开时旋转箭头 */
@@ -861,19 +861,19 @@ const filteredMenuItems = computed(() => {
   height: 50px;
   line-height: 50px;
   font-size: 14px;
-  transition: all 0.3s;
+  transition: all 0.1s;
   border-radius: 4px;
   margin: 4px 8px;
-  color: #ccc;
+  color: #e6efff;
 
   &:hover {
-    background-color: #1e1e1e !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
     color: #fff !important;
   }
 }
 
 :deep(.el-menu-item.is-active) {
-  background-color: #2d2d2d !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
   color: #fff !important;
   font-weight: 500;
   position: relative;
@@ -885,7 +885,7 @@ const filteredMenuItems = computed(() => {
     top: 0;
     height: 100%;
     width: 3px;
-    background-color: #0078d7;
+    background-color: #fff;
     border-radius: 0 4px 4px 0;
   }
 }
@@ -895,7 +895,7 @@ const filteredMenuItems = computed(() => {
 }
 
 :deep(.el-sub-menu .el-menu) {
-  background-color: #1a1a1a;
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 :deep(.el-sub-menu .el-menu .el-menu-item) {
@@ -913,9 +913,9 @@ const filteredMenuItems = computed(() => {
 :deep(.el-menu--popup) {
   padding: 6px;
   border-radius: 8px;
-  background-color: #1a1a1a;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  border: 1px solid #2d2d2d;
+  background-color: #1e3c72;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 
   .el-menu-item {
     min-width: 160px;
@@ -923,7 +923,7 @@ const filteredMenuItems = computed(() => {
     margin: 4px 0;
 
     &:hover {
-      background-color: #2d2d2d !important;
+      background-color: rgba(255, 255, 255, 0.1) !important;
     }
   }
 }
@@ -956,15 +956,15 @@ const filteredMenuItems = computed(() => {
   color: inherit;
 }
 
-/* 子菜单展开/折叠动画 */
+/* 子菜单展开/折叠动画 - 加速动画 */
 :deep(.el-sub-menu .el-menu) {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease-out;
+  transition: max-height 0.1s ease-out;
 }
 
 :deep(.el-sub-menu.is-opened .el-menu) {
   max-height: 1000px;
-  transition: max-height 0.5s ease-in;
+  transition: max-height 0.2s ease-in;
 }
 </style>
