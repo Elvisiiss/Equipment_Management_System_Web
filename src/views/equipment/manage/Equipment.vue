@@ -400,6 +400,15 @@ import {
   Upload,
   UploadFilled
 } from '@element-plus/icons-vue'
+import {
+  getEquipmentList,
+  addEquipment,
+  updateEquipment,
+  deleteEquipment,
+  exportEquipmentData,
+  importEquipmentData,
+  downloadEquipmentTemplate
+} from '@/api/EtAPI'
 
 // 状态管理
 const dialogVisible = ref(false)
@@ -460,87 +469,21 @@ const pagination = reactive({
 // 表格数据
 const tableData = ref([])
 
-// 生成模拟数据
-const generateMockData = () => {
-  const data = []
-  let id = 1
-
-  // 生成车间数据
-  workshopOptions.value.forEach(workshop => {
-    const workshopNode = {
-      id: id++,
-      name: workshop,
-      type: 'workshop',
-      children: []
-    }
-
-    // 生成产线数据
-    const startLine = parseInt(workshop.substring(1)) * 10 + 1
-    for (let i = 1; i <= 6; i++) {
-      const lineNo = startLine + i - 1
-      const lineNode = {
-        id: id++,
-        name: lineNo,
-        type: 'line',
-        children: []
-      }
-
-      // 生成工段数据
-      segmentOptions.value.forEach(segment => {
-        const segmentNode = {
-          id: id++,
-          name: segment,
-          type: 'segment',
-          children: []
-        }
-
-        // 生成设备数据（每个工段下随机1-3台设备）
-        const deviceCount = Math.floor(Math.random() * 3) + 1
-        for (let j = 0; j < deviceCount; j++) {
-          const deviceId = id++
-          const deviceStatus = ['running', 'standby', 'fault', 'offline'][Math.floor(Math.random() * 4)]
-          const inspectionStatus = Math.random() > 0.3 ? 'done' : 'pending'
-
-          segmentNode.children.push({
-            id: deviceId,
-            name: `设备${deviceId}`,
-            deviceCode: `DEV-${deviceId}`,
-            assetCode: `AST-${Math.floor(Math.random() * 10000)}`,
-            manufacturer: ['西门子', '发那科', '三菱', 'ABB', '安川'][Math.floor(Math.random() * 5)],
-            category: ['清洗机', 'COG机', 'FOG机', 'AOI机', '组装机'][Math.floor(Math.random() * 5)],
-            model: `MOD-${Math.floor(Math.random() * 1000)}`,
-            status: deviceStatus,
-            inspectionStatus: inspectionStatus,
-            areaName: `${workshop}车间-${lineNo}产线-${segment}`,
-            production: Math.floor(Math.random() * 10000),
-            utilization: Math.floor(Math.random() * 100),
-            workshop: workshop,
-            line: lineNo,
-            segment: segment,
-            type: 'device'
-          })
-        }
-
-        lineNode.children.push(segmentNode)
-      })
-
-      workshopNode.children.push(lineNode)
-    }
-
-    data.push(workshopNode)
-  })
-
-  return data
-}
-
 // 加载表格数据
-const loadTableData = () => {
-  // 模拟API调用
-  setTimeout(() => {
-    tableData.value = generateMockData()
-    pagination.total = 120 // 模拟总设备数
+const loadTableData = async () => {
+  try {
+    const params = {
+      ...filterForm,
+      page: pagination.page,
+      size: pagination.size
+    }
+    const result = await getEquipmentList(params)
+    tableData.value = result.data
+    pagination.total = result.total
     isSearched.value = true
-  }, 500)
+  } catch (error) {
+    ElMessage.error('加载数据失败')
+  }
 }
 
 // 车间变化处理
@@ -656,28 +599,34 @@ const handleDetail = (row) => {
   ElMessage.info(`查看设备详情：${row.name} (${row.deviceCode})`)
 }
 
-const handleDelete = (row) => {
-  ElMessageBox.confirm(`确定删除设备【${row.name}】?`, '删除确认', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    // 模拟删除操作
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定删除设备【${row.name}】?`, '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    await deleteEquipment(row.id)
     ElMessage.success('设备删除成功')
     handleSearch()
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.info('已取消删除')
+    }
+  }
 }
 
 // 提交设备表单
-const submitDevice = () => {
+const submitDevice = async () => {
   try {
     if (isEditMode.value) {
+      await updateEquipment(deviceForm)
       ElMessage.success('设备更新成功')
     } else {
       // 为新设备生成ID
       deviceForm.id = Date.now()
+      await addEquipment(deviceForm)
       ElMessage.success('设备添加成功')
     }
     dialogVisible.value = false
@@ -689,22 +638,35 @@ const submitDevice = () => {
 
 // 导入/导出
 const downloadTemplate = () => {
-  ElMessage.success('模板下载成功')
+  downloadEquipmentTemplate()
+      .then(() => {
+        ElMessage.success('模板下载成功')
+      })
+      .catch(() => {
+        ElMessage.error('模板下载失败')
+      })
 }
 
 const handleImport = (file) => {
-  ElMessage.info('开始导入设备数据...')
-  setTimeout(() => {
-    ElMessage.success('设备数据导入成功')
-    handleSearch()
-  }, 1500)
+  importEquipmentData(file)
+      .then(() => {
+        ElMessage.success('设备数据导入成功')
+        handleSearch()
+      })
+      .catch(() => {
+        ElMessage.error('设备数据导入失败')
+      })
 }
 
 const exportData = () => {
-  ElMessage.info('开始导出设备数据...')
-  setTimeout(() => {
-    ElMessage.success('设备数据导出成功')
-  }, 1000)
+  const params = { ...filterForm }
+  exportEquipmentData(params)
+      .then(() => {
+        ElMessage.success('设备数据导出成功')
+      })
+      .catch(() => {
+        ElMessage.error('设备数据导出失败')
+      })
 }
 
 // 初始化

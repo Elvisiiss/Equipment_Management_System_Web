@@ -106,7 +106,7 @@ import {
   Connection,
   User,
   List,
-  Histogram
+  StarFilled
 } from '@element-plus/icons-vue'
 
 // 路由实例
@@ -222,7 +222,7 @@ const menuItems = [
   {
     path: '/check',
     name: 'check',
-    meta: { title: '审核管理', icon: HomeFilled },
+    meta: { title: '审核管理', icon: StarFilled },
     permissionId: 1,
     children: [
       {
@@ -234,7 +234,7 @@ const menuItems = [
       {
         path: '/asset/result',
         name: 'CheckResult',
-        meta: { title: '审批配置', icon: HomeFilled },
+        meta: {title: '审批配置', icon: StarFilled},
         permissionId: 1,
       },
     ]

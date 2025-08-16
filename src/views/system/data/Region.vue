@@ -73,7 +73,7 @@ workshops.forEach(ws => {
 
   // 3. 产线 31~36 / 41~46 …
   for (let l = 1; l <= 6; l++) {
-    const lineNo   = Number(ws.substring(1)) * 10 + l
+    const lineNo   = Number(ws.substring(1)) * 10 + l + 10
     const lineNode = { id: id++, name: `${lineNo}产线`, children: [] }
     workshopNode.children.push(lineNode)
 
