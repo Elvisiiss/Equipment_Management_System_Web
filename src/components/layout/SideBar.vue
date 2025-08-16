@@ -9,79 +9,77 @@
             :collapse="false"
             @select="handleMenuSelect"
             :unique-opened="true"
-            class="custom-menu"
-            background-color="#001529"
-            text-color="#fff"
-            active-text-color="#1890ff"
+        class="custom-menu"
+        background-color="#121212"
+        text-color="#ccc"
+        active-text-color="#fff"
         >
-          <!-- 遍历过滤后的一级菜单 -->
-          <template v-for="item in filteredMenuItems" :key="item.path">
-            <!-- 有子菜单的一级项 -->
-            <el-sub-menu
-                v-if="item.children && item.children.length"
-                :index="item.path"
-                popper-class="menu-popper"
-            >
-              <template #title>
-                <div class="menu-item-content" @click="handleMenuClick(item)">
+        <!-- 遍历过滤后的一级菜单 -->
+        <template v-for="item in filteredMenuItems" :key="item.path">
+          <!-- 有子菜单的一级项 -->
+          <el-sub-menu
+              v-if="item.children && item.children.length"
+              :index="item.path"
+              popper-class="menu-popper"
+          >
+            <template #title>
+              <div class="menu-item-content">
                   <span class="menu-icon" v-if="item.meta.icon">
                     <el-icon><component :is="item.meta.icon" /></el-icon>
                   </span>
-                  <span class="menu-title">{{ item.meta.title }}</span>
-                  <el-icon class="arrow-icon" v-if="item.children"><ArrowDown /></el-icon>
-                </div>
-              </template>
+                <span class="menu-title">{{ item.meta.title }}</span>
+              </div>
+            </template>
 
-              <!-- 遍历二级菜单 -->
-              <template v-for="child in item.children" :key="child.path">
-                <!-- 有三级菜单的二级项 -->
-                <el-sub-menu
-                    v-if="child.children && child.children.length"
-                    :index="child.path"
-                >
-                  <template #title>
-                    <div class="submenu-item" @click="handleMenuClick(child)">
-                      <span class="menu-title">{{ child.meta.title }}</span>
-                      <el-icon class="arrow-icon"><ArrowRight /></el-icon>
-                    </div>
-                  </template>
+            <!-- 遍历二级菜单 -->
+            <template v-for="child in item.children" :key="child.path">
+              <!-- 有三级菜单的二级项 -->
+              <el-sub-menu
+                  v-if="child.children && child.children.length"
+                  :index="child.path"
+              >
+                <template #title>
+                  <div class="submenu-item">
+                    <span class="menu-title">{{ child.meta.title }}</span>
+                  </div>
+                </template>
 
-                  <!-- 三级菜单项 -->
-                  <el-menu-item
-                      v-for="grandchild in child.children"
-                      :key="grandchild.path"
-                      :index="grandchild.path"
-                      @click="handleMenuClick(grandchild)"
-                  >
-                    <span class="submenu-title">{{ grandchild.meta.title }}</span>
-                  </el-menu-item>
-                </el-sub-menu>
-
-                <!-- 没有子菜单的二级项 -->
+                <!-- 三级菜单项 -->
                 <el-menu-item
-                    v-else
-                    :index="child.path"
-                    @click="handleMenuClick(child)"
+                    v-for="grandchild in child.children"
+                    :key="grandchild.path"
+                    :index="grandchild.path"
+                    @click="handleMenuClick(grandchild)"
                 >
-                  <span class="submenu-title">{{ child.meta.title }}</span>
+                  <span class="submenu-title">{{ grandchild.meta.title }}</span>
                 </el-menu-item>
-              </template>
-            </el-sub-menu>
+              </el-sub-menu>
 
-            <!-- 没有子菜单的一级项 -->
-            <el-menu-item
-                v-else
-                :index="item.path"
-                @click="handleMenuClick(item)"
-            >
+              <!-- 没有子菜单的二级项 -->
+              <el-menu-item
+                  v-else
+                  :index="child.path"
+                  @click="handleMenuClick(child)"
+              >
+                <span class="submenu-title">{{ child.meta.title }}</span>
+              </el-menu-item>
+            </template>
+          </el-sub-menu>
+
+          <!-- 没有子菜单的一级项 -->
+          <el-menu-item
+              v-else
+              :index="item.path"
+              @click="handleMenuClick(item)"
+          >
               <span class="menu-item-content">
                 <span class="menu-icon" v-if="item.meta.icon">
                   <el-icon><component :is="item.meta.icon" /></el-icon>
                 </span>
                 <span class="menu-title">{{ item.meta.title }}</span>
               </span>
-            </el-menu-item>
-          </template>
+          </el-menu-item>
+        </template>
         </el-menu>
       </el-scrollbar>
     </div>
@@ -266,12 +264,6 @@ const menuItems = [
           },
         ]
       },
-      // {
-      //   path: '/asset/configuration',
-      //   name: 'configuration',
-      //   meta: {title: '配置'},
-      //   permissionId: 1,
-      // },
       {
         path: '/asset/screen',
         name: 'screen',
@@ -336,46 +328,6 @@ const menuItems = [
           },
         ]
       },
-      // {
-      //   path: '/equipment/status',
-      //   name: 'Status',
-      //   meta: {title: '设备状态管理'},
-      //   permissionId: 1,
-      //   children: [
-      //     {
-      //       path: '/equipment/status/policies',
-      //       name: 'Policies',
-      //       meta: {title: '状态规则与策略'},
-      //       permissionId: 1
-      //     },
-      //     {
-      //       path: '/equipment/status/log',
-      //       name: 'Log',
-      //       meta: {title: '状态维护'},
-      //       permissionId: 1
-      //     },
-      //   ]
-      // },
-      // {
-      //   path: '/equipment/location',
-      //   name: 'Location',
-      //   meta: {title: '布局管理'},
-      //   permissionId: 1,
-      //   children: [
-      //     {
-      //       path: '/equipment/location/transfer',
-      //       name: 'Transfer',
-      //       meta: {title: '设备转机'},
-      //       permissionId: 1
-      //     },
-      //     {
-      //       path: '/equipment/location/pm',
-      //       name: 'PM',
-      //       meta: {title: 'PM工单'},
-      //       permissionId: 1
-      //     },
-      //   ]
-      // },
       {
         path: '/equipment/screen',
         name: 'screen',
@@ -407,14 +359,6 @@ const menuItems = [
         name: 'configuration',
         meta: {title: '配置'},
         permissionId: 1,
-        // children: [
-        //   {
-        //     path: '/equipment/configuration/E',
-        //     name: 'E',
-        //     meta: { title: '参数配置' },
-        //     permissionId: 1,
-        //   },
-        // ]
       }
     ]
   },
@@ -512,35 +456,7 @@ const menuItems = [
             permissionId: 1
           }
         ]
-      },
-      // {
-      //   path: '/maintenance/configuration',
-      //   name: 'configuration',
-      //   meta: {title: '配置'},
-      //   permissionId: 1,
-      //   children: [
-      //     {
-      //       path: '/maintenance/configuration/K',
-      //       name: 'K',
-      //       meta: {title: '页面K'},
-      //       permissionId: 1
-      //     }
-      //   ]
-      // },
-      // {
-      //   path: '/maintenance/screen',
-      //   name: 'screen',
-      //   meta: {title: '大屏'},
-      //   permissionId: 1,
-      //   children: [
-      //     {
-      //       path: '/maintenance/screen/L',
-      //       name: 'L',
-      //       meta: {title: '页面L'},
-      //       permissionId: 1
-      //     }
-      //   ]
-      // }
+      }
     ]
   },
   {
@@ -619,18 +535,6 @@ const menuItems = [
             meta: {title: '设备BOM管理'},
             permissionId: 1
           },
-          // {
-          //   path: '/parts/manage/EquipmentDetail',
-          //   name: 'EquipmentDetail',
-          //   meta: {title: '设备详情-不要的'},
-          //   permissionId: 1
-          // },
-          // {
-          //   path: '/parts/manage/LocationForm',
-          //   name: 'LocationForm',
-          //   meta: {title: '表单-不要的'},
-          //   permissionId: 1
-          // },
           {
             path: '/parts/manage/LocationManagement',
             name: 'LocationManagement',
@@ -638,35 +542,7 @@ const menuItems = [
             permissionId: 1
           },
         ]
-      },
-      // {
-      //   path: '/parts/configuration',
-      //   name: 'configuration',
-      //   meta: {title: '配置'},
-      //   permissionId: 1,
-      //   children: [
-      //     {
-      //       path: '/parts/configuration/Q',
-      //       name: 'Q',
-      //       meta: {title: '页面Q'},
-      //       permissionId: 1
-      //     }
-      //   ]
-      // },
-      // {
-      //   path: '/parts/screen',
-      //   name: 'screen',
-      //   meta: {title: '大屏'},
-      //   permissionId: 1,
-      //   children: [
-      //     {
-      //       path: '/parts/screen/R',
-      //       name: 'R',
-      //       meta: {title: '页面R'},
-      //       permissionId: 1
-      //     }
-      //   ]
-      // }
+      }
     ]
   },
   {
@@ -889,13 +765,14 @@ const filteredMenuItems = computed(() => {
 <style scoped lang="scss">
 .side-bar {
   width: 240px;
-  background: linear-gradient(to bottom, #001529, #002140);
-  color: #fff;
+  background-color: #121212;
+  color: #ccc;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 2px 0 15px rgba(0, 0, 0, 0.5);
   transition: all 0.3s ease;
+  border-right: 1px solid #1e1e1e;
 }
 
 .system-title {
@@ -905,10 +782,10 @@ const filteredMenuItems = computed(() => {
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 1px;
-  background-color: rgba(0, 21, 41, 0.85);
-  border-bottom: 1px solid rgba(24, 144, 255, 0.3);
+  background-color: #0a0a0a;
+  border-bottom: 1px solid #1e1e1e;
   padding: 0 16px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  color: #fff;
 }
 
 .menu-container {
@@ -923,13 +800,14 @@ const filteredMenuItems = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background-color: rgba(0, 21, 41, 0.85);
+  border-top: 1px solid #1e1e1e;
+  background-color: #0a0a0a;
   padding: 0 20px;
 
   .admin-name {
     font-size: 14px;
     font-weight: 500;
+    color: #ddd;
   }
 }
 
@@ -957,37 +835,46 @@ const filteredMenuItems = computed(() => {
   font-size: 18px;
   width: 24px;
   height: 24px;
+  color: #aaa;
 }
 
 .arrow-icon {
   margin-left: auto;
-  font-size: 14px;
-  transition: transform 0.3s;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+  color: #888;
+}
+
+/* 手风琴效果 - 展开时旋转箭头 */
+:deep(.el-sub-menu.is-opened) .arrow-icon {
+  transform: rotate(90deg);
 }
 
 /* 菜单激活样式 */
 :deep(.el-menu) {
   border-right: none;
+  background-color: transparent;
 }
 
 :deep(.el-menu-item),
 :deep(.el-sub-menu__title) {
-  height: 48px;
-  line-height: 48px;
+  height: 50px;
+  line-height: 50px;
   font-size: 14px;
   transition: all 0.3s;
   border-radius: 4px;
   margin: 4px 8px;
+  color: #ccc;
 
   &:hover {
-    background-color: rgba(24, 144, 255, 0.15) !important;
+    background-color: #1e1e1e !important;
     color: #fff !important;
   }
 }
 
 :deep(.el-menu-item.is-active) {
-  background: linear-gradient(to right, rgba(24, 144, 255, 0.25), transparent) !important;
-  color: #1890ff !important;
+  background-color: #2d2d2d !important;
+  color: #fff !important;
   font-weight: 500;
   position: relative;
 
@@ -997,33 +884,38 @@ const filteredMenuItems = computed(() => {
     left: 0;
     top: 0;
     height: 100%;
-    width: 4px;
-    background-color: #1890ff;
+    width: 3px;
+    background-color: #0078d7;
     border-radius: 0 4px 4px 0;
   }
 }
 
 :deep(.el-sub-menu.is-active .el-sub-menu__title) {
-  color: #1890ff !important;
+  color: #fff !important;
 }
 
 :deep(.el-sub-menu .el-menu) {
-  background-color: rgba(0, 33, 64, 0.5);
+  background-color: #1a1a1a;
 }
 
 :deep(.el-sub-menu .el-menu .el-menu-item) {
   padding-left: 50px !important;
-  height: 42px;
-  line-height: 42px;
+  height: 44px;
+  line-height: 44px;
   margin: 2px 8px;
   font-size: 13px;
+}
+
+:deep(.el-sub-menu .el-menu .el-sub-menu .el-menu-item) {
+  padding-left: 70px !important;
 }
 
 :deep(.el-menu--popup) {
   padding: 6px;
   border-radius: 8px;
-  background: linear-gradient(to bottom, rgba(0, 21, 41, 0.95), rgba(0, 33, 64, 0.95));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  background-color: #1a1a1a;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid #2d2d2d;
 
   .el-menu-item {
     min-width: 160px;
@@ -1031,7 +923,7 @@ const filteredMenuItems = computed(() => {
     margin: 4px 0;
 
     &:hover {
-      background-color: rgba(24, 144, 255, 0.2) !important;
+      background-color: #2d2d2d !important;
     }
   }
 }
@@ -1057,5 +949,22 @@ const filteredMenuItems = computed(() => {
   &:hover {
     background-color: rgba(255, 255, 255, 0.3);
   }
+}
+
+/* 优化图标颜色 */
+:deep(.el-icon) {
+  color: inherit;
+}
+
+/* 子菜单展开/折叠动画 */
+:deep(.el-sub-menu .el-menu) {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+:deep(.el-sub-menu.is-opened .el-menu) {
+  max-height: 1000px;
+  transition: max-height 0.5s ease-in;
 }
 </style>
