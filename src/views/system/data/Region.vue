@@ -10,7 +10,7 @@
         新增区域
       </el-button>
       <span style="margin-left:12px;color:#666;font-size:13px">
-        提示：先在表格中选中一行，再点“新增区域”即可在该节点下添加子级；厂区只能改名，不能删除或再建厂区。
+        提示：先在表格中选中一行，再点"新增区域"即可在该节点下添加子级；厂区只能改名，不能删除或再建厂区。
       </span>
     </div>
 
@@ -42,18 +42,19 @@
       <el-table-column prop="areaCode" label="区域编码" width="150" />
       <el-table-column prop="areaType" label="区域类型" width="120">
         <template #default="{ row }">
+          <span v-if="row.areaType === 0"> </span>
           <span v-if="row.areaType === 'WORKSHOP'">车间</span>
           <span v-if="row.areaType === 'LINE'">产线</span>
           <span v-if="row.areaType === 'SECTION'">段</span>
         </template>
       </el-table-column>
-      <el-table-column prop="id"   label="区域ID" width="120" />
+      <el-table-column prop="id" label="区域ID" width="120" />
       <el-table-column prop="parentId" label="父级ID" width="120" />
       <el-table-column label="操作" width="220" align="center">
         <template #default="{row}">
-          <!-- 厂区只能编辑（根据实际根节点ID调整） -->
-          <template v-if="isRootNode(row)">
-            <el-button size="small" @click="openEdit(row)">编辑</el-button>
+          <!-- 厂区只能编辑 -->
+          <template v-if="row.id === 0">
+            <el-button size="small" @click="openEdit(row)" disabled>编辑</el-button>
           </template>
           <!-- 其余节点可编辑、可删除 -->
           <template v-else>
@@ -108,7 +109,7 @@ const form = ref({
   id: null,
   parentId: null,
   areaCode: '',
-  areaType: null,  // 仍然保留，用于API提交
+  areaType: null,
   remark: ''
 })
 const treeData = ref([])
@@ -120,7 +121,7 @@ const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
-// 表单验证规则（移除区域类型验证）
+// 表单验证规则
 const rules = reactive({
   areaName: [
     { required: true, message: '请输入区域名称', trigger: 'blur' },
@@ -138,9 +139,9 @@ const rules = reactive({
 /* ---------- 计算属性 ---------- */
 const dialogTitle = computed(() => dialogType.value === 'add' ? '新增区域' : '编辑区域')
 
-// 判断是否为根节点（parentId为null的节点）
-const isRootNode = (row) => {
-  return row.parentId === null
+// 判断是否为厂区节点
+const isFactoryNode = (row) => {
+  return row.id === 0
 }
 
 // 判断当前选中的是否是段（不能添加子区域）
@@ -151,9 +152,10 @@ const isSegmentSelected = computed(() => {
 // 编辑时显示区域类型文本
 const formAreaTypeText = computed(() => {
   switch(form.value.areaType) {
-    case 0: return '车间'
-    case 1: return '产线'
-    case 2: return '段'
+    case 0: return '厂区'
+    case 1: return '车间'
+    case 2: return '产线'
+    case 3: return '段'
     default: return ''
   }
 })
@@ -174,7 +176,18 @@ const loadTreeData = async () => {
           }
         })
       }
-      treeData.value = transformData(res.data.data)
+
+      // 添加厂区作为根节点
+      const factoryNode = {
+        id: 0,
+        areaName: '厂区',
+        areaCode: 'FACTORY',
+        areaType: 0,
+        parentId: null,
+        children: transformData(res.data.data)
+      }
+
+      treeData.value = [factoryNode]
     } else {
       ElMessage.error(res.data.msg || '加载区域数据失败')
     }
@@ -248,16 +261,16 @@ const openAdd = () => {
   }
 
   if (!selectedRow.value) {
-    // 未选中行，默认添加到根节点下
-    editingNode.value = treeData.value[0]
+    // 未选中行，默认添加到厂区下面（车间级）
+    editingNode.value = treeData.value[0] // 厂区
     if (!editingNode.value) {
-      ElMessage.warning('未找到根节点')
+      ElMessage.warning('未找到厂区节点')
       return
     }
   } else {
     const row = selectedRow.value
-    if (isRootNode(row)) {
-      // 选中根节点，添加子节点（车间）
+    if (isFactoryNode(row)) {
+      // 选中厂区 → 添加车间
       editingNode.value = row
     } else if (!row.children) {
       // 无children属性的节点不能添加子级
@@ -271,25 +284,22 @@ const openAdd = () => {
 
   // 根据父节点类型自动设置子节点类型
   let childAreaType = null
-  if (isRootNode(editingNode.value)) {
-    // 根节点下只能是车间（1）
+  console.log(editingNode.value.areaType)
+  if (isFactoryNode(editingNode.value)) {
+    // 厂区下只能是车间（0）
+    childAreaType = 0
+  } else if (editingNode.value.areaType === 'WORKSHOP') {
+    // 车间下只能是产线（1）
     childAreaType = 1
-  } else if (editingNode.value.areaType === 1) {
-    // 车间下只能是产线（2）
+  } else if (editingNode.value.areaType === 'LINE') {
+    // 产线下只能是段（2）
     childAreaType = 2
-  } else if (editingNode.value.areaType === 2) {
-    // 产线下只能是段（3）
-    childAreaType = 3
-  } else if (editingNode.value.areaType === 3) {
-    // 段下不能有子节点
-    ElMessage.error('段不能包含子区域')
-    return
   }
 
   dialogType.value = 'add'
   form.value = {
     areaName: '',
-    parentId: editingNode.value.id,
+    parentId: editingNode.value.id === 0 ? null : editingNode.value.id,
     id: null,
     areaCode: '',
     areaType: childAreaType,  // 自动设置类型
@@ -324,9 +334,10 @@ const handleSave = async () => {
   const submitData = {
     areaName: form.value.areaName.trim(),
     areaCode: form.value.areaCode.trim(),
-    areaType: form.value.areaType,  // 使用自动设置的类型
+    areaType: form.value.areaType,
     remark: form.value.remark.trim()
   }
+  console.log(submitData)
 
   try {
     loading.value = true
@@ -355,7 +366,6 @@ const handleSave = async () => {
         Object.assign(editingNode.value, {
           areaName: submitData.areaName,
           areaCode: submitData.areaCode,
-          // 不更新areaType，保持原有类型
           remark: submitData.remark
         })
         ElMessage.success('区域更新成功')
@@ -373,7 +383,7 @@ const handleSave = async () => {
 }
 
 const handleDelete = async (row) => {
-  if (isRootNode(row)) return // 根节点不可删除
+  if (isFactoryNode(row)) return // 厂区不可删除
 
   try {
     await ElMessageBox.confirm(
