@@ -117,97 +117,6 @@ const authStore = useAuthStore()
 const userAvatar = computed(() => authStore.user?.avatar_url || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png')
 const userName = computed(() => authStore.user?.user_name || '管理员')
 
-// 权限映射表（权限ID -> 权限路径）
-const permissionMap = {
-  16: '/',
-  17: '/asset',
-  18: '/asset/manage',
-  19: '/asset/manage/list',
-  20: '/asset/manage/master',
-  21: '/asset/manage/index',
-  22: '/asset/manage/import',
-  23: '/asset/manage/life',
-  24: '/asset/manage/life/transfer',
-  25: '/asset/configuration',
-  26: '/asset/configuration/B',
-  27: '/asset/screen',
-  28: '/asset/screen/C',
-  29: '/equipment',
-  30: '/equipment/monitoring',
-  31: '/equipment/monitoring/spc',
-  32: '/equipment/monitoring/exception',
-  33: '/equipment/status',
-  34: '/equipment/status/policies',
-  35: '/equipment/status/log',
-  36: '/equipment/location',
-  37: '/equipment/location/transfer',
-  38: '/equipment/location/pm',
-  39: '/equipment/location/recover',
-  40: '/equipment/location/logic',
-  41: '/equipment/EquipmentManage',
-  42: '/equipment/screen',
-  43: '/equipment/screen/oee',
-  44: '/equipment/screen/status',
-  45: '/equipment/screen/iot',
-  46: '/equipment/configuration',
-  47: '/inspection',
-  48: '/inspection/manage',
-  49: '/inspection/manage/ExceptionList',
-  50: '/inspection/manage/PlanList',
-  51: '/inspection/manage/TaskList',
-  52: '/inspection/configuration',
-  53: '/inspection/configuration/PolicyConfig',
-  54: '/inspection/screen',
-  55: '/inspection/screen/Dashboard',
-  56: '/inspection/screen/EfficiencyAnalysis',
-  57: '/inspection/screen/ExceptionAnalysis',
-  58: '/maintenance',
-  59: '/maintenance/manage',
-  60: '/maintenance/manage/ApprovalList',
-  61: '/maintenance/manage/MyApprovals',
-  62: '/maintenance/configuration',
-  63: '/maintenance/configuration/K',
-  64: '/maintenance/screen',
-  65: '/maintenance/screen/L',
-  66: '/mold',
-  67: '/mold/manage',
-  68: '/mold/manage/life',
-  69: '/mold/manage/operation',
-  70: '/mold/manage/maintenance',
-  71: '/mold/manage/storage',
-  72: '/parts',
-  73: '/parts/manage',
-  74: '/parts/manage/SparePartCode',
-  75: '/parts/manage/SparePartInventory',
-  76: '/parts/manage/EdgeInventory',
-  77: '/parts/manage/EquipmentBOM',
-  78: '/parts/manage/EquipmentDetail',
-  79: '/parts/manage/LocationForm',
-  80: '/parts/manage/LocationManagement',
-  81: '/parts/configuration',
-  82: '/parts/configuration/Q',
-  83: '/parts/screen',
-  84: '/parts/screen/R',
-  85: '/repair',
-  86: '/repair/manage',
-  87: '/repair/manage/KnowledgeBase',
-  88: '/repair/manage/RepairOrder',
-  89: '/repair/configuration',
-  90: '/repair/configuration/RepairConfig',
-  91: '/repair/screen',
-  92: '/repair/screen/RepairDashboard',
-  93: '/repair/worker/list',
-  94: '/repair/admin/list',
-  95: '/system',
-  96: '/system/manage',
-  97: '/system/manage/users_roles_permissions',
-  98: '/system/manage/regionManagement',
-  99: '/system/configuration',
-  100: '/system/configuration/DepartmentApproval',
-  101: '/system/screen',
-  102: '/system/screen/X'
-}
-
 // 菜单结构（包含三级菜单示例）
 const menuItems = [
   {
@@ -899,7 +808,7 @@ const filteredMenuItems = computed(() => {
 }
 
 :deep(.el-sub-menu .el-menu .el-menu-item) {
-  padding-left: 50px !important;
+  padding-left: 44px !important;
   height: 44px;
   line-height: 44px;
   margin: 2px 8px;
