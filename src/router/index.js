@@ -156,7 +156,7 @@ const routes = [
     },
     {
         path: '/equipment/screen',
-        name: 'equipment-screen',
+        name: 'screen',
         component: () => import('@/views/equipment/screen.vue'),
         meta: { title: '大屏' },
     },
