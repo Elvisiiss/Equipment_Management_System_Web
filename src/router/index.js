@@ -33,7 +33,7 @@ const routes = [
         path: '/asset/result',
         name: 'CheckResult',
         component: () => import('@/views/check/CheckResult.vue'),
-        meta: { title: '审批结果列表', icon: HomeFilled },
+        meta: { title: '审批配置', icon: HomeFilled },
     },
     {
         path: '/asset/manage',
