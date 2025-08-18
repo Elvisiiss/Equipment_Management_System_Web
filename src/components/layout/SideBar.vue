@@ -23,7 +23,7 @@
                 popper-class="menu-popper"
             >
               <template #title>
-                <div class="menu-item-content">
+                <div class="menu-item-content" @click="handleMenuClick(item)">
                   <span class="menu-icon" v-if="item.meta.icon">
                     <el-icon><component :is="item.meta.icon" /></el-icon>
                   </span>
@@ -39,7 +39,7 @@
                     :index="child.path"
                 >
                   <template #title>
-                    <div class="submenu-item">
+                    <div class="submenu-item" @click="handleMenuClick(child)">
                       <span class="menu-title">{{ child.meta.title }}</span>
                     </div>
                   </template>
@@ -556,7 +556,7 @@ const menuItems = [
             path: '/system/data/region',
             name: 'region',
             component: () => import('@/views/system/data/Region.vue'),
-            meta: { title: '区域管理2' },
+            meta: {title: '区域管理2'},
             permissionId: 1,
           },
           {
@@ -726,6 +726,7 @@ const filteredMenuItems = computed(() => {
   align-items: center;
   width: 100%;
   padding: 0 4px;
+  cursor: pointer;
 }
 
 .submenu-item {
@@ -734,6 +735,7 @@ const filteredMenuItems = computed(() => {
   justify-content: space-between;
   width: 100%;
   padding: 0 4px;
+  cursor: pointer;
 }
 
 .menu-icon {
