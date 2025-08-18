@@ -177,7 +177,6 @@
           </template>
         </el-table-column>
         <el-table-column prop="deviceCode" label="设备编码" width="160" />
-        <el-table-column prop="assetCode" label="资产编码" width="140" />
         <el-table-column prop="manufacturer" label="厂商" width="140" />
         <el-table-column prop="category" label="类别" width="120">
           <template #default="{ row }">
@@ -328,9 +327,6 @@
             <el-form-item label="设备编码" required>
               <el-input v-model="deviceForm.deviceCode" placeholder="请输入设备唯一编码" />
             </el-form-item>
-            <el-form-item label="资产编码">
-              <el-input v-model="deviceForm.assetCode" placeholder="请输入资产编码" />
-            </el-form-item>
             <el-form-item label="区域名称">
               <el-input v-model="deviceForm.areaName" placeholder="请输入区域名称" />
             </el-form-item>
@@ -439,7 +435,6 @@ const deviceForm = reactive({
   id: null,
   name: '',
   deviceCode: '',
-  assetCode: '',
   manufacturer: '',
   category: '',
   model: '',
@@ -729,7 +724,7 @@ onMounted(() => {
 /* 操作按钮区 */
 .operation-buttons {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   margin-top: 20px;
   flex-wrap: wrap;
 }
