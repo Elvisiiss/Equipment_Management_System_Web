@@ -240,7 +240,7 @@ const menuItems = [
       {
         path: '/equipment/screen',
         name: 'screen',
-        meta: {title: '大屏'},
+        meta: {title: '设备监控看板'},
         permissionId: 1,
         children: [
           {
