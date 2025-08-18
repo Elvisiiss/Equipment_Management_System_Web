@@ -2,13 +2,13 @@ import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
-
+// import vueDevTools from 'vite-plugin-vue-devtools'
+// TODO: 这个devTools在App.vue修改之后貌似就变到左上角去了，可以解决吗
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    vueDevTools(),
+    // vueDevTools(),
   ],
   resolve: {
     alias: {
