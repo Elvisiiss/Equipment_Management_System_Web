@@ -1,7 +1,6 @@
 <template>
   <div class="app-container">
-
-    <!-- 主内容区（三列布局） -->
+    <!-- 主内容区（两列布局） -->
     <div class="main-content">
       <!-- 第一列：设备组织结构 -->
       <div class="panel device-panel">
@@ -92,130 +91,11 @@
                 </template>
               </el-table-column>
               <el-table-column prop="createTime" label="创建时间" width="180" sortable></el-table-column>
-              <el-table-column label="操作" width="100" fixed="right">
+              <el-table-column label="操作" width="180" fixed="right">
                 <template #default="{ row }">
+                  <el-button type="text" size="small" @click.stop="showParamConfigDialog(row)">参数配置</el-button>
                   <el-button type="text" size="small" @click.stop="editProductModel(row)">编辑</el-button>
                   <el-button type="text" size="small" @click.stop="deleteProductModel(row)" style="color: #F56C6C">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </div>
-      </div>
-
-      <!-- 第三列：重要参数配置 -->
-      <div class="panel param-panel">
-        <div class="panel-header">
-          <div class="panel-title">
-            <i class="el-icon-setting"></i>
-            {{ currentModel ? currentModel.modelCode : '未选择型号' }} 重要参数配置
-          </div>
-          <div>
-            <el-button type="primary" @click="addParam" :disabled="!currentModel">新增参数</el-button>
-            <el-button type="success" @click="save" :disabled="!currentModel">保存配置</el-button>
-          </div>
-        </div>
-
-        <div class="panel-content">
-          <div class="table-container">
-            <el-table
-                ref="tableRef"
-                :data="paramTable"
-                row-key="id"
-                border
-                v-loading="paramLoading"
-                style="width: 100%"
-            >
-              <!-- 拖拽手柄 -->
-              <el-table-column width="50" align="center">
-                <template #default>
-                  <i class="drag-handle">⋮⋮</i>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="序号" width="60" type="index" align="center"></el-table-column>
-
-              <el-table-column label="参数名称" width="180">
-                <template #default="{ row }">
-                  <el-input v-model="row.name" placeholder="请输入名称" />
-                </template>
-              </el-table-column>
-
-              <el-table-column label="参数类型" width="120">
-                <template #default="{ row }">
-                  <el-select v-model="row.type">
-                    <el-option label="数值" value="number" />
-                    <el-option label="文本" value="text" />
-                    <el-option label="布尔" value="boolean" />
-                  </el-select>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="寄存器地址" width="180">
-                <template #default="{ row }">
-                  <el-input v-model="row.registerAddress" placeholder="0x0000" />
-                </template>
-              </el-table-column>
-
-              <el-table-column label="默认值" width="150">
-                <template #default="{ row }">
-                  <el-input
-                      v-if="row.type === 'text'"
-                      v-model="row.default"
-                      placeholder="默认值"
-                  />
-                  <el-input-number
-                      v-else-if="row.type === 'number'"
-                      v-model="row.default"
-                      :min="0"
-                      :precision="2"
-                      style="width: 100%"
-                  />
-                  <el-switch v-else v-model="row.default" />
-                </template>
-              </el-table-column>
-
-              <el-table-column label="下限" width="120">
-                <template #default="{ row }">
-                  <el-input-number
-                      v-if="row.type === 'number'"
-                      v-model="row.minValue"
-                      :min="0"
-                      :precision="2"
-                      style="width: 100%"
-                  />
-                  <span v-else>-</span>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="上限" width="120">
-                <template #default="{ row }">
-                  <el-input-number
-                      v-if="row.type === 'number'"
-                      v-model="row.maxValue"
-                      :min="0"
-                      :precision="2"
-                      style="width: 100%"
-                  />
-                  <span v-else>-</span>
-                </template>
-              </el-table-column>
-
-              <el-table-column label="单位" width="100">
-                <template #default="{ row }">
-                  <el-input v-model="row.unit" placeholder="单位" />
-                </template>
-              </el-table-column>
-
-              <el-table-column label="是否必填" width="90" align="center">
-                <template #default="{ row }">
-                  <el-checkbox v-model="row.required" />
-                </template>
-              </el-table-column>
-
-              <el-table-column label="操作" width="90" align="center">
-                <template #default="{ $index }">
-                  <el-button type="danger" link @click="removeParam($index)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -258,11 +138,175 @@
         <el-button type="primary" @click="submitProductModel">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 参数配置弹窗 -->
+    <el-dialog
+        v-model="paramDialogVisible"
+        :title="`${currentModel?.modelCode || ''} 重要参数配置`"
+        width="80%"
+        top="5vh"
+        :close-on-click-modal="false"
+    >
+      <div class="param-config-container">
+        <div class="param-tabs">
+          <el-button-group>
+            <el-button
+                :type="paramViewMode === 'list' ? 'primary' : ''"
+                @click="paramViewMode = 'list'"
+            >
+              列表视图
+            </el-button>
+            <el-button
+                :type="paramViewMode === 'json' ? 'primary' : ''"
+                @click="paramViewMode = 'json'"
+            >
+              JSON视图
+            </el-button>
+          </el-button-group>
+
+          <div class="param-actions">
+            <el-button type="primary" @click="addParam" :disabled="paramViewMode !== 'list'">
+              新增参数
+            </el-button>
+            <el-button
+                type="success"
+                @click="copyParamsToClipboard"
+                :disabled="!paramTable.length"
+            >
+              复制参数
+            </el-button>
+            <el-button
+                type="warning"
+                @click="pasteParamsFromClipboard"
+                :disabled="paramViewMode !== 'json'"
+            >
+              粘贴参数
+            </el-button>
+            <el-button type="danger" @click="save">保存配置</el-button>
+          </div>
+        </div>
+
+        <!-- 列表视图 -->
+        <div v-show="paramViewMode === 'list'" class="param-list-view">
+          <el-table
+              ref="tableRef"
+              :data="paramTable"
+              row-key="id"
+              border
+              v-loading="paramLoading"
+              style="width: 100%"
+          >
+            <!-- 拖拽手柄 -->
+            <el-table-column width="50" align="center">
+              <template #default>
+                <i class="drag-handle">⋮⋮</i>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="序号" width="60" type="index" align="center"></el-table-column>
+
+            <el-table-column label="参数名称" width="180">
+              <template #default="{ row }">
+                <el-input v-model="row.name" placeholder="请输入名称" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="参数类型" width="120">
+              <template #default="{ row }">
+                <el-select v-model="row.type">
+                  <el-option label="数值" value="number" />
+                  <el-option label="文本" value="text" />
+                  <el-option label="布尔" value="boolean" />
+                </el-select>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="寄存器地址" width="180">
+              <template #default="{ row }">
+                <el-input v-model="row.registerAddress" placeholder="0x0000" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="默认值" width="150">
+              <template #default="{ row }">
+                <el-input
+                    v-if="row.type === 'text'"
+                    v-model="row.default"
+                    placeholder="默认值"
+                />
+                <el-input-number
+                    v-else-if="row.type === 'number'"
+                    v-model="row.default"
+                    :min="0"
+                    :precision="2"
+                    style="width: 100%"
+                />
+                <el-switch v-else v-model="row.default" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="下限" width="120">
+              <template #default="{ row }">
+                <el-input-number
+                    v-if="row.type === 'number'"
+                    v-model="row.minValue"
+                    :min="0"
+                    :precision="2"
+                    style="width: 100%"
+                />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="上限" width="120">
+              <template #default="{ row }">
+                <el-input-number
+                    v-if="row.type === 'number'"
+                    v-model="row.maxValue"
+                    :min="0"
+                    :precision="2"
+                    style="width: 100%"
+                />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="单位" width="100">
+              <template #default="{ row }">
+                <el-input v-model="row.unit" placeholder="单位" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="是否必填" width="90" align="center">
+              <template #default="{ row }">
+                <el-checkbox v-model="row.required" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="操作" width="90" align="center">
+              <template #default="{ $index }">
+                <el-button type="danger" link @click="removeParam($index)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <!-- JSON视图 -->
+        <div v-show="paramViewMode === 'json'" class="param-json-view">
+          <el-input
+              type="textarea"
+              :rows="20"
+              placeholder="请输入JSON格式的参数配置"
+              v-model="paramJson"
+          ></el-input>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, nextTick, onMounted } from 'vue'
+import { ref, reactive, nextTick, onMounted, watch } from 'vue'
 import {
   ElMessage,
   ElMessageBox,
@@ -279,7 +323,8 @@ import {
   ElSwitch,
   ElCheckbox,
   ElTag,
-  ElButton
+  ElButton,
+  ElButtonGroup
 } from 'element-plus'
 import Sortable from 'sortablejs' // 需安装：npm install sortablejs
 
@@ -301,46 +346,50 @@ const productForm = reactive({
   templateId: null
 })
 const productFormRef = ref(null)
+// 参数配置弹窗
+const paramDialogVisible = ref(false)
+const paramViewMode = ref('list') // 'list' 或 'json'
+const paramJson = ref('')
 // 参数模板选项
 const templateOptions = ref([
   {
     value: '1',
-    label: '清洗机模板',
+    label: '产品型号1',
     children: [
-      { value: '11', label: '标准清洗模板' },
-      { value: '12', label: '快速清洗模板' }
+      { value: '11', label: '模板1' },
+      { value: '12', label: '模板2' }
     ]
   },
   {
     value: '2',
-    label: 'COG机模板',
+    label: '产品型号2',
     children: [
-      { value: '21', label: 'COG标准模板' },
-      { value: '22', label: 'COG高精度模板' }
+      { value: '21', label: '模板1' },
+      { value: '22', label: '模板2' }
     ]
   },
   {
     value: '3',
-    label: 'FOG机模板',
+    label: '产品型号3',
     children: [
-      { value: '31', label: 'FOG通用模板' },
-      { value: '32', label: 'FOG高速模板' }
+      { value: '31', label: '模板1' },
+      { value: '32', label: '模板2' }
     ]
   },
   {
     value: '4',
-    label: 'AOI机模板',
+    label: '产品型号4',
     children: [
-      { value: '41', label: 'AOI检测模板' },
-      { value: '42', label: 'AOI高速模板' }
+      { value: '41', label: '模板1' },
+      { value: '42', label: '模板2' }
     ]
   },
   {
     value: '5',
-    label: '组装机模板',
+    label: '产品型号5',
     children: [
-      { value: '51', label: '组装标准模板' },
-      { value: '52', label: '精密组装模板' }
+      { value: '51', label: '模板1' },
+      { value: '52', label: '模板2' }
     ]
   }
 ])
@@ -354,6 +403,27 @@ const cascaderProps = {
 const paramTable = ref([])
 const tableRef = ref(null)
 let sortable = null // 拖拽实例
+
+// 监听JSON视图变化，同步到表格数据
+watch(paramJson, (newVal) => {
+  try {
+    if (newVal) {
+      const parsed = JSON.parse(newVal)
+      if (Array.isArray(parsed)) {
+        paramTable.value = parsed
+      }
+    }
+  } catch (e) {
+    // JSON解析错误时不处理
+  }
+})
+
+// 监听表格数据变化，同步到JSON视图
+watch(paramTable, (newVal) => {
+  if (paramViewMode.value === 'json') {
+    paramJson.value = JSON.stringify(newVal, null, 2)
+  }
+}, { deep: true })
 
 // 2. 核心方法
 // 初始化设备树
@@ -454,12 +524,19 @@ const loadProductModels = (deviceId) => {
   }, 500)
 }
 
-// 选择产品型号（加载对应参数）
+// 选择产品型号（不再直接加载参数，改为点击按钮触发）
 const selectProductModel = (model) => {
   currentModel.value = model
+}
+
+// 显示参数配置弹窗
+const showParamConfigDialog = (model) => {
+  currentModel.value = model
   paramLoading.value = true
+  paramDialogVisible.value = true
+
+  // 根据模板ID加载不同参数
   setTimeout(() => {
-    // 根据模板ID加载不同参数
     switch (model.templateId) {
       case '11':
         paramTable.value = [
@@ -483,6 +560,7 @@ const selectProductModel = (model) => {
           { id: 10, name: '速度设置', type: 'number', registerAddress: '0x2003', default: 100, minValue: 50, maxValue: 200, unit: 'rpm', required: false }
         ]
     }
+    paramJson.value = JSON.stringify(paramTable.value, null, 2)
     paramLoading.value = false
     nextTick(initDrag) // 初始化拖拽
   }, 800)
@@ -595,6 +673,35 @@ const removeParam = (index) => {
 const save = () => {
   console.log('保存配置：', currentModel.value.modelCode, paramTable.value)
   ElMessage.success('参数配置已保存！')
+  paramDialogVisible.value = false
+}
+
+// 复制参数到剪贴板
+const copyParamsToClipboard = async () => {
+  try {
+    const jsonStr = JSON.stringify(paramTable.value, null, 2)
+    await navigator.clipboard.writeText(jsonStr)
+    ElMessage.success('参数已复制到剪贴板')
+  } catch (err) {
+    ElMessage.error('复制失败: ' + err.message)
+  }
+}
+
+// 从剪贴板粘贴参数
+const pasteParamsFromClipboard = async () => {
+  try {
+    const text = await navigator.clipboard.readText()
+    const parsed = JSON.parse(text)
+    if (Array.isArray(parsed)) {
+      paramTable.value = parsed
+      paramJson.value = JSON.stringify(parsed, null, 2)
+      ElMessage.success('参数已从剪贴板粘贴')
+    } else {
+      ElMessage.error('剪贴板内容不是有效的参数数组')
+    }
+  } catch (err) {
+    ElMessage.error('粘贴失败: ' + err.message)
+  }
 }
 
 // 初始化表格拖拽
@@ -637,11 +744,6 @@ onMounted(() => {
 }
 
 .model-panel {
-  width: 420px;
-  margin-right: 16px;
-}
-
-.param-panel {
   flex: 1;
 }
 
@@ -745,6 +847,30 @@ onMounted(() => {
   color: #409EFF;
 }
 
+/* 参数配置弹窗样式 */
+.param-config-container {
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+}
+
+.param-tabs {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.param-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.param-list-view,
+.param-json-view {
+  flex: 1;
+  overflow: auto;
+}
+
 /* 设备树表格层级样式（深度选择器） */
 .el-table :deep(.el-table__row--level-0) {
   background-color: #f5f7fa !important;
@@ -780,8 +906,7 @@ onMounted(() => {
   }
 
   .device-panel,
-  .model-panel,
-  .param-panel {
+  .model-panel {
     width: 100%;
     margin-right: 0;
     margin-bottom: 16px;
