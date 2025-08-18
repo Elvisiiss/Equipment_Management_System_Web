@@ -34,10 +34,10 @@
               @input="handleSearch"
           ></el-input>
         </el-form-item>
-        <el-form-item label="入库负责人">
+        <el-form-item label="设备名称">
           <el-input
-              v-model="filterForm.inCharge"
-              placeholder="请输入入库负责人"
+              v-model="filterForm.name"
+              placeholder="请输入设备名称"
               clearable
               @input="handleSearch"
           ></el-input>
@@ -515,13 +515,13 @@ const isSearched = ref(false) // 是否进行过搜索
 // 筛选表单
 const filterForm = reactive({
   deviceCode: '',
+  name: '', // Add name search field
   status: [],
-  inCharge: '',
   manufacturer: '',
   lifespan: '',
-  workshop: '', // 车间（单选）
-  line: [],     // 产线（多选）
-  segment: []   // 工段（多选）
+  workshop: '',
+  line: [],
+  segment: []
 })
 
 // 设备表单（新增/编辑共用）
@@ -536,7 +536,6 @@ const deviceForm = reactive({
   status: '',
   lifespan: '',
   inTime: '',
-  inCharge: '',
   acceptTime: '',
   acceptor: '',
   workshop: '',

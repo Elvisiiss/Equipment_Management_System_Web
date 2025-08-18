@@ -79,85 +79,125 @@
     </el-card>
 
     <!-- 第三行：BOM 备件清单 -->
-    <el-card class="full-width-card" header="BOM 清单（备件）">
-      <el-table :data="bomList" stripe style="width:100%">
-        <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="spareCode" label="备件编码" />
-        <el-table-column prop="spareName" label="备件名称" />
-        <el-table-column prop="usage" label="用量" width="80" />
-        <el-table-column prop="stock" label="库存数量" width="100" />
-        <el-table-column prop="areaName" label="区域名称" />
-      </el-table>
+    <el-card class="full-width-card">
+      <template #header>
+        <div class="card-header">
+          <span>BOM 清单（备件）</span>
+          <el-button @click="toggleCollapse('bom')" :icon="collapseState.bom ? 'ArrowDown' : 'ArrowUp'" circle />
+        </div>
+      </template>
+      <div v-show="!collapseState.bom">
+        <el-table :data="bomList" stripe style="width:100%">
+          <el-table-column type="index" label="序号" width="60" />
+          <el-table-column prop="spareCode" label="备件编码" />
+          <el-table-column prop="spareName" label="备件名称" />
+          <el-table-column prop="usage" label="用量" width="80" />
+          <el-table-column prop="stock" label="库存数量" width="100" />
+          <el-table-column prop="areaName" label="区域名称" />
+        </el-table>
+      </div>
     </el-card>
 
     <!-- 第四行：模治具清单 -->
-    <el-card class="full-width-card" header="模治具清单">
-      <el-table :data="mouldList" stripe style="width:100%">
-        <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="mouldCode" label="模具编码" />
-        <el-table-column prop="mouldName" label="模具名称" />
-        <el-table-column prop="usage" label="用量" width="80" />
-        <el-table-column prop="stock" label="库存数量" width="100" />
-        <el-table-column prop="productModel" label="产品型号" />
-        <el-table-column prop="areaName" label="区域名称" />
-      </el-table>
+    <el-card class="full-width-card">
+      <template #header>
+        <div class="card-header">
+          <span>模治具清单</span>
+          <el-button @click="toggleCollapse('mould')" :icon="collapseState.mould ? 'ArrowDown' : 'ArrowUp'" circle />
+        </div>
+      </template>
+      <div v-show="!collapseState.mould">
+        <el-table :data="mouldList" stripe style="width:100%">
+          <el-table-column type="index" label="序号" width="60" />
+          <el-table-column prop="mouldCode" label="模具编码" />
+          <el-table-column prop="mouldName" label="模具名称" />
+          <el-table-column prop="usage" label="用量" width="80" />
+          <el-table-column prop="stock" label="库存数量" width="100" />
+          <el-table-column prop="productModel" label="产品型号" />
+          <el-table-column prop="areaName" label="区域名称" />
+        </el-table>
+      </div>
     </el-card>
 
     <!-- 第五行：生命周期履历 -->
-    <el-card class="full-width-card" header="设备全生命周期履历">
-      <el-table :data="lifeCycleList" stripe style="width:100%">
-        <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="stage" label="阶段" />
-        <el-table-column prop="submitter" label="提交人" />
-        <el-table-column prop="submitTime" label="提交时间" sortable />
-        <el-table-column prop="approver" label="审批人" />
-        <el-table-column prop="approveTime" label="审批时间" sortable />
-        <el-table-column prop="remark" label="备注" />
-        <el-table-column prop="areaName" label="区域名称" />
-      </el-table>
+    <el-card class="full-width-card">
+      <template #header>
+        <div class="card-header">
+          <span>设备全生命周期履历</span>
+          <el-button @click="toggleCollapse('lifeCycle')" :icon="collapseState.lifeCycle ? 'ArrowDown' : 'ArrowUp'" circle />
+        </div>
+      </template>
+      <div v-show="!collapseState.lifeCycle">
+        <el-table :data="lifeCycleList" stripe style="width:100%">
+          <el-table-column type="index" label="序号" width="60" />
+          <el-table-column prop="stage" label="阶段" />
+          <el-table-column prop="submitter" label="提交人" />
+          <el-table-column prop="submitTime" label="提交时间" sortable />
+          <el-table-column prop="approver" label="审批人" />
+          <el-table-column prop="approveTime" label="审批时间" sortable />
+          <el-table-column prop="remark" label="备注" />
+          <el-table-column prop="areaName" label="区域名称" />
+        </el-table>
+      </div>
     </el-card>
 
     <!-- 第六行：点检任务 -->
-    <el-card class="full-width-card" header="今日点检任务">
-      <div style="margin-bottom:8px">
-        <el-button @click="refreshCheck">刷新</el-button>
-        <el-button @click="goToInspectionList">详情</el-button>
+    <el-card class="full-width-card">
+      <template #header>
+        <div class="card-header">
+          <span>今日点检任务</span>
+          <div>
+            <el-button @click="refreshCheck">刷新</el-button>
+            <el-button @click="goToInspectionList">详情</el-button>
+            <el-button @click="toggleCollapse('check')" :icon="collapseState.check ? 'ArrowDown' : 'ArrowUp'" circle />
+          </div>
+        </div>
+      </template>
+      <div v-show="!collapseState.check">
+        <el-table v-if="checkList.length" :data="checkList" stripe style="width:100%">
+          <el-table-column type="index" label="序号" width="60" />
+          <el-table-column prop="time" label="时间" />
+          <el-table-column prop="content" label="点检内容" />
+          <el-table-column prop="checker" label="点检人" />
+          <el-table-column prop="period" label="时段" />
+          <el-table-column prop="status" label="状态">
+            <template #default="{row}">
+              <el-tag :type="row.status==='已执行'?'success':'warning'">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="areaName" label="区域名称" />
+        </el-table>
+        <div v-else>今日无点检计划</div>
       </div>
-      <el-table v-if="checkList.length" :data="checkList" stripe style="width:100%">
-        <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="time" label="时间" />
-        <el-table-column prop="content" label="点检内容" />
-        <el-table-column prop="checker" label="点检人" />
-        <el-table-column prop="period" label="时段" />
-        <el-table-column prop="status" label="状态">
-          <template #default="{row}">
-            <el-tag :type="row.status==='已执行'?'success':'warning'">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="areaName" label="区域名称" />
-      </el-table>
-      <div v-else>今日无点检计划</div>
     </el-card>
 
     <!-- 第七行：保养信息 -->
-    <el-card class="full-width-card" header="今日保养信息">
-      <div style="margin-bottom:8px">
-        <el-button @click="refreshMaintain">刷新</el-button>
-        <el-button @click="goToMaintenanceList">详情</el-button>
+    <el-card class="full-width-card">
+      <template #header>
+        <div class="card-header">
+          <span>今日保养信息</span>
+          <div>
+            <el-button @click="refreshMaintain">刷新</el-button>
+            <el-button @click="goToMaintenanceList">详情</el-button>
+            <el-button @click="toggleCollapse('maintain')" :icon="collapseState.maintain ? 'ArrowDown' : 'ArrowUp'" circle />
+          </div>
+        </div>
+      </template>
+      <div v-show="!collapseState.maintain">
+        <el-table v-if="maintainList.length" :data="maintainList" stripe style="width:100%">
+          <el-table-column type="index" label="序号" width="60" />
+          <el-table-column prop="date" label="日期" />
+          <el-table-column prop="content" label="保养内容" />
+          <el-table-column prop="maintainer" label="保养人" />
+          <el-table-column prop="status" label="状态">
+            <template #default="{row}">
+              <el-tag type="success">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="areaName" label="区域名称" />
+        </el-table>
+        <div v-else>今日无保养计划</div>
       </div>
-      <el-table v-if="maintainList.length" :data="maintainList" stripe style="width:100%">
-        <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="date" label="日期" />
-        <el-table-column prop="content" label="保养内容" />
-        <el-table-column prop="maintainer" label="保养人" />
-        <el-table-column prop="status" label="状态">
-          <template #default="{row}">
-            <el-tag type="success">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="areaName" label="区域名称" />
-      </el-table>
-      <div v-else>今日无保养计划</div>
     </el-card>
 
     <!-- 弹窗：说明书/图纸 -->
@@ -300,16 +340,29 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {ref, reactive, computed, onMounted, nextTick} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import vueQr from 'vue-qr/src/packages/vue-qr.vue'
 import html2canvas from 'html2canvas'
-import { ElMessage } from 'element-plus'
-import { Document, Picture } from '@element-plus/icons-vue'
-import { deviceAPI } from '@/api/ckAPI'
+import {ElMessage} from 'element-plus'
+import {Document, Picture} from '@element-plus/icons-vue'
+import {deviceAPI} from '@/api/ckAPI'
 
 const router = useRouter()
 const route = useRoute()
+
+// 折叠状态
+const collapseState = reactive({
+  bom: false,
+  mould: false,
+  lifeCycle: false,
+  check: false,
+  maintain: false
+})
+
+function toggleCollapse(type) {
+  collapseState[type] = !collapseState[type]
+}
 
 /* 查询条件 */
 const query = reactive({
@@ -390,7 +443,7 @@ const today = new Date().toLocaleDateString()
 
 /* 状态 tag 颜色 */
 const statusTagType = computed(() => {
-  const map = { 运行中: 'success', 待机: 'info', 闲置: 'warning', 报废: 'danger', '转移中': 'primary' }
+  const map = {运行中: 'success', 待机: 'info', 闲置: 'warning', 报废: 'danger', '转移中': 'primary'}
   return map[device.status] || ''
 })
 
@@ -399,70 +452,70 @@ const areaOptions = [
   {
     value: 'C2车间',
     label: 'C2车间',
-    children: Array.from({ length: 6 }, (_, i) => ({
-      value: `C2车间${31+i}产线`,
-      label: `${31+i}产线`,
+    children: Array.from({length: 6}, (_, i) => ({
+      value: `C2车间${31 + i}产线`,
+      label: `${31 + i}产线`,
       children: [
-        { value: `C2车间${31+i}产线CFOG段`, label: 'CFOG段' },
-        { value: `C2车间${31+i}产线贴合段`, label: '贴合段' },
-        { value: `C2车间${31+i}产线组装段`, label: '组装段' },
-        { value: `C2车间${31+i}产线30米线`, label: '30米线' }
+        {value: `C2车间${31 + i}产线CFOG段`, label: 'CFOG段'},
+        {value: `C2车间${31 + i}产线贴合段`, label: '贴合段'},
+        {value: `C2车间${31 + i}产线组装段`, label: '组装段'},
+        {value: `C2车间${31 + i}产线30米线`, label: '30米线'}
       ]
     }))
   },
   {
     value: 'C3车间',
     label: 'C3车间',
-    children: Array.from({ length: 6 }, (_, i) => ({
-      value: `C3车间${41+i}产线`,
-      label: `${41+i}产线`,
+    children: Array.from({length: 6}, (_, i) => ({
+      value: `C3车间${41 + i}产线`,
+      label: `${41 + i}产线`,
       children: [
-        { value: `C3车间${41+i}产线CFOG段`, label: 'CFOG段' },
-        { value: `C3车间${41+i}产线贴合段`, label: '贴合段' },
-        { value: `C3车间${41+i}产线组装段`, label: '组装段' },
-        { value: `C3车间${41+i}产线30米线`, label: '30米线' }
+        {value: `C3车间${41 + i}产线CFOG段`, label: 'CFOG段'},
+        {value: `C3车间${41 + i}产线贴合段`, label: '贴合段'},
+        {value: `C3车间${41 + i}产线组装段`, label: '组装段'},
+        {value: `C3车间${41 + i}产线30米线`, label: '30米线'}
       ]
     }))
   },
   {
     value: 'C4车间',
     label: 'C4车间',
-    children: Array.from({ length: 6 }, (_, i) => ({
-      value: `C4车间${51+i}产线`,
-      label: `${51+i}产线`,
+    children: Array.from({length: 6}, (_, i) => ({
+      value: `C4车间${51 + i}产线`,
+      label: `${51 + i}产线`,
       children: [
-        { value: `C4车间${51+i}产线CFOG段`, label: 'CFOG段' },
-        { value: `C4车间${51+i}产线贴合段`, label: '贴合段' },
-        { value: `C4车间${51+i}产线组装段`, label: '组装段' },
-        { value: `C4车间${51+i}产线30米线`, label: '30米线' }
+        {value: `C4车间${51 + i}产线CFOG段`, label: 'CFOG段'},
+        {value: `C4车间${51 + i}产线贴合段`, label: '贴合段'},
+        {value: `C4车间${51 + i}产线组装段`, label: '组装段'},
+        {value: `C4车间${51 + i}产线30米线`, label: '30米线'}
       ]
     }))
   },
   {
     value: 'C5车间',
     label: 'C5车间',
-    children: Array.from({ length: 6 }, (_, i) => ({
-      value: `C5车间${61+i}产线`,
-      label: `${61+i}产线`,
+    children: Array.from({length: 6}, (_, i) => ({
+      value: `C5车间${61 + i}产线`,
+      label: `${61 + i}产线`,
       children: [
-        { value: `C5车间${61+i}产线CFOG段`, label: 'CFOG段' },
-        { value: `C5车间${61+i}产线贴合段`, label: '贴合段' },
-        { value: `C5车间${61+i}产线组装段`, label: '组装段' },
-        { value: `C5车间${61+i}产线30米线`, label: '30米线' }
+        {value: `C5车间${61 + i}产线CFOG段`, label: 'CFOG段'},
+        {value: `C5车间${61 + i}产线贴合段`, label: '贴合段'},
+        {value: `C5车间${61 + i}产线组装段`, label: '组装段'},
+        {value: `C5车间${61 + i}产线30米线`, label: '30米线'}
       ]
     }))
   },
   {
     value: 'C6车间',
     label: 'C6车间',
-    children: Array.from({ length: 6 }, (_, i) => ({
-      value: `C6车间${71+i}产线`,
-      label: `${71+i}产线`,
+    children: Array.from({length: 6}, (_, i) => ({
+      value: `C6车间${71 + i}产线`,
+      label: `${71 + i}产线`,
       children: [
-        { value: `C6车间${71+i}产线CFOG段`, label: 'CFOG段' },
-        { value: `C6车间${71+i}产线贴合段`, label: '贴合段' },
-        { value: `C6车间${71+i}产线组装段`, label: '组装段' },
-        { value: `C6车间${71+i}产线30米线`, label: '30米线' }
+        {value: `C6车间${71 + i}产线CFOG段`, label: 'CFOG段'},
+        {value: `C6车间${71 + i}产线贴合段`, label: '贴合段'},
+        {value: `C6车间${71 + i}产线组装段`, label: '组装段'},
+        {value: `C6车间${71 + i}产线30米线`, label: '30米线'}
       ]
     }))
   }
@@ -474,7 +527,7 @@ const cascaderProps = {
 }
 
 /* 搜索设备 */
-async function searchDevice () {
+async function searchDevice() {
   if (!query.code) {
     ElMessage.warning('请输入设备编码')
     return
@@ -483,7 +536,7 @@ async function searchDevice () {
 }
 
 /* 加载详情 */
-async function loadDeviceDetail (code) {
+async function loadDeviceDetail(code) {
   try {
     // 获取设备基本信息
     const deviceRes = await deviceAPI.getDeviceDetail(code)
@@ -494,7 +547,13 @@ async function loadDeviceDetail (code) {
     // 获取设备相关列表
     const listsRes = await deviceAPI.getDeviceLists(code)
     if (listsRes.success) {
-      const { bomList: bom, mouldList: mould, lifeCycleList: life, checkList: check, maintainList: maintain } = listsRes.data
+      const {
+        bomList: bom,
+        mouldList: mould,
+        lifeCycleList: life,
+        checkList: check,
+        maintainList: maintain
+      } = listsRes.data
       bomList.value = bom
       mouldList.value = mould
       lifeCycleList.value = life
@@ -508,7 +567,7 @@ async function loadDeviceDetail (code) {
 }
 
 /* 说明书/图纸弹窗 */
-function showDoc (type) {
+function showDoc(type) {
   docType.value = type
   docTitle.value = type === 'manual' ? '设备说明书' : '设备图纸'
   if (type === 'drawing') {
@@ -524,10 +583,8 @@ function showDoc (type) {
   docVisible.value = true
 }
 
-
-
 /* 导出二维码 */
-function downloadQR () {
+function downloadQR() {
   html2canvas(qrRef.value).then(canvas => {
     const a = document.createElement('a')
     a.href = canvas.toDataURL('image/png')
@@ -537,7 +594,7 @@ function downloadQR () {
 }
 
 /* 打开弹窗 */
-function openAcceptDialog () {
+function openAcceptDialog() {
   Object.assign(acceptForm, {
     result: '合格',
     opinion: '',
@@ -548,7 +605,7 @@ function openAcceptDialog () {
   acceptVisible.value = true
 }
 
-function openTransferDialog () {
+function openTransferDialog() {
   transferForm.targetArea = []
   transferForm.reason = ''
   transferForm.attachments = []
@@ -709,7 +766,7 @@ async function submitScrap() {
 }
 
 /* 刷新点检/保养 */
-async function refreshCheck () {
+async function refreshCheck() {
   try {
     const res = await deviceAPI.refreshCheckTasks(device.code)
     if (res.success) {
@@ -722,7 +779,7 @@ async function refreshCheck () {
   }
 }
 
-async function refreshMaintain () {
+async function refreshMaintain() {
   try {
     const res = await deviceAPI.refreshMaintainTasks(device.code)
     if (res.success) {
@@ -745,15 +802,33 @@ onMounted(() => {
   padding: 16px;
   background-color: #f5f5f5;
 }
+
 .full-width-card {
   margin-bottom: 16px;
 }
+
 .top-bar {
   margin-bottom: 16px;
 }
+
 .el-upload__tip {
   font-size: 12px;
   color: #606266;
   margin-top: 7px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #F0F0F0;
+  padding: 10px 16px;
+  border-radius: 4px 4px 0 0;
+}
+
+:deep(.el-card__header) {
+  background-color: #F0F0F0;
+  border-bottom: 1px solid #ebeef5;
+  padding: 0;
 }
 </style>

@@ -68,11 +68,11 @@ export const getDevicesByPage = (params) => {
         getAllDevices().then(allDevices => {
             // 应用筛选条件
             let filteredDevs = [...allDevices]
-            const { deviceCode, status, inCharge, manufacturer, lifespan, workshop, line, segment } = filterForm
+            const { deviceCode, status, name, manufacturer, lifespan, workshop, line, segment } = filterForm
 
             if (deviceCode) filteredDevs = filteredDevs.filter(d => d.deviceCode.includes(deviceCode))
+            if (name) filteredDevs = filteredDevs.filter(d => d.name.includes(name)) // Add name filter
             if (status.length > 0) filteredDevs = filteredDevs.filter(d => status.includes(d.status))
-            if (inCharge) filteredDevs = filteredDevs.filter(d => d.inCharge.includes(inCharge))
             if (manufacturer) filteredDevs = filteredDevs.filter(d => d.manufacturer.includes(manufacturer))
             if (lifespan) filteredDevs = filteredDevs.filter(d => String(d.lifespan) === lifespan)
             if (workshop) filteredDevs = filteredDevs.filter(d => d.workshop === workshop)
