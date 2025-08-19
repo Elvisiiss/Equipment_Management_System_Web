@@ -3,7 +3,6 @@
     <div class="control-panel">
       <div class="filter-row">
         <div class="filter-group">
-          <label>时间维度</label>
           <div class="time-dimension">
             <el-radio-group v-model="timeType" @change="handleTimeTypeChange">
               <el-radio-button label="day">日</el-radio-button>
@@ -12,10 +11,11 @@
               <el-radio-button label="year">年</el-radio-button>
             </el-radio-group>
           </div>
+
+
         </div>
 
         <div class="filter-group">
-          <label>时间范围</label>
           <div class="time-range">
             <!-- 日维度选择器 -->
             <div v-if="timeType === 'day'">

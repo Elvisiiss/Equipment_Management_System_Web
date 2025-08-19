@@ -197,43 +197,49 @@ const menuItems = [
             path: '/equipment/monitoring/manage',
             name: 'Equipment',
             meta: {title: '设备管理2'},
+            permissionId: 1,
+          },
+          {
+            path: '/equipment/monitoring/summary',
+            name: 'EquipmentSummary',
+            meta: {title: '设备详情2'},
             permissionId: 1
           },
           {
             path: '/equipment/monitoring/spc',
             name: 'SPCManagement',
             meta: {title: '设备SPC监控'},
-            permissionId: 1
+            permissionId: 1,
           },
           {
             path: '/equipment/monitoring/exception',
             name: 'Exception',
             meta: {title: '异常与阈值'},
-            permissionId: 1
+            permissionId: 1,
           },
           {
             path: '/equipment/status/policies',
             name: 'Policies',
             meta: {title: '状态规则与策略'},
-            permissionId: 1
+            permissionId: 1,
           },
           {
             path: '/equipment/location/transfer',
             name: 'Transfer',
             meta: {title: '设备转机'},
-            permissionId: 1
+            permissionId: 1,
           },
           {
             path: '/equipment/location/pm',
             name: 'PM',
             meta: {title: '布局管理'},
-            permissionId: 1
+            permissionId: 1,
           },
           {
             path: '/equipment/EquipmentManage',
             name: 'EquipmentManage',
             meta: {title: '设备管理'},
-            permissionId: 1
+            permissionId: 1,
           },
         ]
       },
@@ -247,6 +253,12 @@ const menuItems = [
             path: '/equipment/screen/oee',
             name: 'OEEManagement',
             meta: {title: 'OEE管理看板'},
+            permissionId: 1
+          },
+          {
+            path: '/equipment/screen/down',
+            name: 'DownManagement',
+            meta: {title: '停机分析报表'},
             permissionId: 1
           },
           {

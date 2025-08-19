@@ -86,6 +86,12 @@ const routes = [
         meta: {title: '设备管理2'},
     },
     {
+        path: '/equipment/monitoring/summary',
+        name: 'EquipmentSummary',
+        component:()=>import('@/views/equipment/manage/EquipmentSummary.vue'),
+        meta: {title: '设备详情2'},
+    },
+    {
         path: '/equipment/monitoring/spc',
         name: 'SPCManagement',
         component: () => import('@/views/equipment/manage/SPCManagement2.vue'),
@@ -165,6 +171,12 @@ const routes = [
         name: 'OEEManagement',
         component:()=>import('@/views/equipment/screen/OEEManagement.vue'),
         meta: { title: 'OEE管理看板' },
+    },
+    {
+        path: '/equipment/screen/down',
+        name: 'DownManagement',
+        component:()=>import('@/views/equipment/screen/DownManagement.vue'),
+        meta: {title: '停机分析报表'},
     },
     {
         path: '/equipment/screen/status',
