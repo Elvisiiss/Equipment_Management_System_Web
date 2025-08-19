@@ -56,79 +56,80 @@ const generateDeviceList = (params) => {
 
 // 生成设备详情
 const generateDeviceDetail = (deviceId) => {
+    // 产量及状态参数
+    const output = [
+        { id: 1, param: 'O001', description: '今日产量', value: Math.floor(Math.random() * 5000) + 10000, unit: 'pcs', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 2, param: 'O002', description: '昨日产量', value: Math.floor(Math.random() * 5000) + 10000, unit: 'pcs', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 3, param: 'O003', description: '本月累计', value: Math.floor(Math.random() * 50000) + 200000, unit: 'pcs', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 4, param: 'O004', description: '生产效率', value: (Math.random() * 20 + 80).toFixed(1), unit: '%', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 5, param: 'O005', description: '设备利用率', value: (Math.random() * 30 + 60).toFixed(1), unit: '%', isAlarm: false, isWarning: Math.random() > 0.7, updateTime: new Date().toLocaleString() },
+        { id: 6, param: 'O006', description: '运行时长', value: (Math.random() * 10 + 10).toFixed(1), unit: 'h', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 7, param: 'O007', description: '停机时长', value: (Math.random() * 2 + 0.1).toFixed(1), unit: 'h', isAlarm: Math.random() > 0.8, isWarning: Math.random() > 0.7, updateTime: new Date().toLocaleString() },
+        { id: 8, param: 'O008', description: '计划达成率', value: (Math.random() * 10 + 85).toFixed(1), unit: '%', isAlarm: false, isWarning: Math.random() > 0.8, updateTime: new Date().toLocaleString() }
+    ]
+
     // 报警参数
     const alarmParams = [
-        { id: 1, param: 'P001', description: '清洁升降气缸压力异常', value: '0.85', unit: 'MPa', isAlarm: true, updateTime: new Date().toLocaleString() },
-        { id: 2, param: 'P002', description: '保压升降气缸位置偏差过大', value: '1.2', unit: 'mm', isAlarm: false, updateTime: new Date().toLocaleString() },
-        { id: 3, param: 'P003', description: '下料翻转破真空B超时', value: '超时', unit: '', isAlarm: true, updateTime: new Date().toLocaleString() },
-        { id: 4, param: 'P004', description: '清洁平移气缸速度异常', value: '120', unit: 'mm/s', isAlarm: true, updateTime: new Date().toLocaleString() },
-        { id: 5, param: 'P005', description: '加热板温度偏差过大', value: '5.2', unit: '℃', isAlarm: false, updateTime: new Date().toLocaleString() },
-        { id: 6, param: 'P006', description: '真空度不足', value: '-85', unit: 'kPa', isAlarm: true, updateTime: new Date().toLocaleString() },
-        { id: 7, param: 'P007', description: '传送带电机过载', value: '125', unit: '%', isAlarm: true, updateTime: new Date().toLocaleString() },
-        { id: 8, param: 'P008', description: '冷却水流量不足', value: '8.5', unit: 'L/min', isAlarm: false, updateTime: new Date().toLocaleString() }
+        { id: 1, param: 'P001', description: '清洁升降气缸压力异常', value: '0.85', unit: 'MPa', isAlarm: true, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 2, param: 'P002', description: '保压升降气缸位置偏差过大', value: '1.2', unit: 'mm', isAlarm: false, isWarning: true, updateTime: new Date().toLocaleString() },
+        { id: 3, param: 'P003', description: '下料翻转破真空B超时', value: '超时', unit: '', isAlarm: true, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 4, param: 'P004', description: '清洁平移气缸速度异常', value: '120', unit: 'mm/s', isAlarm: true, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 5, param: 'P005', description: '加热板温度偏差过大', value: '5.2', unit: '℃', isAlarm: false, isWarning: true, updateTime: new Date().toLocaleString() },
+        { id: 6, param: 'P006', description: '真空度不足', value: '-85', unit: 'kPa', isAlarm: true, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 7, param: 'P007', description: '传送带电机过载', value: '125', unit: '%', isAlarm: true, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 8, param: 'P008', description: '冷却水流量不足', value: '8.5', unit: 'L/min', isAlarm: false, isWarning: true, updateTime: new Date().toLocaleString() }
     ]
 
     // 关键参数
     const keyParams = [
-        { id: 1, param: 'T001', description: '热压头温度', value: '182.5', unit: '℃', standard: '180', range: '±5℃', isWarning: false, updateTime: new Date().toLocaleString() },
-        { id: 2, param: 'P101', description: '热压压力', value: '45.2', unit: 'MPa', standard: '45', range: '40-50MPa', isWarning: false, updateTime: new Date().toLocaleString() },
-        { id: 3, param: 'T002', description: '冷却温度', value: '24.8', unit: '℃', standard: '25', range: '20-30℃', isWarning: false, updateTime: new Date().toLocaleString() },
-        { id: 4, param: 'V001', description: '传送带速度', value: '12.5', unit: 'm/min', standard: '12.8', range: '12.0-13.5m/min', isWarning: true, updateTime: new Date().toLocaleString() },
-        { id: 5, param: 'A001', description: '对位精度', value: '0.012', unit: 'mm', standard: '0.010', range: '≤0.015mm', isWarning: false, updateTime: new Date().toLocaleString() }
+        { id: 1, param: 'T001', description: '热压头温度', value: '182.5', unit: '℃', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 2, param: 'P101', description: '热压压力', value: '45.2', unit: 'MPa', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 3, param: 'T002', description: '冷却温度', value: '24.8', unit: '℃', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 4, param: 'V001', description: '传送带速度', value: '12.5', unit: 'm/min', isAlarm: false, isWarning: true, updateTime: new Date().toLocaleString() },
+        { id: 5, param: 'A001', description: '对位精度', value: '0.012', unit: 'mm', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 6, param: 'S001', description: '伺服电机转速', value: '1500', unit: 'rpm', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 7, param: 'L001', description: '激光功率', value: '85', unit: '%', isAlarm: false, isWarning: true, updateTime: new Date().toLocaleString() },
+        { id: 8, param: 'F001', description: '气流速度', value: '5.2', unit: 'm/s', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() }
     ]
 
     // 非关键参数
     const nonKeyParams = [
-        { id: 1, param: 'H001', description: '设备运行时间', value: '2568', unit: 'h', updateTime: new Date().toLocaleString() },
-        { id: 2, param: 'E001', description: '能耗', value: '32.5', unit: 'kWh', updateTime: new Date().toLocaleString() },
-        { id: 3, param: 'C001', description: '环境温度', value: '25.5', unit: '℃', updateTime: new Date().toLocaleString() },
-        { id: 4, param: 'C002', description: '环境湿度', value: '45', unit: '%', updateTime: new Date().toLocaleString() },
-        { id: 5, param: 'V002', description: '气源压力', value: '0.65', unit: 'MPa', updateTime: new Date().toLocaleString() }
+        { id: 1, param: 'H001', description: '设备运行时间', value: Math.floor(Math.random() * 1000) + 2000, unit: 'h', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 2, param: 'E001', description: '能耗', value: (Math.random() * 10 + 25).toFixed(1), unit: 'kWh', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 3, param: 'C001', description: '环境温度', value: (Math.random() * 5 + 23).toFixed(1), unit: '℃', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 4, param: 'C002', description: '环境湿度', value: Math.floor(Math.random() * 10) + 40, unit: '%', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 5, param: 'V002', description: '气源压力', value: (Math.random() * 0.1 + 0.6).toFixed(2), unit: 'MPa', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 6, param: 'W001', description: '用水量', value: (Math.random() * 50 + 100).toFixed(1), unit: 'L', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 7, param: 'N001', description: '噪音水平', value: (Math.random() * 5 + 65).toFixed(1), unit: 'dB', isAlarm: false, isWarning: Math.random() > 0.8, updateTime: new Date().toLocaleString() },
+        { id: 8, param: 'D001', description: '振动频率', value: (Math.random() * 2 + 10).toFixed(1), unit: 'Hz', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() }
     ]
 
-    // SOP看板
-    const sop = {
-        activeStep: 3,
-        steps: [
-            { title: '开机准备', description: '检查设备状态，确认各安全装置正常' },
-            { title: '参数设定', description: '根据生产计划设定设备参数' },
-            { title: '材料装载', description: '将原材料正确装载到指定位置' },
-            { title: '启动运行', description: '启动设备，监控初始运行状态' },
-            { title: '过程监控', description: '持续监控设备运行参数和产品质量' },
-            { title: '完成停机', description: '完成生产后按规程关闭设备' },
-            { title: '清洁维护', description: '清洁设备并进行日常维护' }
-        ],
-        attachments: [
-            { id: 1, name: '设备操作手册_V2.3.pdf' },
-            { id: 2, name: '安全操作规程.docx' },
-            { id: 3, name: '维护保养计划表.xlsx' }
-        ]
-    }
-
-    // 产量及状态
-    const outputMetrics = {
-        todayOutput: 12500,
-        todayChange: 2.5,
-        yieldRate: 98.7,
-        yieldChange: 0.3,
-        runningHours: 18.5,
-        oee: 85.2
-    }
+    // SOP参数
+    const sop = [
+        { id: 1, param: 'SOP001', description: '开机检查完成度', value: '100', unit: '%', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 2, param: 'SOP002', description: '参数设置合规性', value: '100', unit: '%', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 3, param: 'SOP003', description: '材料装载规范性', value: '95', unit: '%', isAlarm: false, isWarning: true, updateTime: new Date().toLocaleString() },
+        { id: 4, param: 'SOP004', description: '安全装置检查', value: '100', unit: '%', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 5, param: 'SOP005', description: '维护周期合规性', value: '80', unit: '%', isAlarm: false, isWarning: true, updateTime: new Date().toLocaleString() },
+        { id: 6, param: 'SOP006', description: '记录完整性', value: '90', unit: '%', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 7, param: 'SOP007', description: '停机操作规范性', value: '100', unit: '%', isAlarm: false, isWarning: false, updateTime: new Date().toLocaleString() },
+        { id: 8, param: 'SOP008', description: '异常处理及时性', value: '75', unit: '%', isAlarm: true, isWarning: false, updateTime: new Date().toLocaleString() }
+    ]
 
     return {
         id: deviceId,
         name: `设备 ${deviceId}`,
-        deviceCode: `DEV-${deviceId}`,
+        deviceCode: `DEV-${['C2', 'C3', 'C4', 'C5', 'C6'][deviceId % 5]}-${1000 + deviceId}`,
         workshop: ['C2', 'C3', 'C4', 'C5', 'C6'][deviceId % 5],
         line: ['31', '32', '33', '34', '35', '36'][deviceId % 6],
         segment: ['CFOG段', '贴合段', '组装段', '30米线段'][deviceId % 4],
         model: ['X-2000', 'ProMax 3000', 'Ultra 5', 'SuperClean'][deviceId % 4],
         status: ['运行中', '待机中', '故障中', '维护中'][deviceId % 4],
-        alarmParams,
-        keyParams,
-        nonKeyParams,
-        sop,
-        outputMetrics
+        output,          // 产量及状态参数
+        alarmParams,     // 报警参数
+        keyParams,       // 关键参数
+        nonKeyParams,    // 非关键参数
+        sop              // SOP参数
     }
 }
 

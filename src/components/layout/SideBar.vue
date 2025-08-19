@@ -206,12 +206,6 @@ const menuItems = [
             permissionId: 1
           },
           {
-            path: '/equipment/monitoring/spc',
-            name: 'SPCManagement',
-            meta: {title: '设备SPC监控'},
-            permissionId: 1,
-          },
-          {
             path: '/equipment/monitoring/exception',
             name: 'Exception',
             meta: {title: '异常与阈值'},
@@ -274,6 +268,13 @@ const menuItems = [
             permissionId: 1
           }
         ]
+      },
+      {
+        path: '/equipment/SPC',
+        name: 'SPCIndexPage',
+        meta: {title: '设备SPC看板'},
+        permissionId: 1,
+        children: []
       },
       {
         path: '/equipment/configuration',

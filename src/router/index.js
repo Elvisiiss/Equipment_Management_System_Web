@@ -92,9 +92,9 @@ const routes = [
         meta: {title: '设备详情2'},
     },
     {
-        path: '/equipment/monitoring/spc',
-        name: 'SPCManagement',
-        component: () => import('@/views/equipment/manage/SPCManagement2.vue'),
+        path: '/equipment/SPC',
+        name: 'SPCIndexPage',
+        component: () => import('@/views/equipment/SPC/SPCIndexPage.vue'),
         meta: { title: '设备SPC监控' }
     },
     {
