@@ -1,232 +1,173 @@
 <template>
   <div class="oee-app">
     <div class="control-panel">
-      <div class="filter-row">
-        <div class="filter-group">
-          <div class="time-dimension">
-            <el-radio-group v-model="timeType" @change="handleTimeTypeChange">
-              <el-radio-button label="day">日</el-radio-button>
-              <el-radio-button label="week">周</el-radio-button>
-              <el-radio-button label="month">月</el-radio-button>
-              <el-radio-button label="year">年</el-radio-button>
-            </el-radio-group>
-          </div>
+      <el-form :model="queryForm" inline label-width="90px" size="small">
+        <!-- 时间维度 -->
+        <el-form-item label="时间维度">
+          <el-radio-group v-model="timeType" @change="handleTimeTypeChange">
+            <el-radio-button label="day">日</el-radio-button>
+            <el-radio-button label="week">周</el-radio-button>
+            <el-radio-button label="month">月</el-radio-button>
+            <el-radio-button label="year">年</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
 
+        <!-- 开始 / 结束 -->
+        <el-form-item label="开始时间">
+          <el-date-picker
+              v-if="timeType === 'day'"
+              v-model="startDate"
+              type="date"
+              placeholder="开始日期"
+              :disabled-date="dayEndDateDisabled"
+              @change="handleDayStartChange"
+          />
+          <el-date-picker
+              v-if="timeType === 'month'"
+              v-model="startMonth"
+              type="month"
+              placeholder="开始月份"
+              :disabled-date="monthEndDateDisabled"
+              @change="handleMonthStartChange"
+          />
+          <el-date-picker
+              v-if="timeType === 'year'"
+              v-model="startYear"
+              type="year"
+              placeholder="开始年份"
+              :disabled-date="yearEndDateDisabled"
+              @change="handleYearStartChange"
+          />
+          <el-select
+              v-if="timeType === 'week'"
+              v-model="startWeek"
+              placeholder="开始周"
+              @change="handleWeekStartChange"
+          >
+            <el-option
+                v-for="week in fixedWeekOptions"
+                :key="week.value"
+                :label="week.label"
+                :value="week.value"
+                :disabled="endWeek && week.value > endWeek"
+            />
+          </el-select>
+        </el-form-item>
 
-        </div>
+        <el-form-item label="结束时间">
+          <el-date-picker
+              v-if="timeType === 'day'"
+              v-model="endDate"
+              type="date"
+              placeholder="结束日期"
+              :disabled-date="dayStartDateDisabled"
+              @change="handleDayEndChange"
+          />
+          <el-date-picker
+              v-if="timeType === 'month'"
+              v-model="endMonth"
+              type="month"
+              placeholder="结束月份"
+              :disabled-date="monthStartDateDisabled"
+              @change="handleMonthEndChange"
+          />
+          <el-date-picker
+              v-if="timeType === 'year'"
+              v-model="endYear"
+              type="year"
+              placeholder="结束年份"
+              :disabled-date="yearStartDateDisabled"
+              @change="handleYearEndChange"
+          />
+          <el-select
+              v-if="timeType === 'week'"
+              v-model="endWeek"
+              placeholder="结束周"
+              @change="handleWeekEndChange"
+          >
+            <el-option
+                v-for="week in fixedWeekOptions"
+                :key="week.value"
+                :label="week.label"
+                :value="week.value"
+                :disabled="startWeek && week.value < startWeek"
+            />
+          </el-select>
+        </el-form-item>
 
-        <div class="filter-group">
-          <div class="time-range">
-            <!-- 日维度选择器 -->
-            <div v-if="timeType === 'day'">
-              <el-row>
-                <el-col :span="24">
-                  <div class="time-range-label">开始日期</div>
-                  <el-date-picker
-                      v-model="startDate"
-                      type="date"
-                      placeholder="选择开始日期"
-                      :disabled-date="dayEndDateDisabled"
-                      @change="handleDayStartChange"
-                  />
-                </el-col>
-              </el-row>
-              <el-row style="margin-top: 8px;">
-                <el-col :span="24">
-                  <div class="time-range-label">结束日期</div>
-                  <el-date-picker
-                      v-model="endDate"
-                      type="date"
-                      placeholder="选择结束日期"
-                      :disabled-date="dayStartDateDisabled"
-                      @change="handleDayEndChange"
-                  />
-                </el-col>
-              </el-row>
-            </div>
-
-            <!-- 周维度选择器 -->
-            <div v-if="timeType === 'week'">
-              <el-row>
-                <el-col :span="24">
-                  <div class="time-range-label">起始周</div>
-                  <el-select
-                      v-model="startWeek"
-                      placeholder="选择起始周"
-                      @change="handleWeekStartChange"
-                  >
-                    <el-option
-                        v-for="week in fixedWeekOptions"
-                        :key="week.value"
-                        :label="week.label"
-                        :value="week.value"
-                        :disabled="endWeek && week.value > endWeek"
-                    />
-                  </el-select>
-                </el-col>
-              </el-row>
-              <el-row style="margin-top: 8px;">
-                <el-col :span="24">
-                  <div class="time-range-label">结束周</div>
-                  <el-select
-                      v-model="endWeek"
-                      placeholder="选择结束周"
-                      @change="handleWeekEndChange"
-                  >
-                    <el-option
-                        v-for="week in fixedWeekOptions"
-                        :key="week.value"
-                        :label="week.label"
-                        :value="week.value"
-                        :disabled="startWeek && week.value < startWeek"
-                    />
-                  </el-select>
-                </el-col>
-              </el-row>
-            </div>
-
-            <!-- 月维度选择器 -->
-            <div v-if="timeType === 'month'">
-              <el-row>
-                <el-col :span="24">
-                  <div class="time-range-item">
-                    <div class="time-range-label">开始月份</div>
-                    <el-date-picker
-                        v-model="startMonth"
-                        type="month"
-                        placeholder="选择开始月份"
-                        :disabled-date="monthEndDateDisabled"
-                        @change="handleMonthStartChange"
-                    />
-                  </div>
-                </el-col>
-              </el-row>
-              <el-row style="margin-top: 8px;">
-                <el-col :span="24">
-                  <div class="time-range-item">
-                    <div class="time-range-label">结束月份</div>
-                    <el-date-picker
-                        v-model="endMonth"
-                        type="month"
-                        placeholder="选择结束月份"
-                        :disabled-date="monthStartDateDisabled"
-                        @change="handleMonthEndChange"
-                    />
-                  </div>
-                </el-col>
-              </el-row>
-            </div>
-
-            <!-- 年维度选择器 -->
-            <div v-if="timeType === 'year'">
-              <el-row>
-                <el-col :span="24">
-                  <div class="time-range-item">
-                    <div class="time-range-label">开始年份</div>
-                    <el-date-picker
-                        v-model="startYear"
-                        type="year"
-                        placeholder="选择开始年份"
-                        :disabled-date="yearEndDateDisabled"
-                        @change="handleYearStartChange"
-                    />
-                  </div>
-                </el-col>
-              </el-row>
-              <el-row style="margin-top: 8px;">
-                <el-col :span="24">
-                  <div class="time-range-item">
-                    <div class="time-range-label">结束年份</div>
-                    <el-date-picker
-                        v-model="endYear"
-                        type="year"
-                        placeholder="选择结束年份"
-                        :disabled-date="yearStartDateDisabled"
-                        @change="handleYearEndChange"
-                    />
-                  </div>
-                </el-col>
-              </el-row>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="filter-row">
-        <div class="filter-group">
-          <label>车间</label>
+        <!-- 车间 -->
+        <el-form-item label="车间">
           <el-select v-model="workshop" placeholder="选择车间">
-            <el-option label="全部车间" value="all"></el-option>
-            <el-option label="一车间" value="workshop1"></el-option>
-            <el-option label="二车间" value="workshop2"></el-option>
-            <el-option label="三车间" value="workshop3"></el-option>
+            <el-option label="全部车间" value="all" />
+            <el-option label="一车间" value="workshop1" />
+            <el-option label="二车间" value="workshop2" />
+            <el-option label="三车间" value="workshop3" />
           </el-select>
-        </div>
+        </el-form-item>
 
-        <div class="filter-group">
-          <label>产线</label>
+        <!-- 产线 -->
+        <el-form-item label="产线">
           <el-select v-model="productionLine" placeholder="选择产线">
-            <el-option label="全部产线" value="all"></el-option>
-            <el-option label="31产线" value="line31"></el-option>
-            <el-option label="32产线" value="line32"></el-option>
-            <el-option label="33产线" value="line33"></el-option>
+            <el-option label="全部产线" value="all" />
+            <el-option label="31产线" value="line31" />
+            <el-option label="32产线" value="line32" />
+            <el-option label="33产线" value="line33" />
           </el-select>
-        </div>
+        </el-form-item>
 
-        <div class="filter-group">
-          <label>工段</label>
+        <!-- 工段 -->
+        <el-form-item label="工段">
           <el-select v-model="workSection" placeholder="选择工段">
-            <el-option label="全部工段" value="all"></el-option>
-            <el-option label="CFOG段" value="section1"></el-option>
-            <el-option label="贴合段" value="section2"></el-option>
-            <el-option label="组装段" value="section3"></el-option>
+            <el-option label="全部工段" value="all" />
+            <el-option label="CFOG段" value="section1" />
+            <el-option label="贴合段" value="section2" />
+            <el-option label="组装段" value="section3" />
           </el-select>
-        </div>
-      </div>
+        </el-form-item>
 
-      <div class="filter-row">
-        <div class="filter-group">
-          <label>设备名称</label>
+        <!-- 设备名称 -->
+        <el-form-item label="设备名称">
           <el-select v-model="equipment" placeholder="选择设备">
-            <el-option label="全部设备" value="all"></el-option>
-            <el-option label="冲压机-A型" value="press-a"></el-option>
-            <el-option label="焊接机器人-B型" value="welder-b"></el-option>
-            <el-option label="喷涂机-C型" value="painter-c"></el-option>
+            <el-option label="全部设备" value="all" />
+            <el-option label="冲压机-A型" value="press-a" />
+            <el-option label="焊接机器人-B型" value="welder-b" />
+            <el-option label="喷涂机-C型" value="painter-c" />
           </el-select>
-        </div>
+        </el-form-item>
 
-        <div class="filter-group">
-          <label>厂商</label>
+        <!-- 厂商 -->
+        <el-form-item label="厂商">
           <el-select v-model="manufacturer" placeholder="选择设备厂商">
-            <el-option label="全部厂商" value="all"></el-option>
-            <el-option label="西门子" value="siemens"></el-option>
-            <el-option label="发那科" value="fanuc"></el-option>
-            <el-option label="ABB" value="abb"></el-option>
+            <el-option label="全部厂商" value="all" />
+            <el-option label="西门子" value="siemens" />
+            <el-option label="发那科" value="fanuc" />
+            <el-option label="ABB" value="abb" />
           </el-select>
-        </div>
+        </el-form-item>
 
-        <div class="filter-group">
-          <label>班次</label>
+        <!-- 班次 -->
+        <el-form-item label="班次">
           <el-select v-model="shift" placeholder="选择班次">
-            <el-option label="全部班次" value="all"></el-option>
-            <el-option label="白班 (8:00-20:00)" value="day"></el-option>
-            <el-option label="夜班 (20:00-8:00)" value="night"></el-option>
+            <el-option label="全部班次" value="all" />
+            <el-option label="白班 (8:00-20:00)" value="day" />
+            <el-option label="夜班 (20:00-8:00)" value="night" />
           </el-select>
-        </div>
+        </el-form-item>
 
-        <div class="filter-group">
-          <label>稼动率核算方式</label>
+        <!-- 核算方式 -->
+        <el-form-item label="核算方式">
           <el-select v-model="calculationMethod" placeholder="选择核算方式">
-            <el-option label="包含离线时长" value="include"></el-option>
-            <el-option label="不包含离线时长" value="exclude"></el-option>
+            <el-option label="包含离线时长" value="include" />
+            <el-option label="不包含离线时长" value="exclude" />
           </el-select>
-        </div>
-      </div>
+        </el-form-item>
 
-      <div class="actions">
-        <el-button type="primary" @click="fetchData">查询数据</el-button>
-        <el-button @click="resetFilters">重置条件</el-button>
-      </div>
+        <!-- 按钮 -->
+        <el-form-item>
+          <el-button type="primary" @click="fetchData">查询数据</el-button>
+          <el-button @click="resetFilters">重置条件</el-button>
+        </el-form-item>
+      </el-form>
     </div>
 
     <div class="chart-container">
@@ -236,10 +177,18 @@
       </div>
       <div id="oee-chart" ref="chartRef"></div>
       <div class="legend">
-        <div class="legend-item"><div class="legend-color" style="background-color: #e74c3c;"></div>时间稼动率</div>
-        <div class="legend-item"><div class="legend-color" style="background-color: #f39c12;"></div>性能稼动率</div>
-        <div class="legend-item"><div class="legend-color" style="background-color: #2ecc71;"></div>良率</div>
-        <div class="legend-item"><div class="legend-color" style="background-color: #3498db;"></div>OEE</div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #e74c3c;"></div>时间稼动率
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #f39c12;"></div>性能稼动率
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #2ecc71;"></div>良率
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: #3498db;"></div>OEE
+        </div>
       </div>
     </div>
 
@@ -251,42 +200,12 @@
           style="width: 100%"
           @row-click="handleRowClick"
       >
-        <el-table-column
-            prop="index"
-            label="序号"
-            width="80"
-            align="center"
-        />
-        <el-table-column
-            prop="name"
-            :label="currentLevelLabel"
-            width="180"
-            align="center"
-        />
-        <el-table-column
-            prop="availability"
-            label="时间稼动率(%)"
-            width="150"
-            align="center"
-        />
-        <el-table-column
-            prop="performance"
-            label="性能稼动率(%)"
-            width="150"
-            align="center"
-        />
-        <el-table-column
-            prop="quality"
-            label="良率(%)"
-            width="150"
-            align="center"
-        />
-        <el-table-column
-            prop="oee"
-            label="OEE(%)"
-            width="150"
-            align="center"
-        >
+        <el-table-column prop="index" label="序号" width="80" align="center" />
+        <el-table-column prop="name" :label="currentLevelLabel" width="180" align="center" />
+        <el-table-column prop="availability" label="时间稼动率(%)" width="150" align="center" />
+        <el-table-column prop="performance" label="性能稼动率(%)" width="150" align="center" />
+        <el-table-column prop="quality" label="良率(%)" width="150" align="center" />
+        <el-table-column prop="oee" label="OEE(%)" width="150" align="center">
           <template #default="scope">
             <el-button type="text" @click.stop="handleOeeClick(scope.row)">
               {{ scope.row.oee }}
@@ -309,7 +228,9 @@ import {
   ElDatePicker,
   ElButton,
   ElTable,
-  ElTableColumn
+  ElTableColumn,
+  ElForm,
+  ElFormItem
 } from 'element-plus';
 
 // 时间维度
@@ -318,8 +239,8 @@ const timeType = ref('day');
 // 时间范围变量
 const startDate = ref(null);
 const endDate = ref(null);
-const startWeek = ref(null)
-const endWeek = ref(null)
+const startWeek = ref(null);
+const endWeek = ref(null);
 const startMonth = ref(null);
 const endMonth = ref(null);
 const startYear = ref(null);
@@ -342,10 +263,10 @@ const chartRef = ref(null);
 let chartInstance = null;
 
 // 表格数据
-const currentLevel = ref('workshop'); // workshop, productionLine, workSection, equipment
+const currentLevel = ref('workshop');
 const currentLevelLabel = ref('车间名称');
 const currentTableData = ref([]);
-const dataStack = ref([]); // 用于存储历史数据
+const dataStack = ref([]);
 
 // 模拟数据
 const workshopData = [
@@ -378,8 +299,7 @@ const workSectionData = {
     { id: 'section2', name: '贴合段', availability: 84, performance: 77, quality: 94, oee: 60.9 },
     { id: 'section3', name: '组装段', availability: 85, performance: 80, quality: 95, oee: 64.6 },
     { id: 'section4', name: '30米线段', availability: 83, performance: 78, quality: 94, oee: 60.8 }
-  ],
-  // 其他产线的工段数据...
+  ]
 };
 
 const equipmentData = {
@@ -387,11 +307,22 @@ const equipmentData = {
     { id: 'equip1', name: '冲压机-A1', availability: 80, performance: 75, quality: 92, oee: 55.2 },
     { id: 'equip2', name: '焊接机器人-B1', availability: 82, performance: 78, quality: 93, oee: 59.5 },
     { id: 'equip3', name: '喷涂机-C1', availability: 85, performance: 80, quality: 94, oee: 63.9 }
-  ],
-  // 其他工段的设备数据...
+  ]
 };
 
-// 初始化表格数据
+const fixedWeekOptions = [
+  { label: '第20周', value: 20 },
+  { label: '第21周', value: 21 },
+  { label: '第22周', value: 22 },
+  { label: '第23周', value: 23 },
+  { label: '第24周', value: 24 },
+  { label: '第25周', value: 25 },
+  { label: '第26周', value: 26 },
+  { label: '第27周', value: 27 },
+  { label: '第28周', value: 28 },
+  { label: '第29周', value: 29 }
+];
+
 const initTableData = () => {
   currentLevel.value = 'workshop';
   currentLevelLabel.value = '车间名称';
@@ -402,12 +333,8 @@ const initTableData = () => {
   dataStack.value = [];
 };
 
-// 处理行点击
-const handleRowClick = (row) => {
-  // 点击行逻辑，如果需要可以添加
-};
+const handleRowClick = (row) => {};
 
-// 处理OEE列点击
 const handleOeeClick = (row) => {
   dataStack.value.push({
     level: currentLevel.value,
@@ -439,7 +366,6 @@ const handleOeeClick = (row) => {
   }
 };
 
-// 返回上一级
 const goBack = () => {
   if (dataStack.value.length > 0) {
     const prevData = dataStack.value.pop();
@@ -449,7 +375,6 @@ const goBack = () => {
   }
 };
 
-// 日期范围信息
 const dataRangeInfo = computed(() => {
   if (timeType.value === 'day' && startDate.value && endDate.value) {
     const start = formatDate(startDate.value);
@@ -469,7 +394,6 @@ const dataRangeInfo = computed(() => {
   return '';
 });
 
-// 日期格式化函数
 const formatDate = (date) => {
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -489,9 +413,8 @@ const formatYear = (date) => {
   return date.getFullYear().toString();
 };
 
-// 处理时间维度变化
 const handleTimeTypeChange = (val) => {
-  switch(val) {
+  switch (val) {
     case 'day':
       chartTitle.value = '日设备 OEE 趋势报表';
       initDayRange();
@@ -512,7 +435,6 @@ const handleTimeTypeChange = (val) => {
   renderChart();
 };
 
-// 初始化日期范围
 const initDayRange = () => {
   const today = new Date();
   const oneWeekAgo = new Date();
@@ -522,7 +444,8 @@ const initDayRange = () => {
 };
 
 const initWeekRange = () => {
-  // 周维度的初始化逻辑
+  startWeek.value = 25;
+  endWeek.value = 29;
 };
 
 const initMonthRange = () => {
@@ -541,7 +464,6 @@ const initYearRange = () => {
   endYear.value = now;
 };
 
-// 日期禁用函数
 const dayEndDateDisabled = (time) => {
   if (!endDate.value) return false;
   return time.getTime() > endDate.value.getTime();
@@ -572,7 +494,6 @@ const yearStartDateDisabled = (time) => {
   return time.getFullYear() < startYear.value.getFullYear();
 };
 
-// 处理日期变化
 const handleDayStartChange = () => {
   if (startDate.value && endDate.value && startDate.value > endDate.value) {
     endDate.value = new Date(startDate.value);
@@ -584,6 +505,14 @@ const handleDayEndChange = () => {
   if (startDate.value && endDate.value && startDate.value > endDate.value) {
     startDate.value = new Date(endDate.value);
   }
+  fetchData();
+};
+
+const handleWeekStartChange = () => {
+  fetchData();
+};
+
+const handleWeekEndChange = () => {
   fetchData();
 };
 
@@ -615,17 +544,14 @@ const handleYearEndChange = () => {
   fetchData();
 };
 
-// 获取数据
 const fetchData = () => {
   console.log('获取数据中...');
-  // 模拟API请求
   setTimeout(() => {
     renderChart();
     initTableData();
   }, 500);
 };
 
-// 重置条件
 const resetFilters = () => {
   timeType.value = 'day';
   shift.value = 'all';
@@ -642,7 +568,6 @@ const resetFilters = () => {
   initTableData();
 };
 
-// 渲染图表
 const renderChart = () => {
   if (!chartRef.value) return;
 
@@ -652,14 +577,13 @@ const renderChart = () => {
 
   chartInstance = echarts.init(chartRef.value);
 
-  // 根据时间维度生成不同的数据
   let xAxisData = [];
   let availabilityData = [];
   let performanceData = [];
   let qualityData = [];
   let oeeData = [];
 
-  switch(timeType.value) {
+  switch (timeType.value) {
     case 'day':
       xAxisData = ['2025-07-20', '2025-07-21', '2025-07-22', '2025-07-23', '2025-07-24'];
       availabilityData = [85, 82, 88, 86, 90];
@@ -699,7 +623,7 @@ const renderChart = () => {
           color: '#999'
         }
       },
-      formatter: function(params) {
+      formatter: function (params) {
         let result = params[0].name + '<br/>';
         params.forEach(item => {
           let suffix = item.seriesType === 'line' ? '%' : '%';
@@ -784,7 +708,6 @@ const renderChart = () => {
   chartInstance.setOption(option);
 };
 
-// 窗口大小变化时重绘图表
 const handleResize = () => {
   if (chartInstance) {
     chartInstance.resize();
@@ -792,27 +715,17 @@ const handleResize = () => {
 };
 
 onMounted(() => {
-  // 初始化日期范围
   initDayRange();
-
-  // 初始化图表
   renderChart();
-
-  // 初始化表格数据
   initTableData();
-
-  // 监听窗口大小变化
   window.addEventListener('resize', handleResize);
 });
 
 onBeforeUnmount(() => {
-  // 销毁图表实例
   if (chartInstance) {
     chartInstance.dispose();
     chartInstance = null;
   }
-
-  // 移除事件监听
   window.removeEventListener('resize', handleResize);
 });
 </script>
@@ -848,21 +761,6 @@ body {
   animation: fadeInLeft 0.8s ease;
 }
 
-.filter-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.filter-row:last-child {
-  margin-bottom: 0;
-}
-
-.filter-group {
-  flex: 1;
-  min-width: 0;
-}
-
 .chart-container {
   background: white;
   border-radius: 12px;
@@ -886,61 +784,6 @@ body {
   color: #1a6dcc;
   margin-bottom: 25px;
   font-weight: 600;
-}
-
-.panel-title {
-  font-size: 1.4rem;
-  color: #1a6dcc;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #eaeef5;
-  font-weight: 600;
-}
-
-.filter-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #555;
-}
-
-.filter-group .el-select {
-  width: 100%;
-}
-
-.time-range {
-  display: flex;
-  gap: 15px;
-  margin-top: 10px;
-}
-
-.time-range .el-date-editor {
-  flex: 1;
-}
-
-.time-range-item {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.time-range-label {
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 5px;
-}
-
-.actions {
-  display: flex;
-  gap: 15px;
-  margin-top: 25px;
-}
-
-.actions button {
-  flex: 1;
-  padding: 12px;
-  font-size: 1rem;
-  font-weight: 500;
 }
 
 .chart-title {
@@ -977,33 +820,12 @@ body {
   margin-right: 8px;
 }
 
-.time-dimension {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 25px;
-}
-
-.time-dimension .el-radio-button {
-  margin: 0 5px;
-}
-
 .data-range-info {
   text-align: center;
   margin-bottom: 15px;
   font-size: 1.1rem;
   color: #555;
   font-weight: 500;
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 @keyframes fadeInLeft {
@@ -1040,12 +862,8 @@ body {
 }
 
 @media (max-width: 992px) {
-  .filter-row {
-    flex-direction: column;
-  }
-
-  .time-range {
-    flex-direction: column;
+  .control-panel .el-form-item {
+    width: 100%;
   }
 }
 </style>
