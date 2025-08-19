@@ -566,12 +566,6 @@ const menuItems = [
             permissionId: 1,
           },
           {
-            path: '/system/data/DepartmentApproval',
-            name: 'DepartmentApproval',
-            meta: {title: '审批设置'},
-            permissionId: 1
-          },
-          {
             path: '/system/data/dict',
             name: 'dictionary',
             meta: {title: '字典管理'},
@@ -581,6 +575,12 @@ const menuItems = [
             path: '/system/data/log',
             name: 'log',
             meta: {title: '日志管理'},
+            permissionId: 1
+          },
+          {
+            path: '/system/data/DepartmentApproval',
+            name: 'DepartmentApproval',
+            meta: {title: '审批设置'},
             permissionId: 1
           },
         ]

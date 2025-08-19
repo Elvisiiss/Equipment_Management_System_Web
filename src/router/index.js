@@ -88,7 +88,7 @@ const routes = [
     {
         path: '/equipment/monitoring/spc',
         name: 'SPCManagement',
-        component: () => import('@/views/equipment/manage/SPCManagement.vue'),
+        component: () => import('@/views/equipment/manage/SPCManagement2.vue'),
         meta: { title: '设备SPC监控' }
     },
     {
