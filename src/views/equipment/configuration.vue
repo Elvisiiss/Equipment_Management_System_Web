@@ -9,7 +9,7 @@
             <i class="el-icon-menu"></i>
             设备组织结构
           </div>
-          <el-button type="primary" icon="el-icon-refresh" circle @click="refreshData"></el-button>
+          <el-button type="primary" icon="refresh" circle @click="refreshData"></el-button>
         </div>
 
         <div class="selected-device" v-if="currentDevice">
@@ -66,7 +66,7 @@
           </div>
           <el-button
               type="primary"
-              icon="el-icon-plus"
+              icon="plus"
               @click="addProductModel"
               :disabled="!currentDevice"
           >
