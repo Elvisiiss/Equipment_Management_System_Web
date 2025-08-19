@@ -39,21 +39,6 @@
               :md="8"
               :lg="6"
           >
-            <el-form-item label="自动锁屏时间">
-              <el-select v-model="lockTime">
-                <el-option label="5分钟" value="5"></el-option>
-                <el-option label="10分钟" value="10"></el-option>
-                <el-option label="30分钟" value="30"></el-option>
-                <el-option label="永不锁屏" value="0"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col
-              :xs="24"
-              :sm="12"
-              :md="8"
-              :lg="6"
-          >
             <el-form-item label="数据备份频率">
               <el-select v-model="backupFreq">
                 <el-option label="每日" value="daily"></el-option>
@@ -63,6 +48,95 @@
             </el-form-item>
           </el-col>
         </el-row>
+
+        <!-- 新增时间配置部分 -->
+        <div class="time-config-section">
+          <div class="time-config-header">
+            <h3 class="time-config-title">时间配置（班次设置）</h3>
+            <el-button
+                type="primary"
+                size="small"
+                @click="addShift"
+                class="add-shift-btn"
+            >
+              <el-icon><Plus /></el-icon> 添加班次
+            </el-button>
+          </div>
+
+          <!-- 动态显示班次时间设置 -->
+          <div v-for="(shift, index) in shifts" :key="shift.id" class="shift-item">
+            <el-divider content-position="left">
+              {{ shift.name }}
+              <el-button
+                  type="text"
+                  size="small"
+                  class="delete-shift-btn"
+                  @click="removeShift(index)"
+                  :disabled="shifts.length <= 1"
+              >
+                <el-icon color="#f56c6c"><Delete /></el-icon>
+              </el-button>
+            </el-divider>
+            <el-row :gutter="20" class="settings-row">
+              <el-col
+                  :xs="24"
+                  :sm="12"
+                  :md="8"
+                  :lg="6"
+              >
+                <el-form-item :label="`${shift.name}名称`">
+                  <el-input v-model="shift.name"></el-input>
+                </el-form-item>
+              </el-col>
+              <el-col
+                  :xs="24"
+                  :sm="12"
+                  :md="8"
+                  :lg="6"
+              >
+                <el-form-item :label="`${shift.name}开始时间`">
+                  <el-time-picker
+                      v-model="shift.startTime"
+                      format="HH:mm"
+                      value-format="HH:mm"
+                      placeholder="选择开始时间"
+                  ></el-time-picker>
+                </el-form-item>
+              </el-col>
+              <el-col
+                  :xs="24"
+                  :sm="12"
+                  :md="8"
+                  :lg="6"
+              >
+                <el-form-item :label="`${shift.name}结束时间`">
+                  <el-time-picker
+                      v-model="shift.endTime"
+                      format="HH:mm"
+                      value-format="HH:mm"
+                      placeholder="选择结束时间"
+                  ></el-time-picker>
+                </el-form-item>
+              </el-col>
+              <el-col
+                  :xs="24"
+                  :sm="12"
+                  :md="8"
+                  :lg="6"
+                  class="shift-note"
+              >
+                <div class="note-text">
+                  <el-icon size="14"><InfoFilled /></el-icon>
+                  <span>支持跨24点设置（如20:00至08:00），班次可重叠</span>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+
+          <div v-if="shifts.length === 0" class="no-shifts">
+            <el-empty description="暂无班次，请添加班次"></el-empty>
+          </div>
+        </div>
       </div>
 
       <!-- 审核管理设置 -->
@@ -518,15 +592,70 @@ import {
   List,
   Tools,
   Box,
-  EditPen
+  EditPen,
+  InfoFilled,
+  Plus,
+  Delete
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElEmpty } from 'element-plus'
+
+// 生成唯一ID用于班次key
+const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5)
+}
 
 // 系统基础设置
 const systemName = ref('设备管理系统')
 const defaultLang = ref('zh-CN')
-const lockTime = ref('10')
 const backupFreq = ref('daily')
+
+// 时间配置（班次设置）- 支持任意数量班次
+const shifts = ref([
+  { id: generateId(), name: '正常班', startTime: '08:00', endTime: '18:00' }
+])
+
+// 添加新班次
+const addShift = () => {
+  const newShiftIndex = shifts.value.length
+  let shiftName = ''
+  let startTime = ''
+  let endTime = ''
+
+  // 根据索引设置默认值
+  switch(newShiftIndex) {
+    case 1:
+      shiftName = '晚班'
+      startTime = '20:00'
+      endTime = '08:00'
+      break
+    case 2:
+      shiftName = '中班'
+      startTime = '16:00'
+      endTime = '00:00'
+      break
+    default:
+      shiftName = `班次${newShiftIndex + 1}`
+      startTime = '08:00'
+      endTime = '18:00'
+  }
+
+  shifts.value.push({
+    id: generateId(),
+    name: shiftName,
+    startTime: startTime,
+    endTime: endTime
+  })
+}
+
+// 删除班次
+const removeShift = (index) => {
+  if (shifts.value.length <= 1) {
+    ElMessage.warning('至少保留一个班次')
+    return
+  }
+  shifts.value.splice(index, 1)
+  ElMessage.success('班次已删除')
+}
 
 // 审核管理设置
 const checkProcessEnabled = ref(true)
@@ -582,10 +711,20 @@ const handleBack = () => {
 }
 
 const handleSave = () => {
+  // 这里可以添加保存逻辑，将班次设置等数据提交到后端
+  console.log('保存的班次设置:', shifts.value)
   ElMessage.success('设置已保存（模拟操作）')
 }
 
 const handleReset = () => {
+  // 重置为默认值
+  systemName.value = '设备管理系统'
+  defaultLang.value = 'zh-CN'
+  backupFreq.value = 'daily'
+  shifts.value = [
+    { id: generateId(), name: '正常班', startTime: '08:00', endTime: '18:00' }
+  ]
+
   ElMessage.info('已重置为默认值（模拟操作）')
 }
 </script>
@@ -634,6 +773,66 @@ const handleReset = () => {
   font-size: 16px;
   color: #303133;
   font-weight: 600;
+}
+
+/* 时间配置样式 */
+.time-config-section {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px dashed #eee;
+}
+
+.time-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.time-config-title {
+  font-size: 14px;
+  color: #606266;
+  margin: 0;
+  font-weight: 500;
+}
+
+.add-shift-btn {
+  padding: 5px 10px;
+}
+
+.shift-item {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+
+.delete-shift-btn {
+  margin-left: 10px;
+  padding: 0;
+  height: auto;
+}
+
+.shift-note {
+  display: flex;
+  align-items: center;
+}
+
+.note-text {
+  display: flex;
+  align-items: center;
+  color: #909399;
+  font-size: 12px;
+  padding-top: 25px;
+}
+
+.note-text el-icon {
+  margin-right: 4px;
+}
+
+.no-shifts {
+  padding: 30px 0;
+  text-align: center;
 }
 
 .settings-row {

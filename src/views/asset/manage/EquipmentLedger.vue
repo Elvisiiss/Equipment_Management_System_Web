@@ -57,7 +57,7 @@
           </el-select>
         </el-form-item>
 
-        <!-- 三级筛选（车间/产线/工段）- 修改为三行显示 -->
+        <!-- 三级筛选（车间/产线/工段）- 搜索部分保持原样 -->
         <el-form-item label="车间">
           <el-select
               v-model="filterForm.workshop"
@@ -113,9 +113,9 @@
 
       <!-- 操作按钮区 -->
       <div class="operation-buttons">
-        <el-button type="primary" icon="el-icon-search" @click="handleSearch">查询</el-button>
-        <el-button icon="el-icon-refresh" @click="resetFilter">重置</el-button>
-        <el-button type="success" icon="el-icon-download" @click="downloadTemplate">下载模板</el-button>
+        <el-button type="primary" icon="search" @click="handleSearch">查询</el-button>
+        <el-button icon="refresh" @click="resetFilter">重置</el-button>
+        <el-button type="success" icon="download" @click="downloadTemplate">下载模板</el-button>
 
         <!-- 导入数据 -->
         <el-upload
@@ -126,11 +126,11 @@
             :on-change="handleImport"
             accept=".xlsx,.xls"
         >
-          <el-button type="warning" icon="el-icon-upload2">导入数据</el-button>
+          <el-button type="warning" icon="download">导入数据</el-button>
         </el-upload>
 
-        <el-button type="info" icon="el-icon-upload" @click="exportData">导出数据</el-button>
-        <el-button type="primary" icon="el-icon-plus" @click="handleAdd">新增设备</el-button>
+        <el-button type="info" icon="upload" @click="exportData">导出数据</el-button>
+        <el-button type="primary" icon="plus" @click="handleAdd">新增设备</el-button>
       </div>
     </div>
 
@@ -197,21 +197,16 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="workshop" label="车间" width="100">
+
+        <!-- 合并为区域名称 -->
+        <el-table-column label="区域名称" width="200">
           <template #default="{ row }">
-            <span v-if="row.type === 'device'">{{ row.workshop || '-' }}</span>
+            <span v-if="row.type === 'device'">
+              {{ getAreaName(row) }}
+            </span>
           </template>
         </el-table-column>
-        <el-table-column prop="line" label="产线" width="100">
-          <template #default="{ row }">
-            <span v-if="row.type === 'device'">{{ row.line || '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="segment" label="工段" width="120">
-          <template #default="{ row }">
-            <span v-if="row.type === 'device'">{{ row.segment || '-' }}</span>
-          </template>
-        </el-table-column>
+
         <el-table-column prop="lifespan" label="寿命上限" width="120">
           <template #default="{ row }">
             <span v-if="row.type === 'device'">
@@ -268,7 +263,7 @@
           </div>
           <div class="form-grid">
             <el-form :model="deviceForm" label-width="100px" label-position="top">
-              <!-- 弹窗内三级级联 -->
+              <!-- 弹窗内三级选择器保留 -->
               <el-form-item label="车间" required>
                 <el-select
                     v-model="deviceForm.workshop"
@@ -316,6 +311,15 @@
                       :value="segment"
                   ></el-option>
                 </el-select>
+              </el-form-item>
+
+              <!-- 显示合并后的区域名称 -->
+              <el-form-item label="区域名称" v-if="deviceForm.workshop || deviceForm.line || deviceForm.segment">
+                <el-input
+                    v-model="computedAreaName"
+                    placeholder="区域名称"
+                    disabled
+                ></el-input>
               </el-form-item>
 
               <el-form-item label="设备名称" required>
@@ -543,6 +547,11 @@ const deviceForm = reactive({
   segment: ''
 })
 
+// 计算属性：合并车间、产线、工段为区域名称
+const computedAreaName = computed(() => {
+  return getAreaName(deviceForm)
+})
+
 // 选项数据
 const workshopOptions = ref([]) // 车间选项
 const lineOptions = ref([]) // 产线选项
@@ -573,6 +582,15 @@ const getStatusClass = (status) => {
     case '闲置': return 'status-idle'
     default: return ''
   }
+}
+
+// 合并车间、产线、工段为区域名称
+const getAreaName = (row) => {
+  const parts = []
+  if (row.workshop) parts.push(`${row.workshop}车间`)
+  if (row.line) parts.push(`${row.line}产线`)
+  if (row.segment) parts.push(row.segment)
+  return parts.length > 0 ? parts.join('/') : '-'
 }
 
 
@@ -730,8 +748,7 @@ const handleDetail = (row) => {
   router.push({
     path: '/asset/manage/index',
     query: {
-      code: row.deviceCode,
-      workshop: row.workshop
+      code: row.deviceCode
     }
   })
 }

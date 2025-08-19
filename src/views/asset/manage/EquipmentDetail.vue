@@ -5,13 +5,6 @@
       <!-- 查询 -->
       <el-col :span="8">
         <el-form inline>
-          <el-form-item label="车间">
-            <el-select v-model="query.workshop" placeholder="全部车间" clearable>
-              <el-option label="C4车间" value="C4车间" />
-              <el-option label="C5车间" value="C5车间" />
-              <el-option label="C6车间" value="C6车间" />
-            </el-select>
-          </el-form-item>
           <el-form-item label="设备编码">
             <el-input v-model="query.code" placeholder="请输入设备编码" clearable />
           </el-form-item>
@@ -67,9 +60,7 @@
             <el-descriptions-item label="设备名称">{{ device.name }}</el-descriptions-item>
             <el-descriptions-item label="设备类别">{{ device.category }}</el-descriptions-item>
             <el-descriptions-item label="型号">{{ device.model }}</el-descriptions-item>
-            <el-descriptions-item label="车间">{{ device.workshop }}</el-descriptions-item>
-            <el-descriptions-item label="产线">{{ device.line }}</el-descriptions-item>
-            <el-descriptions-item label="工段">{{ device.section }}</el-descriptions-item>
+            <el-descriptions-item label="区域名称">{{ device.areaName }}</el-descriptions-item>
             <el-descriptions-item label="责任人">{{ device.owner }}</el-descriptions-item>
             <el-descriptions-item label="厂商">{{ device.vendor }}</el-descriptions-item>
             <el-descriptions-item label="进场日期">{{ device.inDate }}</el-descriptions-item>
@@ -435,7 +426,6 @@ const maintainPage = reactive({ currentPage: 1, pageSize: 5 })
 
 /* 查询条件 */
 const query = reactive({
-  workshop: route.query.workshop || 'C4车间',
   code: route.query.code || 'C4-51-12'
 })
 
@@ -446,14 +436,12 @@ const device = reactive({
   assetCode: 'ZC202308001',
   code: 'C4-51-12',
   name: '自动贴片机',
-  workshop: 'C4车间',
-  line: '51产线',
+  areaName: 'C4车间 / 51产线 / 贴片工段',
   category: '贴片设备',
   model: 'TPJ-5000',
   vendor: '三星电子',
   inDate: '2023-06-15',
   owner: '张工',
-  section: '贴片工段',
   qrText: '设备ID: C4-51-12 | 名称: 自动贴片机'
 })
 
@@ -906,5 +894,9 @@ onMounted(() => {
   text-align: center;
   padding: 30px;
   color: #909399;
+}
+
+:deep(.el-input) {
+  width: 200px; /* 固定宽度即可 */
 }
 </style>
