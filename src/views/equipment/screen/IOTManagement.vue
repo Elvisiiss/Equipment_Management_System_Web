@@ -1,697 +1,359 @@
 <template>
-  <div class="container">
-    <!-- 卡片一：查询条件 -->
-    <div class="card search-card">
-      <div class="search-conditions">
-        <div class="search-item">
-          <label for="workshop">车间：</label>
-          <select id="workshop" v-model="selectedWorkshop">
-            <option value="all">全部车间</option>
-            <option value="C4">C4车间</option>
-            <option value="C4-front">C4前段01-11</option>
-          </select>
-        </div>
-        <div class="search-item">
-          <label for="equipment">设备：</label>
-          <select id="equipment" v-model="selectedEquipment">
-            <option v-for="equip in filteredEquipments" :key="equip" :value="equip">{{ equip }}</option>
-          </select>
-        </div>
-        <button class="search-btn" @click="searchEquipment">搜索</button>
-      </div>
-    </div>
+  <div class="page">
+    <!-- ================= 第一行：查询条件 ================= -->
+    <el-row :gutter="16" class="query-row">
+      <el-col :span="8">
+        <el-select v-model="query.workshop" placeholder="车间" clearable style="width:100%">
+          <el-option label="车间A" value="A"/>
+          <el-option label="车间B" value="B"/>
+        </el-select>
+      </el-col>
+      <el-col :span="8">
+        <el-select v-model="query.line" placeholder="产线" clearable style="width:100%">
+          <el-option label="产线1" value="1"/>
+          <el-option label="产线2" value="2"/>
+        </el-select>
+      </el-col>
+      <el-col :span="8">
+        <el-input v-model="query.deviceName" placeholder="设备名称" clearable/>
+      </el-col>
+    </el-row>
 
-    <!-- 卡片二：设备图片 -->
-    <div class="card image-card" v-if="showEquipmentImage">
-      <div class="equipment-info">
-        <h3>{{ selectedEquipment }}</h3>
-        <div class="info-row">
-          <span>车间: {{ equipmentInfo.workshop }}</span>
-          <span>设备型号: {{ equipmentInfo.model }}</span>
-        </div>
-        <div class="info-row">
-          <span>厂商: {{ equipmentInfo.manufacturer }}</span>
-          <span>进厂日期: {{ equipmentInfo.entryDate }}</span>
-        </div>
-        <div class="info-row">
-          <span>责任工程师: {{ equipmentInfo.engineer }}</span>
-        </div>
-        <div class="equipment-image">
-          <img src="https://via.placeholder.com/300x200?text=设备图片" alt="设备图片">
-          <div class="no-image" v-if="!equipmentInfo.hasImage">暂无图片</div>
-        </div>
-      </div>
-    </div>
+    <!-- ================= 第二行：设备主信息 ================= -->
+    <el-card>
+      <el-row :gutter="20" align="middle">
+        <!-- 1. 设备图 -->
+        <el-col :span="6">
+          <el-image
+              src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+              fit="cover"
+              style="width:100%;height:180px;border-radius:6px"
+          />
+        </el-col>
 
-    <!-- 卡片三：稼动率统计 -->
-    <div class="card stats-card">
-      <div class="stats-header">
-        <div class="date-picker">
-          <label>日期：</label>
-          <input type="date" v-model="selectedDate">
-        </div>
-        <div class="shift-selector">
-          <label>班次：</label>
-          <select v-model="selectedShift">
-            <option value="all">全部班次</option>
-            <option value="day">白班</option>
-            <option value="night">晚班</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="stats-content">
-        <div class="rate-charts">
-          <div class="chart-container">
-            <h4>总稼动率</h4>
-            <div class="ring-chart">
-              <svg width="150" height="150" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#eee" stroke-width="10" />
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#1890ff" stroke-width="10"
-                        stroke-dasharray="283" :stroke-dashoffset="283 - (283 * totalRate / 100)"
-                        stroke-linecap="round" transform="rotate(-90 50 50)" />
-              </svg>
-              <div class="chart-label">{{ totalRate }}%</div>
-            </div>
-            <div class="chart-description">运行时间/开机时间</div>
+        <!-- 2. 关键信息 一行排列 -->
+        <el-col :span="12">
+          <div class="info-row">
+            <div class="info-item"><span class="label">车间：</span>{{ device.workshop }}</div>
+            <div class="info-item"><span class="label">产线：</span>{{ device.line }}</div>
+            <div class="info-item"><span class="label">工段：</span>{{ device.section }}</div>
+            <div class="info-item"><span class="label">设备型号：</span>{{ device.model }}</div>
+            <div class="info-item"><span class="label">厂商：</span>{{ device.vendor }}</div>
+            <div class="info-item"><span class="label">进场日期：</span>{{ device.inDate }}</div>
+            <div class="info-item"><span class="label">责任工程师：</span>{{ device.owner }}</div>
           </div>
-          <div class="chart-container">
-            <h4>净稼动率</h4>
-            <div class="ring-chart">
-              <svg width="150" height="150" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#eee" stroke-width="10" />
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#52c41a" stroke-width="10"
-                        stroke-dasharray="283" :stroke-dashoffset="283 - (283 * netRate / 100)"
-                        stroke-linecap="round" transform="rotate(-90 50 50)" />
-              </svg>
-              <div class="chart-label">{{ netRate }}%</div>
-            </div>
-            <div class="chart-description">运行时间/开机时间-交接班<br>计划停机</div>
-          </div>
-        </div>
+        </el-col>
 
-        <div class="status-info">
-          <div class="pie-chart-container">
-            <h4>设备状态分布</h4>
-            <div class="pie-chart">
-              <svg width="200" height="200" viewBox="0 0 100 100">
-                <g v-for="(item, index) in processedPieData" :key="index">
-                  <path :d="getSectorPath(50, 50, 45, item.startAngle, item.endAngle)"
-                        :fill="item.color" stroke="#fff" stroke-width="1" />
-                </g>
-              </svg>
-              <div class="pie-legend">
-                <div v-for="item in statusData" :key="item.name" class="legend-item">
-                  <span class="legend-color" :style="{backgroundColor: item.color}"></span>
-                  <span class="legend-label">{{ item.name }}</span>
-                  <span class="legend-value">{{ ((item.value / totalStatusValue) * 100).toFixed(1) }}%</span>
-                </div>
+        <!-- 3. 二维码 -->
+        <el-col :span="6" class="qr-zone">
+          <div ref="qrRef">
+            <vue-qr :text="device.qrText" :size="160"/>
+          </div>
+          <el-button @click="downloadQR" style="margin-top:12px">导出二维码</el-button>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <!-- ================= 第三行：稼动率卡片 ================= -->
+    <el-card>
+      <el-row :gutter="20">
+        <!-- 左侧 总稼动率 & 净稼动率 -->
+        <el-col :span="12" class="rate-left">
+          <div class="rate-date">
+            <el-date-picker v-model="rateDate" type="date" placeholder="选择日期"/>
+            <el-select v-model="rateShift" style="margin-left:8px">
+              <el-option label="全部" value="all"/>
+              <el-option label="白班" value="day"/>
+              <el-option label="晚班" value="night"/>
+            </el-select>
+          </div>
+
+          <div class="rate-box">
+            <div class="ring-wrapper">
+              <div class="ring" :style="ringStyle(85)"></div>
+              <div class="ring-center">
+                <div class="big">85%</div>
+                <div class="small">总稼动率</div>
+              </div>
+            </div>
+
+            <div class="ring-wrapper">
+              <div class="ring" :style="ringStyle(75)"></div>
+              <div class="ring-center">
+                <div class="big">75%</div>
+                <div class="small">净稼动率</div>
               </div>
             </div>
           </div>
-          <div class="status-table-container">
-            <table class="status-table">
-              <thead>
-              <tr>
-                <th>状态</th>
-                <th>时间</th>
-                <th>比例</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="item in statusTableData" :key="item.status">
-                <td>{{ item.status }}</td>
-                <td>{{ item.duration }}</td>
-                <td>{{ item.percentage }}%</td>
-              </tr>
-              </tbody>
-            </table>
+        </el-col>
+
+        <!-- 右侧 状态饼图 + 表格 -->
+        <el-col :span="12" class="rate-right">
+          <!-- 状态饼图 -->
+          <div class="big-ring">
+            <div class="ring" :style="multiRingStyle"></div>
+            <div class="ring-center">
+              <div class="big">60%</div>
+              <div class="sub">进行 60%</div>
+              <div class="sub">待机 15%</div>
+              <div class="sub">报警 15%</div>
+              <div class="sub">离线 10%</div>
+            </div>
           </div>
+
+          <!-- 状态表格 -->
+          <el-table :data="stateTable" stripe style="margin-top:12px">
+            <el-table-column prop="state" label="状态"/>
+            <el-table-column prop="time" label="时间(h)"/>
+            <el-table-column prop="percent" label="比例(%)"/>
+          </el-table>
+        </el-col>
+      </el-row>
+    </el-card>
+
+    <!-- ================= 第四行：时间轴 ================= -->
+    <el-card>
+      <div class="timeline-header">
+        <span>设备状态时间轴</span>
+        <div>
+          <el-date-picker v-model="timelineDate" type="date"/>
+          <el-select v-model="timelineStart" style="margin-left:8px">
+            <el-option label="7:30" value="7:30"/>
+            <el-option label="0:00" value="0:00"/>
+          </el-select>
         </div>
       </div>
 
-      <div class="time-slots">
-        <div class="time-slot" v-for="time in timeSlots" :key="time">{{ time }}</div>
-      </div>
-    </div>
-
-    <!-- 卡片四：状态记录表 -->
-    <div class="card status-table-card">
-      <div class="table-header">
-        <span>状态</span>
-        <span>产量</span>
-        <span>心跳</span>
-      </div>
-      <table class="detailed-status-table">
-        <thead>
-        <tr>
-          <th>序号</th>
-          <th>设备</th>
-          <th>状态</th>
-          <th>持续时长</th>
-          <th>开始时间</th>
-          <th>结束时间</th>
-          <th>
-            <button class="export-btn">导出excel</button>
-          </th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="(record, index) in statusRecords" :key="index">
-          <td>{{ record.id }}</td>
-          <td>{{ record.equipment }}</td>
-          <td>{{ record.status }}</td>
-          <td>{{ record.duration }}</td>
-          <td>{{ record.startTime }}</td>
-          <td>{{ record.endTime }}</td>
-          <td></td>
-        </tr>
-        </tbody>
-      </table>
-      <div class="table-footer">
-        <span>共 {{ statusRecords.length }} 条</span>
-        <div class="pagination">
-          <span>每页 10 条</span>
-          <button>上一页</button>
-          <button>下一页</button>
+      <div class="timeline-wrapper">
+        <div
+            v-for="(item,i) in timelineData"
+            :key="i"
+            class="timeline-node"
+        >
+          <div class="time">{{item.time}}</div>
+          <div class="bar" :style="{width:item.percent+'%',backgroundColor:item.color}"></div>
+          <div class="percent">{{item.percent}}%</div>
         </div>
       </div>
-    </div>
+    </el-card>
+
+    <!-- ================= 第五行：预警 / 推送 ================= -->
+    <el-card>
+      <el-tabs v-model="activeTable" type="card">
+        <el-tab-pane label="预警" name="warning">
+          <el-table :data="warningTable" stripe>
+            <el-table-column prop="index" label="序号" width="60"/>
+            <el-table-column prop="param" label="参数名称"/>
+            <el-table-column prop="value" label="当前值"/>
+            <el-table-column prop="status" label="状态">
+              <template #default="scope">
+                <el-tag :type="scope.row.statusType">{{scope.row.status}}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="upper" label="上限"/>
+            <el-table-column prop="lower" label="下限"/>
+            <el-table-column prop="unit" label="单位"/>
+            <el-table-column prop="updateTime" label="更新时间"/>
+          </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane label="推送" name="push">
+          <el-table :data="pushTable" stripe>
+            <el-table-column prop="index" label="序号" width="60"/>
+            <el-table-column prop="param" label="参数名称"/>
+            <el-table-column prop="status" label="状态">
+              <template #default="scope">
+                <el-tag :type="scope.row.statusType">{{scope.row.status}}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="time" label="时间"/>
+            <el-table-column prop="desc" label="事项"/>
+            <el-table-column prop="sender" label="推送人"/>
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
+    </el-card>
   </div>
 </template>
 
-<script>
-import { ref, computed } from 'vue';
+<script setup>
+import { ref, computed } from 'vue'
+import VueQr from 'vue-qr/src/packages/vue-qr.vue'
 
-export default {
-  setup() {
-    // 卡片一数据
-    const selectedWorkshop = ref('all');
-    const selectedEquipment = ref('');
-    const showEquipmentImage = ref(false);
+/* 查询条件 */
+const query = ref({ workshop:'', line:'', deviceName:'' })
 
-    const allEquipments = [
-      'C4-51-12', 'C4-51-13', 'C4-51-14',
-      'C4-01-01', 'C4-01-02', 'C4-01-03'
-    ];
+/* 设备主信息 */
+const device = ref({
+  workshop:'车间A',
+  line:'产线1',
+  section:'装配工段',
+  model:'CXK-450',
+  vendor:'某某机床有限公司',
+  inDate:'2023-06-01',
+  owner:'张三',
+  qrText:'设备编码：EQ-20230601001\n设备名称：设备A'
+})
 
-    const filteredEquipments = computed(() => {
-      if (selectedWorkshop.value === 'all') return allEquipments;
-      if (selectedWorkshop.value === 'C4') return allEquipments.filter(e => e.startsWith('C4-51'));
-      if (selectedWorkshop.value === 'C4-front') return allEquipments.filter(e => e.startsWith('C4-01'));
-      return [];
-    });
+/* 二维码导出 */
+const qrRef = ref()
+function downloadQR(){
+  const canvas = qrRef.value.querySelector('canvas')
+  const url = canvas.toDataURL('image/png')
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'device-qr.png'
+  a.click()
+}
 
-    const equipmentInfo = ref({
-      workshop: 'C4车间',
-      model: '深圳序佑盖板全自动',
-      manufacturer: '序佑',
-      entryDate: '',
-      engineer: '',
-      hasImage: false
-    });
-
-    const searchEquipment = () => {
-      if (selectedEquipment.value) {
-        showEquipmentImage.value = true;
-        // 模拟获取设备信息
-        equipmentInfo.value = {
-          workshop: 'C4车间',
-          model: '深圳序佑盖板全自动',
-          manufacturer: '序佑',
-          entryDate: '2023-05-15',
-          engineer: '张三',
-          hasImage: false
-        };
-      }
-    };
-
-    // 卡片三数据
-    const selectedDate = ref('2025-07-28');
-    const selectedShift = ref('day');
-    const totalRate = ref(4.63);
-    const netRate = ref(7.25);
-
-    const statusData = ref([
-      { name: '运行', value: 15, color: '#4CAF50' },
-      { name: '待机', value: 60, color: '#FFC107' },
-      { name: '报警', value: 5, color: '#F44336' },
-      { name: '离线', value: 10, color: '#9E9E9E' },
-      { name: '无数据', value: 10, color: '#607D8B' }
-    ]);
-
-    // 计算饼图数据
-    const totalStatusValue = computed(() => {
-      return statusData.value.reduce((sum, item) => sum + item.value, 0);
-    });
-
-    const processedPieData = computed(() => {
-      let startAngle = 0;
-      return statusData.value.map(item => {
-        const angle = (item.value / totalStatusValue.value) * 360;
-        const endAngle = startAngle + angle;
-        const result = {
-          ...item,
-          startAngle,
-          endAngle
-        };
-        startAngle = endAngle;
-        return result;
-      });
-    });
-
-    // 计算扇形路径
-    const getSectorPath = (cx, cy, r, startAngle, endAngle) => {
-      const startRad = (startAngle - 90) * Math.PI / 180;
-      const endRad = (endAngle - 90) * Math.PI / 180;
-
-      const x1 = cx + r * Math.cos(startRad);
-      const y1 = cy + r * Math.sin(startRad);
-      const x2 = cx + r * Math.cos(endRad);
-      const y2 = cy + r * Math.sin(endRad);
-
-      const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
-
-      return `
-        M ${cx} ${cy}
-        L ${x1} ${y1}
-        A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}
-        L ${cx} ${cy}
-        Z
-      `;
-    };
-
-    const statusTableData = computed(() => {
-      const total = totalStatusValue.value;
-      return statusData.value.map(item => ({
-        status: item.name,
-        duration: calculateDuration(item.value, total),
-        percentage: ((item.value / total) * 100).toFixed(1)
-      }));
-    });
-
-    const calculateDuration = (value, total) => {
-      const totalMinutes = 24 * 60; // 假设一天24小时
-      const minutes = Math.round((value / total) * totalMinutes);
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      return hours > 0 ? `${hours}小时${mins}分` : `${mins}分`;
-    };
-
-    const timeSlots = ref(['12:30', '13:30', '14:30', '15:30', '16:30', '17:30', '18:30']);
-
-    // 卡片四数据
-    const statusRecords = ref([
-      { id: 1, equipment: 'C4-51-12', status: '待机', duration: '2小时47分20秒', startTime: '2025-07-28 07:30:00', endTime: '2025-07-28 10:17:20' },
-      { id: 2, equipment: 'C4-51-12', status: '运行', duration: '2分11秒', startTime: '2025-07-28 10:17:20', endTime: '2025-07-28 10:19:31' },
-      { id: 3, equipment: 'C4-51-12', status: '待机', duration: '1分13秒', startTime: '2025-07-28 10:19:31', endTime: '2025-07-28 10:20:44' },
-      { id: 4, equipment: 'C4-51-12', status: '运行', duration: '5分24秒', startTime: '2025-07-28 10:20:44', endTime: '2025-07-28 10:26:08' },
-      { id: 5, equipment: 'C4-51-12', status: '待机', duration: '40秒', startTime: '2025-07-28 10:26:08', endTime: '2025-07-28 10:26:48' },
-      { id: 6, equipment: 'C4-51-12', status: '运行', duration: '3分58秒', startTime: '2025-07-28 10:26:48', endTime: '2025-07-28 10:30:46' },
-      { id: 7, equipment: 'C4-51-12', status: '待机', duration: '1小时8分15秒', startTime: '2025-07-28 10:30:46', endTime: '2025-07-28 11:39:01' }
-    ]);
-
-    return {
-      selectedWorkshop,
-      selectedEquipment,
-      filteredEquipments,
-      showEquipmentImage,
-      equipmentInfo,
-      searchEquipment,
-      selectedDate,
-      selectedShift,
-      totalRate,
-      netRate,
-      statusData,
-      processedPieData,
-      statusTableData,
-      totalStatusValue,
-      timeSlots,
-      statusRecords,
-      getSectorPath
-    };
+/* 第三行稼动率 */
+const rateDate = ref(new Date())
+const rateShift = ref('all')
+const stateTable = [
+  { state:'进行', time:'14.4', percent:60 },
+  { state:'待机', time:'3.6',  percent:15 },
+  { state:'报警', time:'3.6',  percent:15 },
+  { state:'离线', time:'2.4',  percent:10 }
+]
+/* 环形进度条：单值 */
+function ringStyle(percent){
+  return {
+    background:`conic-gradient(#409eff 0% ${percent}%, #e9ecef ${percent}% 100%)`
   }
-};
+}
+/* 多色状态饼图 */
+const multiRingStyle = computed(()=>{
+  /* 进行 60 待机 15 报警 15 离线 10 */
+  return {
+    background:`conic-gradient(
+      #67c23a 0% 60%,
+      #909399 60% 75%,
+      #e6a23c 75% 90%,
+      #f56c6c 90% 100%)`
+  }
+})
+
+/* 第四行时间轴 */
+const timelineDate = ref(new Date())
+const timelineStart = ref('7:30')
+const timelineData = Array.from({length:24}, (_,i)=>({
+  time:`${i.toString().padStart(2,'0')}:00`,
+  percent:Math.floor(Math.random()*100),
+  color:['#67c23a','#909399','#e6a23c','#f56c6c'][i%4]
+}))
+
+/* 第五行表格 */
+const activeTable = ref('warning')
+const warningTable = [
+  { index:1, param:'温度', value:'85', status:'超上限', statusType:'danger', upper:80, lower:20, unit:'℃', updateTime:'2025-08-19 09:30' },
+  { index:2, param:'压力', value:'0.2', status:'超下限', statusType:'warning', upper:1.0, lower:0.5, unit:'MPa', updateTime:'2025-08-19 09:32' }
+]
+const pushTable = [
+  { index:1, param:'温度', status:'已推送', statusType:'success', time:'2025-08-19 09:31', desc:'温度超过上限，可能导致设备过热', sender:'系统' },
+  { index:2, param:'压力', status:'未推送', statusType:'info', time:'2025-08-19 09:33', desc:'压力低于下限，可能影响产品质量', sender:'设备负责人' }
+]
 </script>
+
 <style scoped>
-.container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+.page{
+  padding:16px;
+  background:#f5f7fa;
+}
+.query-row{
+  margin-bottom:16px;
+}
+.el-card{
+  margin-bottom:16px;
 }
 
-.card {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  padding: 20px;
+/* 第二行 一行排列关键信息 */
+.info-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px 32px;
+  font-size:14px;
+}
+.info-item .label{
+  font-weight:bold;
+  color:#333;
 }
 
-.search-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* 第三行 环形饼图 */
+.rate-left{
+  display:flex;
+  flex-direction:column;
+}
+.rate-date{
+  margin-bottom:12px;
+}
+.rate-box{
+  display:flex;
+  gap:40px;
+  align-items:center;
+}
+.ring-wrapper{
+  position:relative;
+  width:120px;
+  height:120px;
+}
+.ring{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+}
+.ring-center{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+}
+.big{
+  font-size:24px;
+  font-weight:bold;
+  color:#409eff;
+}
+.small{
+  font-size:12px;
+  color:#606266;
 }
 
-.search-conditions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+/* 大状态饼图 */
+.big-ring{
+  position:relative;
+  width:180px;
+  height:180px;
+  margin:0 auto;
+}
+.sub{
+  font-size:12px;
+  color:#606266;
+  margin-top:2px;
 }
 
-.search-item {
-  display: flex;
-  align-items: center;
+/* 第四行 时间轴 */
+.timeline-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
 }
-
-.search-item label {
-  margin-right: 8px;
-  white-space: nowrap;
+.timeline-wrapper{
+  display:flex;
+  overflow-x:auto;
 }
-
-.search-item select, .search-item input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  min-width: 150px;
+.timeline-node{
+  flex:0 0 4.166%;
+  text-align:center;
+  padding:4px;
+  font-size:12px;
 }
-
-.search-btn {
-  padding: 8px 20px;
-  background-color: #1890ff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.bar{
+  height:8px;
+  margin:4px auto;
+  border-radius:2px;
 }
-
-.search-btn:hover {
-  background-color: #40a9ff;
-}
-
-.image-card {
-  min-height: 200px;
-}
-
-.equipment-info h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 18px;
-}
-
-.info-row {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.info-row span {
-  margin-right: 30px;
-  min-width: 200px;
-}
-
-.equipment-image {
-  margin-top: 20px;
-  text-align: center;
-  position: relative;
-}
-
-.equipment-image img {
-  max-width: 100%;
-  border: 1px solid #eee;
-}
-
-.no-image {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #999;
-  font-size: 16px;
-}
-
-.stats-card {
-  position: relative;
-}
-
-.stats-header {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.date-picker, .shift-selector {
-  display: flex;
-  align-items: center;
-}
-
-.date-picker label, .shift-selector label {
-  margin-right: 8px;
-}
-
-.stats-content {
-  display: flex;
-  gap: 20px;
-}
-
-.rate-charts {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.chart-container {
-  text-align: center;
-}
-
-.chart-container h4 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-}
-
-.ring-chart {
-  position: relative;
-  width: 150px;
-  height: 150px;
-  margin: 0 auto;
-}
-
-.chart-label {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 18px;
-  font-weight: bold;
-}
-
-.chart-description {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #666;
-}
-
-.status-info {
-  flex: 2;
-  display: flex;
-  gap: 20px;
-}
-
-.pie-chart-container {
-  flex: 1;
-}
-
-.pie-chart-container h4 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-  text-align: center;
-}
-
-/* 保持之前的样式不变，只添加新增的样式 */
-.pie-chart {
-  position: relative;
-  width: 100%;
-  height: 200px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.pie-legend {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  margin: 5px 0;
-}
-
-.legend-color {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.legend-label {
-  margin-right: 8px;
-  font-size: 12px;
-}
-
-.legend-value {
-  font-size: 12px;
-  font-weight: bold;
-}
-
-/* 其他样式保持不变... */
-.pie-chart {
-  position: relative;
-  width: 100%;
-  height: 200px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.pie-legend {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  margin: 5px 0;
-}
-
-.legend-color {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.legend-label {
-  margin-right: 8px;
-  font-size: 12px;
-}
-
-.legend-value {
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.status-table-container {
-  flex: 1;
-}
-
-.status-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.status-table th, .status-table td {
-  padding: 8px 12px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.status-table th {
-  background-color: #f5f5f5;
-  font-weight: 500;
-}
-
-.time-slots {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-  padding-top: 10px;
-  border-top: 1px solid #eee;
-}
-
-.time-slot {
-  color: #666;
-  font-size: 12px;
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 15px;
-}
-
-.detailed-status-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.detailed-status-table th, .detailed-status-table td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.detailed-status-table th {
-  background-color: #f5f5f5;
-  font-weight: 500;
-}
-
-.export-btn {
-  padding: 5px 10px;
-  background-color: #1890ff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.export-btn:hover {
-  background-color: #40a9ff;
-}
-
-.table-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 15px;
-  padding-top: 10px;
-  border-top: 1px solid #eee;
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.pagination button {
-  padding: 5px 10px;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.pagination button:hover {
-  background-color: #e9e9e9;
+.percent{
+  font-weight:bold;
 }
 </style>
