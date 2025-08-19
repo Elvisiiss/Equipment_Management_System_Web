@@ -21,8 +21,8 @@
         </el-table-column>
         <el-table-column label="状态">
           <template #default="{ row }">
-            <el-tag :type="row.status === '0' ? 'success' : 'danger'">
-              {{ row.status === '0' ? '正常' : '异常' }}
+            <el-tag :type="row.status === '正常' ? 'success' : 'danger'">
+              {{ row.status === '正常' ? '正常' : '异常' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -39,6 +39,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页组件 -->
+      <el-pagination
+          style="margin-top: 20px"
+          background
+          layout="prev, pager, next, sizes, total"
+          :total="total"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[5, 10, 20, 50]"
+          @current-change="getFirstTable"
+          @size-change="handleSizeChange"
+      />
     </el-card>
 
     <!-- ====================== 第二层 ====================== -->
@@ -88,8 +101,8 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="firstForm.status">
-            <el-radio label="0">正常</el-radio>
-            <el-radio label="1">异常</el-radio>
+            <el-radio label="正常">正常</el-radio>
+            <el-radio label="异常">异常</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注">
@@ -133,40 +146,22 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-
-/* ========= 假数据 ========= */
-const firstMock = ref([
-  {
-    id: 1,
-    dictName: '用户状态',
-    dictType: 'sys_user_status',
-    status: '0',
-    remark: '用户账户状态字典',
-    createTime: '2025-08-18 10:00:00'
-  },
-  {
-    id: 2,
-    dictName: '性别',
-    dictType: 'sys_user_sex',
-    status: '0',
-    remark: '',
-    createTime: '2025-08-18 10:05:00'
-  }
-])
-
-const secondMock = reactive({
-  sys_user_status: [
-    { id: 1, label: '正常', value: '0', sort: 1, remark: '', createTime: '2025-08-18 10:00:00' },
-    { id: 2, label: '停用', value: '1', sort: 2, remark: '', createTime: '2025-08-18 10:00:00' }
-  ],
-  sys_user_sex: [
-    { id: 3, label: '男', value: '0', sort: 1, remark: '', createTime: '2025-08-18 10:05:00' },
-    { id: 4, label: '女', value: '1', sort: 2, remark: '', createTime: '2025-08-18 10:05:00' }
-  ]
-})
+import {
+  getDictsPage,
+  createDict,
+  updateDict,
+  deleteDict,
+  getDictItems,
+  createDictItem,
+  updateDictItem,
+  deleteDictItem
+} from '@/api/system/dictAPI'
 
 /* ========= 第一层 ========= */
 const firstTableData = ref([])
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
 const firstDialogVisible = ref(false)
 const firstForm = reactive({
   id: null,
@@ -176,44 +171,69 @@ const firstForm = reactive({
   remark: ''
 })
 
-function getFirstTable () {
-  firstTableData.value = firstMock.value
+// 分页查询字典列表
+function getFirstTable() {
+  const params = {
+    page: currentPage.value - 1,
+    size: pageSize.value
+  }
+
+  getDictsPage(params).then(res => {
+    if (res.status === 200) {
+      firstTableData.value = res.data.data.records
+      total.value = res.data.data.total
+    }
+  }).catch(error => {
+    ElMessage.error('获取字典列表失败: ' + (error.message || error))
+  })
 }
-function resetFirstForm () {
+
+// 重置表单
+function resetFirstForm() {
   Object.assign(firstForm, { id: null, dictName: '', dictType: '', status: '0', remark: '' })
 }
-function openFirstDialog (row = null) {
-  if (row) Object.assign(firstForm, row)
+
+// 打开弹窗
+function openFirstDialog(row = null) {
+  if (row) {
+    Object.assign(firstForm, row)
+  }
   firstDialogVisible.value = true
 }
-function submitFirst () {
+
+// 提交表单
+function submitFirst() {
   if (!firstForm.dictName || !firstForm.dictType) {
     ElMessage.warning('请填写完整')
     return
   }
-  if (firstForm.id) {
-    // 修改
-    const idx = firstMock.value.findIndex(v => v.id === firstForm.id)
-    Object.assign(firstMock.value[idx], { ...firstForm })
-  } else {
-    // 新增
-    firstMock.value.push({
-      ...firstForm,
-      id: Date.now(),
-      createTime: new Date().toLocaleString()
-    })
-    // 自动初始化第二层空数组，防止 undefined
-    secondMock[firstForm.dictType] = secondMock[firstForm.dictType] || []
-  }
-  firstDialogVisible.value = false
-  getFirstTable()
+
+  const submitPromise = firstForm.id
+      ? updateDict(firstForm)
+      : createDict(firstForm)
+
+  submitPromise.then(() => {
+    ElMessage.success(firstForm.id ? '修改成功' : '新增成功')
+    firstDialogVisible.value = false
+    getFirstTable()
+  }).catch(error => {
+    ElMessage.error('操作失败: ' + (error.message || error))
+  })
 }
-function handleFirstDelete (id) {
-  const idx = firstMock.value.findIndex(v => v.id === id)
-  if (idx === -1) return
-  const dictType = firstMock.value[idx].dictType
-  firstMock.value.splice(idx, 1)
-  delete secondMock[dictType]
+
+// 删除字典
+function handleFirstDelete(id) {
+  deleteDict(id).then(() => {
+    ElMessage.success('删除成功')
+    getFirstTable()
+  }).catch(error => {
+    ElMessage.error('删除失败: ' + (error.message || error))
+  })
+}
+
+// 分页大小变化
+function handleSizeChange(val) {
+  pageSize.value = val
   getFirstTable()
 }
 
@@ -227,48 +247,74 @@ const secondForm = reactive({
   label: '',
   value: '',
   sort: 0,
-  remark: ''
+  remark: '',
+  dictType: '' // 新增字典类型字段
 })
 
-function toSecondLayer (dictType) {
+// 进入第二层
+function toSecondLayer(dictType) {
   currentDictType.value = dictType
   showSecond.value = true
   getSecondTable()
 }
-function getSecondTable () {
-  secondTableData.value = secondMock[currentDictType.value] || []
+
+// 获取字典项列表
+function getSecondTable() {
+  getDictItems(currentDictType.value).then(res => {
+    if (res.status === 200) {
+      console.log(res.data.data)
+      secondTableData.value = res.data.data
+    }
+  }).catch(error => {
+    ElMessage.error('获取字典项失败: ' + (error.message || error))
+  })
 }
-function resetSecondForm () {
+
+// 重置表单
+function resetSecondForm() {
   Object.assign(secondForm, { id: null, label: '', value: '', sort: 0, remark: '' })
 }
-function openSecondDialog (row = null) {
-  if (row) Object.assign(secondForm, row)
+
+// 打开弹窗
+function openSecondDialog(row = null) {
+  if (row) {
+    Object.assign(secondForm, row)
+    secondForm.dictType = currentDictType.value // 设置字典类型
+  } else {
+    // 新增时设置字典类型
+    secondForm.dictType = currentDictType.value
+  }
   secondDialogVisible.value = true
 }
-function submitSecond () {
+
+// 提交表单
+function submitSecond() {
   if (!secondForm.label || !secondForm.value) {
     ElMessage.warning('请填写完整')
     return
   }
-  const list = secondMock[currentDictType.value]
-  if (secondForm.id) {
-    const idx = list.findIndex(v => v.id === secondForm.id)
-    Object.assign(list[idx], { ...secondForm })
-  } else {
-    list.push({
-      ...secondForm,
-      id: Date.now(),
-      createTime: new Date().toLocaleString()
-    })
-  }
-  secondDialogVisible.value = false
-  getSecondTable()
+
+  const submitPromise = secondForm.id
+      ? updateDictItem(secondForm)
+      : createDictItem(secondForm)
+
+  submitPromise.then(() => {
+    ElMessage.success(secondForm.id ? '修改成功' : '新增成功')
+    secondDialogVisible.value = false
+    getSecondTable()
+  }).catch(error => {
+    ElMessage.error('操作失败: ' + (error.message || error))
+  })
 }
-function handleSecondDelete (id) {
-  const list = secondMock[currentDictType.value]
-  const idx = list.findIndex(v => v.id === id)
-  list.splice(idx, 1)
-  getSecondTable()
+
+// 删除字典项
+function handleSecondDelete(id) {
+  deleteDictItem(id).then(() => {
+    ElMessage.success('删除成功')
+    getSecondTable()
+  }).catch(error => {
+    ElMessage.error('删除失败: ' + (error.message || error))
+  })
 }
 
 onMounted(() => {
