@@ -49,7 +49,7 @@ const modules = [
   { title: '模具/治工具',  path: '/mold/manage',        icon: Tools },
   { title: '备件管理',     path: '/parts/screen',       icon: Coin },
   { title: '维修管理',     path: '/repair/screen',      icon: EditPen },
-  { title: '系统管理',     path: '/system/screen',      icon: Operation },
+  { title: '系统管理',     path: '/system',             icon: Operation },
   // 新增审核管理模块
   { title: '审核管理',     path: '/check/list',         icon: DocumentChecked }
 ]
