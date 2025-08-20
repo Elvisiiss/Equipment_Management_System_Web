@@ -34,13 +34,15 @@
         <!-- 2. 关键信息 一行排列 -->
         <el-col :span="12">
           <div class="info-row">
-            <div class="info-item"><span class="label">车间：</span>{{ device.workshop }}</div>
-            <div class="info-item"><span class="label">产线：</span>{{ device.line }}</div>
-            <div class="info-item"><span class="label">工段：</span>{{ device.section }}</div>
-            <div class="info-item"><span class="label">设备型号：</span>{{ device.model }}</div>
+            <div class="info-item"><span class="label">状态：</span>{{ device.status }}</div>
+            <div class="info-item"><span class="label">设备编码：</span>{{ device.code }}</div>
+            <div class="info-item"><span class="label">设备名称：</span>{{ device.name }}</div>
+            <div class="info-item"><span class="label">设备类别：</span>{{ device.type }}</div>
+            <div class="info-item"><span class="label">型号：</span>{{ device.model }}</div>
+            <div class="info-item"><span class="label">区域名称：</span>{{ device.area }}</div>
             <div class="info-item"><span class="label">厂商：</span>{{ device.vendor }}</div>
+            <div class="info-item"><span class="label">责任人：</span>{{ device.owner }}</div>
             <div class="info-item"><span class="label">进场日期：</span>{{ device.inDate }}</div>
-            <div class="info-item"><span class="label">责任工程师：</span>{{ device.owner }}</div>
           </div>
         </el-col>
 
@@ -70,17 +72,9 @@
 
           <div class="rate-box">
             <div class="ring-wrapper">
-              <div class="ring" :style="ringStyle(85)"></div>
-              <div class="ring-center">
-                <div class="big">85%</div>
-                <div class="small">总稼动率</div>
-              </div>
-            </div>
-
-            <div class="ring-wrapper">
               <div class="ring" :style="ringStyle(75)"></div>
               <div class="ring-center">
-                <div class="big">75%</div>
+                <div class="big">75</div>
                 <div class="small">净稼动率</div>
               </div>
             </div>
@@ -111,10 +105,10 @@
       </el-row>
     </el-card>
 
-    <!-- ================= 第四行：时间轴 ================= -->
+    <!-- ================= 第四行：时间块图 ================= -->
     <el-card>
       <div class="timeline-header">
-        <span>设备状态时间轴</span>
+        <span>设备状态时间分布</span>
         <div>
           <el-date-picker v-model="timelineDate" type="date"/>
           <el-select v-model="timelineStart" style="margin-left:8px">
@@ -124,15 +118,36 @@
         </div>
       </div>
 
-      <div class="timeline-wrapper">
-        <div
-            v-for="(item,i) in timelineData"
-            :key="i"
-            class="timeline-node"
-        >
-          <div class="time">{{item.time}}</div>
-          <div class="bar" :style="{width:item.percent+'%',backgroundColor:item.color}"></div>
-          <div class="percent">{{item.percent}}%</div>
+      <!-- 时间块图 -->
+      <div class="time-block-chart">
+        <!-- 时间刻度 -->
+        <div class="time-scale">
+          <div v-for="time in timeScale" :key="time" class="time-tick">
+            {{ time }}
+          </div>
+        </div>
+
+        <!-- 状态图例 -->
+        <div class="state-legend">
+          <div v-for="state in stateTypes" :key="state.value" class="legend-item">
+            <div class="color-box" :style="{backgroundColor: state.color}"></div>
+            <span>{{ state.label }}</span>
+          </div>
+        </div>
+
+        <!-- 时间块图主体 -->
+        <div class="time-blocks">
+          <div
+              v-for="(block, index) in timeBlockData"
+              :key="index"
+              class="time-block"
+              :style="{
+              left: block.startPercent + '%',
+              width: block.widthPercent + '%',
+              backgroundColor: block.color
+            }"
+              :title="`${block.stateLabel}: ${block.startTime} - ${block.endTime}`"
+          ></div>
         </div>
       </div>
     </el-card>
@@ -185,14 +200,16 @@ const query = ref({ workshop:'', line:'', deviceName:'' })
 
 /* 设备主信息 */
 const device = ref({
-  workshop:'车间A',
-  line:'产线1',
-  section:'装配工段',
-  model:'CXK-450',
-  vendor:'某某机床有限公司',
-  inDate:'2023-06-01',
-  owner:'张三',
-  qrText:'设备编码：EQ-20230601001\n设备名称：设备A'
+  status:'运行中',
+  code:'C4-51-12',
+  name:'自动贴片机',
+  type:'贴片设备',
+  model:'TPJ-5000',
+  area:'C4车间 / 51产线 / 贴片工段',
+  vendor:'三星电子',
+  owner:'张工',
+  inDate:'2023-06-15',
+  qrText:'设备编码：C4-51-12\n设备名称：自动贴片机'
 })
 
 /* 二维码导出 */
@@ -233,14 +250,74 @@ const multiRingStyle = computed(()=>{
   }
 })
 
-/* 第四行时间轴 */
+/* 第四行时间块图 */
 const timelineDate = ref(new Date())
 const timelineStart = ref('7:30')
-const timelineData = Array.from({length:24}, (_,i)=>({
-  time:`${i.toString().padStart(2,'0')}:00`,
-  percent:Math.floor(Math.random()*100),
-  color:['#67c23a','#909399','#e6a23c','#f56c6c'][i%4]
-}))
+
+// 定义状态类型和颜色
+const stateTypes = ref([
+  { value: 'running', label: '运行中', color: '#67c23a' },
+  { value: 'standby', label: '待机', color: '#909399' },
+  { value: 'fault', label: '故障', color: '#e6a23c' },
+  { value: 'offline', label: '离线', color: '#f56c6c' }
+])
+
+// 时间刻度 (07:30 - 18:30)
+const timeScale = computed(() => {
+  const times = []
+  for (let i = 7; i <= 18; i++) {
+    if (i === 7) {
+      times.push('07:30')
+    } else {
+      times.push(`${i.toString().padStart(2, '0')}:00`)
+    }
+  }
+  times.push('18:30')
+  return times
+})
+
+// 生成模拟的时间块数据
+const timeBlockData = computed(() => {
+  const blocks = []
+  const startMinutes = 7 * 60 + 30 // 07:30
+  const endMinutes = 18 * 60 + 30 // 18:30
+  const totalMinutes = endMinutes - startMinutes
+
+  // 生成随机状态块
+  let currentTime = startMinutes
+  while (currentTime < endMinutes) {
+    const stateIndex = Math.floor(Math.random() * stateTypes.value.length)
+    const state = stateTypes.value[stateIndex]
+
+    // 随机生成本次状态的持续时间 (15-120分钟)
+    const duration = Math.floor(Math.random() * 105) + 15
+    const endTime = Math.min(currentTime + duration, endMinutes)
+
+    const startPercent = ((currentTime - startMinutes) / totalMinutes) * 100
+    const widthPercent = ((endTime - currentTime) / totalMinutes) * 100
+
+    // 格式化时间显示
+    const formatTime = (minutes) => {
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+    }
+
+    blocks.push({
+      state: state.value,
+      stateLabel: state.label,
+      color: state.color,
+      startTime: formatTime(currentTime),
+      endTime: formatTime(endTime),
+      startPercent: startPercent,
+      widthPercent: widthPercent
+    })
+
+    currentTime = endTime
+  }
+
+  return blocks
+})
 
 /* 第五行表格 */
 const activeTable = ref('warning')
@@ -331,29 +408,70 @@ const pushTable = [
   margin-top:2px;
 }
 
-/* 第四行 时间轴 */
+/* 第四行 时间块图 */
 .timeline-header{
   display:flex;
   justify-content:space-between;
   align-items:center;
   margin-bottom:12px;
 }
-.timeline-wrapper{
-  display:flex;
-  overflow-x:auto;
+
+/* 时间块图样式 */
+.time-block-chart {
+  position: relative;
+  margin-top: 20px;
 }
-.timeline-node{
-  flex:0 0 4.166%;
-  text-align:center;
-  padding:4px;
-  font-size:12px;
+
+.time-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #606266;
 }
-.bar{
-  height:8px;
-  margin:4px auto;
-  border-radius:2px;
+
+.time-tick {
+  flex: 1;
+  text-align: center;
 }
-.percent{
-  font-weight:bold;
+
+.state-legend {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+  gap: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+}
+
+.color-box {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  border-radius: 3px;
+}
+
+.time-blocks {
+  position: relative;
+  height: 40px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.time-block {
+  position: absolute;
+  height: 100%;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.time-block:hover {
+  opacity: 0.8;
+  transform: scaleY(1.1);
 }
 </style>
