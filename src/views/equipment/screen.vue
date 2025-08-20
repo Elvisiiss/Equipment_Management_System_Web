@@ -1,94 +1,24 @@
 <template>
   <!-- 设备监控看板 - 科技风 -->
   <div class="equipment-screen">
-    <!-- 大标题 -->
-    <div class="screen-header">
-      <div class="header-left"></div>
-
-      <h1>设备监控中心</h1>
-
-      <!-- 实时时钟 -->
-      <div class="real-time-clock">
-        {{ currentTime }}
-      </div>
-
-      <!-- 筛选区域 -->
-      <div class="filter-area">
-        <el-form :inline="true" :model="filterForm" class="filter-form">
-          <el-form-item>
-            <el-select
-                v-model="filterForm.workshop"
-                multiple
-                collapse-tags
-                collapse-tags-tooltip
-                placeholder="车间"
-                clearable
-                @change="handleWorkshopChange"
-                class="tech-select"
-            >
-              <el-option
-                  v-for="ws in workshopOptions"
-                  :key="ws.value"
-                  :label="ws.label"
-                  :value="ws.value"
-              ></el-option>
-            </el-select>
-          </el-form-item>
-
-          <el-form-item>
-            <el-select
-                v-model="filterForm.line"
-                multiple
-                collapse-tags
-                collapse-tags-tooltip
-                placeholder="产线"
-                clearable
-                :disabled="filterForm.workshop.length === 0"
-                @change="handleLineChange"
-                class="tech-select"
-            >
-              <el-option
-                  v-for="line in lineOptions"
-                  :key="line.value"
-                  :label="line.label"
-                  :value="line.value"
-              ></el-option>
-            </el-select>
-          </el-form-item>
-        </el-form>
-      </div>
-
-      <!-- 全屏开关 -->
-      <div class="fullscreen-switch">
-        <el-switch
-            v-model="fullScreen"
-            inline-prompt
-            active-text="全屏"
-            inactive-text="退出"
-            active-color="#13ce66"
-            @change="handleFullScreenChange"
-        />
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+      <div class="nav-item">时间{{ currentTime }}</div>
+      <h1 class="title">设备监控中心</h1>
+      <div class="nav-item">
+        <el-button type="text">车间</el-button>
+        <el-button type="text">产线</el-button>
+        <el-button type="text">全屏切换</el-button>
       </div>
     </div>
 
-    <!-- 统计卡片 -->
-    <div class="stat-container">
-      <div
-          v-for="(card, idx) in statCards"
-          :key="idx"
-          class="stat-card"
-          :style="{
-          backgroundColor: card.color,
-          borderLeft: `4px solid ${card.borderColor}`
-        }"
-          @click="goManage"
-      >
-        <div class="stat-title">{{ card.title }}</div>
-        <div class="stat-value">{{ card.number }}</div>
-        <div class="stat-icon">
-          <i :class="card.icon"></i>
-        </div>
-      </div>
+    <!-- 状态卡片 -->
+    <div class="status-cards">
+      <div class="card" style="background-color: #4F52D7FF;">设备总数 120</div>
+      <div class="card" style="background-color: #4CAF50;">运行中 82</div>
+      <div class="card" style="background-color: #E6A23C;">待机 20</div>
+      <div class="card" style="background-color: #D32F2F;">故障 8</div>
+      <div class="card" style="background-color: #9E9E9E;">离线 10</div>
     </div>
 
     <!-- 第二行：饼图 -->
@@ -100,17 +30,7 @@
             <el-button type="text" @click="goManage">详情</el-button>
           </div>
           <div class="chart-container">
-            <v-chart
-                :option="typePieOption"
-                autoresize
-                style="height: 100%"
-            />
-          </div>
-          <div class="data-display">
-            <div v-for="(item, index) in typePieOption.series[0].data" :key="index" class="data-item">
-              <div class="data-label">{{ item.name }}：</div>
-              <div class="data-value">{{ item.value }}</div>
-            </div>
+            <v-chart :option="typePieOption" autoresize style="height: 100%;" />
           </div>
         </div>
       </el-col>
@@ -121,17 +41,7 @@
             <el-button type="text" @click="goManage">详情</el-button>
           </div>
           <div class="chart-container">
-            <v-chart
-                :option="utilPieOption"
-                autoresize
-                style="height: 100%"
-            />
-          </div>
-          <div class="data-display">
-            <div v-for="(item, index) in utilPieOption.series[0].data" :key="index" class="data-item">
-              <div class="data-label">{{ item.name }}：</div>
-              <div class="data-value">{{ item.value }}</div>
-            </div>
+            <v-chart :option="utilPieOption" autoresize style="height: 100%;" />
           </div>
         </div>
       </el-col>
@@ -152,11 +62,7 @@
             </div>
           </div>
           <div class="chart-container">
-            <v-chart
-                :option="lineOption"
-                autoresize
-                style="height: 100%"
-            />
+            <v-chart :option="lineOption" autoresize style="height: 100%;" />
           </div>
         </div>
       </el-col>
@@ -167,32 +73,11 @@
             <el-button type="text" @click="goManage">详情</el-button>
           </div>
           <div class="table-container">
-            <el-table
-                :data="stopRank"
-                size="small"
-                style="width: 100%"
-                height="100%"
-                @row-click="() => goManage()"
-            >
+            <el-table :data="stopRank" size="small" style="width: 100%; height: 100%;" @row-click="() => goManage()">
               <el-table-column type="index" width="50" align="center" />
-              <el-table-column
-                  prop="name"
-                  label="设备名称"
-                  show-overflow-tooltip
-                  min-width="120"
-              />
-              <el-table-column
-                  prop="duration"
-                  label="时长"
-                  width="150"
-                  align="center"
-              />
-              <el-table-column
-                  prop="start"
-                  label="开始时间"
-                  width="140"
-                  align="center"
-              />
+              <el-table-column prop="name" label="设备名称" show-overflow-tooltip min-width="120" />
+              <el-table-column prop="duration" label="时长" width="150" align="center" />
+              <el-table-column prop="start" label="开始时间" width="140" align="center" />
             </el-table>
           </div>
         </div>
@@ -202,17 +87,17 @@
 </template>
 
 <script setup>
-import {useRouter} from 'vue-router'
-import {ref, onMounted, reactive, inject, watch, onBeforeUnmount} from 'vue'
+import { useRouter } from 'vue-router'
+import { ref, onMounted, reactive, inject, watch, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts/core'
-import {PieChart, LineChart} from 'echarts/charts'
+import { PieChart, LineChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
   LegendComponent,
   GridComponent
 } from 'echarts/components'
-import {CanvasRenderer} from 'echarts/renderers'
+import { CanvasRenderer } from 'echarts/renderers'
 import VChart from 'vue-echarts'
 
 // 注册图表
@@ -289,7 +174,7 @@ const workshopOptions = ref([
 const lineOptions = ref([])
 
 const workshopLineMap = {
-  C2: ['31', '32', '33', '34', '35', '36'],
+  C2: ['31', '32', '333', '34', '35', '36'],
   C3: ['41', '42', '43', '44', '45', '46'],
   C4: ['51', '52', '53', '54', '55', '56'],
   C5: ['61', '62', '63', '64', '65', '66'],
@@ -382,14 +267,14 @@ const statCards = ref([
     title: '脱机/离线',
     number: 10,
     color: 'rgba(102, 57, 0, 0.7)',
-    borderColor: '#E6A23C',
+    borderColor: '#909399',
     icon: 'el-icon-disconnect'
   },
   {
     title: '待机',
     number: 20,
     color: 'rgba(58, 58, 58, 0.7)',
-    borderColor: '#909399',
+    borderColor: '#E6A23C',
     icon: 'el-icon-time'
   }
 ])
@@ -419,9 +304,9 @@ const typePieOption = ref({
       labelLine: {show: false},
       data: [
         {value: 82, name: '运行中', itemStyle: {color: '#67C23A'}},
-        {value: 20, name: '待机', itemStyle: {color: '#909399'}},
+        {value: 20, name: '待机', itemStyle: {color: '#E6A23C'}},
         {value: 8, name: '故障', itemStyle: {color: '#F56C6C'}},
-        {value: 10, name: '离线', itemStyle: {color: '#E6A23C'}}
+        {value: 10, name: '离线', itemStyle: {color: '#909399'}}
       ]
     }
   ]
@@ -544,169 +429,42 @@ onMounted(() => {
   color: #fff;
   overflow: auto;
 
-  .screen-header {
+  .navbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px; // 减小头部和卡片之间的间距
-    position: relative;
+    margin-bottom: 20px;
     padding: 0 50px;
+    background-color: #1a2b40;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
-    h1 {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 24px; // 减小标题字体大小
+    .nav-item {
+      font-size: 14px;
+      color: #fff;
+      margin-right: 20px;
+    }
+
+    .title {
+      font-size: 24px;
       font-weight: bold;
-      background: linear-gradient(90deg, #409EFF, #67C23A);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 10px rgba(64, 158, 255, 0.3);
-    }
-
-    .header-left {
-      flex: 1;
-    }
-
-    // 实时时钟
-    .real-time-clock {
-      position: absolute;
-      left: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 14px; // 减小时钟字体大小
-      background: rgba(64, 158, 255, 0.2);
-      padding: 4px 8px; // 减小时钟内边距
-      border-radius: 4px;
-      border: 1px solid rgba(64, 158, 255, 0.3);
-      box-shadow: 0 0 10px rgba(64, 158, 255, 0.1);
-    }
-
-    // 筛选区域
-    .filter-area {
-      position: absolute;
-      right: 100px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    // 全屏开关
-    .fullscreen-switch {
-      position: absolute;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10;
-
-      :deep(.el-switch) {
-        --el-switch-on-color: rgba(19, 206, 102, 0.3);
-        --el-switch-off-color: rgba(255, 73, 73, 0.3);
-        --el-switch-border-color: rgba(64, 158, 255, 0.3);
-      }
-
-      :deep(.el-switch__label) {
-        color: #fff !important;
-        font-weight: bold;
-      }
-    }
-
-    // 下拉框样式（缩小）
-    :deep(.tech-select) {
-      width: 90px; // 减小下拉框宽度
-      font-size: 12px;
-
-      .el-input__wrapper {
-        background: rgba(16, 42, 87, 0.7);
-        border: 1px solid rgba(64, 158, 255, 0.3);
-        box-shadow: 0 0 8px rgba(64, 158, 255, 0.3);
-        border-radius: 4px;
-        transition: all 0.3s;
-
-        &:hover {
-          box-shadow: 0 0 12px rgba(64, 158, 255, 0.5);
-        }
-      }
-
-      .el-input__inner {
-        color: #fff;
-        font-size: 12px;
-        &::placeholder {
-          color: rgba(255, 255, 255, 0.6);
-        }
-      }
-
-      .el-select__tags {
-        .el-tag {
-          background: rgba(64, 158, 255, 0.3);
-          border-color: rgba(64, 158, 255, 0.5);
-          color: #fff;
-          box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
-        }
-      }
-
-      .el-tag__close {
-        color: #fff;
-        background: transparent;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-      }
-
-      .el-icon {
-        color: rgba(255, 255, 255, 0.7);
-      }
+      margin: 0 20px;
     }
   }
 
-  .stat-container {
+  .status-cards {
     display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px; // 减小卡片之间的间距
-    gap: 10px;
+    justify-content: space-around;
+    margin-bottom: 20px;
 
-    .stat-card {
-      flex: 1;
-      height: 80px; // 减小卡片高度
-      border-radius: 6px;
+    .card {
+      padding: 10px 20px;
+      border-radius: 8px;
       color: #fff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 0 10px; // 减小卡片内边距
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
+      text-align: center;
+      transition: background-color 0.3s;
 
       &:hover {
-        transform: translateY(-3px); // 减小悬停时的位移
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-      }
-
-      .stat-title {
-        font-size: 12px; // 减小标题字体大小
-        opacity: 0.8;
-      }
-
-      .stat-value {
-        font-size: 20px; // 减小数值字体大小
-        font-weight: 600;
-        margin: 5px 0;
-      }
-
-      .stat-icon {
-        position: absolute;
-        right: 10px; // 减小图标与边界的距离
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 28px; // 减小图标大小
-        opacity: 0.3;
+        background-color: rgba(255, 255, 255, 0.2);
       }
     }
   }
@@ -714,7 +472,7 @@ onMounted(() => {
   .chart-row {
     flex: 1;
     min-height: 0;
-    margin-bottom: 10px; // 减小行之间的间距
+    margin-bottom: 10px;
 
     .chart-card {
       height: 100%;
@@ -726,21 +484,21 @@ onMounted(() => {
       flex-direction: column;
 
       .chart-header {
-        padding: 8px 12px; // 减小头部内边距
+        padding: 10px 16px;
         border-bottom: 1px solid rgba(64, 158, 255, 0.2);
         display: flex;
         justify-content: space-between;
         align-items: center;
 
         h3 {
-          font-size: 14px; // 减小标题字体大小
+          font-size: 16px;
           font-weight: 500;
           margin: 0;
           display: flex;
           align-items: center;
 
           i {
-            margin-right: 6px; // 减小图标与文字的间距
+            margin-right: 8px;
             color: #409EFF;
           }
         }
@@ -748,21 +506,21 @@ onMounted(() => {
 
       .chart-container {
         flex: 1;
-        padding: 5px; // 减小容器内边距
-        min-height: 150px; // 减小图表容器高度
+        padding: 10px;
+        min-height: 200px;
       }
 
       .data-display {
         display: flex;
         justify-content: space-around;
-        padding: 5px 0; // 减小数据展示区域的内边距
+        padding: 10px 0;
         background: rgba(16, 42, 87, 0.3);
         border-top: 1px solid rgba(64, 158, 255, 0.2);
 
         .data-item {
           display: flex;
           align-items: center;
-          font-size: 12px; // 减小数据字体大小
+          font-size: 14px;
 
           .data-label {
             opacity: 0.8;
@@ -778,7 +536,7 @@ onMounted(() => {
       .trend-data-display {
         display: flex;
         justify-content: space-around;
-        padding: 5px 5px; // 减小趋势数据展示区域的内边距
+        padding: 10px 5px;
         background: rgba(16, 42, 87, 0.3);
         border-bottom: 1px solid rgba(64, 158, 255, 0.2);
 
@@ -786,7 +544,7 @@ onMounted(() => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          font-size: 12px; // 减小趋势数据字体大小
+          font-size: 13px;
 
           .trend-day {
             opacity: 0.8;
@@ -802,7 +560,7 @@ onMounted(() => {
 
       .table-container {
         flex: 1;
-        padding: 5px; // 减小表格容器内边距
+        padding: 10px;
 
         :deep(.el-table) {
           background: transparent;

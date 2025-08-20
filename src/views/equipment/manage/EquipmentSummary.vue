@@ -60,7 +60,7 @@
     <el-card>
       <el-row :gutter="20">
         <!-- 左侧 总稼动率 & 净稼动率 -->
-        <el-col :span="12" class="rate-left">
+        <el-col :span="8" class="rate-left">
           <div class="rate-date">
             <el-date-picker v-model="rateDate" type="date" placeholder="选择日期"/>
             <el-select v-model="rateShift" style="margin-left:8px">
@@ -71,34 +71,45 @@
           </div>
 
           <div class="rate-box">
+            <!-- 总稼动率 -->
             <div class="ring-wrapper">
-              <div class="ring" :style="ringStyle(75)"></div>
+              <div class="ring" :style="ringStyle(63.64)"></div>
               <div class="ring-center">
-                <div class="big">75</div>
-                <div class="small">净稼动率</div>
+                <div class="big">63.64%</div>
+                <div class="small">运行时间/开机时间</div>
+              </div>
+            </div>
+
+            <!-- 净解决率 -->
+            <div class="ring-wrapper">
+              <div class="ring" :style="ringStyle(100)"></div>
+              <div class="ring-center">
+                <div class="big">100%</div>
+                <div class="small">运行时间/开机时间-交接班计划停机</div>
               </div>
             </div>
           </div>
         </el-col>
 
-        <!-- 右侧 状态饼图 + 表格 -->
-        <el-col :span="12" class="rate-right">
-          <!-- 状态饼图 -->
+        <!-- 中间 状态饼图 -->
+        <el-col :span="8" class="rate-middle">
           <div class="big-ring">
             <div class="ring" :style="multiRingStyle"></div>
             <div class="ring-center">
-              <div class="big">60%</div>
-              <div class="sub">进行 60%</div>
-              <div class="sub">待机 15%</div>
-              <div class="sub">报警 15%</div>
-              <div class="sub">离线 10%</div>
+              <div class="big">状态分布</div>
+              <div class="sub running">运行 31.22%</div>
+              <div class="sub standby">待机 27.78%</div>
+              <div class="sub offline">离线 0%</div>
+              <div class="sub fault">故障 0%</div>
             </div>
           </div>
+        </el-col>
 
-          <!-- 状态表格 -->
-          <el-table :data="stateTable" stripe style="margin-top:12px">
-            <el-table-column prop="state" label="状态"/>
-            <el-table-column prop="time" label="时间(h)"/>
+        <!-- 右侧 状态表格 -->
+        <el-col :span="8" class="rate-right">
+          <el-table :data="stateTable" stripe style="width:100%">
+            <el-table-column prop="state" label="状态" width="80"/>
+            <el-table-column prop="time" label="时间"/>
             <el-table-column prop="percent" label="比例(%)"/>
           </el-table>
         </el-col>
@@ -227,10 +238,10 @@ function downloadQR(){
 const rateDate = ref(new Date())
 const rateShift = ref('all')
 const stateTable = [
-  { state:'进行', time:'14.4', percent:60 },
-  { state:'待机', time:'3.6',  percent:15 },
-  { state:'报警', time:'3.6',  percent:15 },
-  { state:'离线', time:'2.4',  percent:10 }
+  { state:'运行', time:'27分41秒', percent:'31.22' },
+  { state:'待机', time:'2小时19分49秒', percent:'27.78' },
+  { state:'闲置', time:'0', percent:'0' },
+  { state:'离线', time:'0', percent:'0' }
 ]
 /* 环形进度条：单值 */
 function ringStyle(percent){
@@ -240,13 +251,13 @@ function ringStyle(percent){
 }
 /* 多色状态饼图 */
 const multiRingStyle = computed(()=>{
-  /* 进行 60 待机 15 报警 15 离线 10 */
+  /* 运行 31.22 待机 27.78 离线 0 故障 0 */
   return {
     background:`conic-gradient(
-      #67c23a 0% 60%,
-      #909399 60% 75%,
-      #e6a23c 75% 90%,
-      #f56c6c 90% 100%)`
+      #67c23a 0% 31.22%,
+      #e6a23c 31.22% 59%,
+      #f56c6c 59% 59%,
+      #909399 59% 100%)`
   }
 })
 
@@ -367,6 +378,7 @@ const pushTable = [
   display:flex;
   gap:40px;
   align-items:center;
+  justify-content: center;
 }
 .ring-wrapper{
   position:relative;
@@ -386,26 +398,56 @@ const pushTable = [
   text-align:center;
 }
 .big{
-  font-size:24px;
+  font-size:20px;
   font-weight:bold;
   color:#409eff;
 }
 .small{
-  font-size:12px;
+  font-size:10px;
   color:#606266;
+  margin-top:4px;
+  line-height:1.2;
 }
 
-/* 大状态饼图 */
+/* 中间区域饼图 */
+.rate-middle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .big-ring{
   position:relative;
   width:180px;
   height:180px;
-  margin:0 auto;
+}
+.ring-center .big {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 5px;
 }
 .sub{
   font-size:12px;
   color:#606266;
   margin-top:2px;
+}
+.running {
+  color: #67c23a;
+}
+.standby {
+  color: #e6a23c;
+}
+.offline {
+  color: #f56c6c;
+}
+.fault {
+  color: #909399;
+}
+
+/* 右侧表格区域 */
+.rate-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* 第四行 时间块图 */
