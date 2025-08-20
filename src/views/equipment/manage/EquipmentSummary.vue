@@ -24,25 +24,77 @@
       <el-row :gutter="20" align="middle">
         <!-- 1. 设备图 -->
         <el-col :span="6">
-          <el-image
-              src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
-              fit="cover"
-              style="width:100%;height:180px;border-radius:6px"
-          />
+          <div class="device-image-container">
+            <el-image
+                src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+                fit="cover"
+                style="width:100%;height:180px;border-radius:6px"
+            />
+            <div class="device-status-badge" :class="device.status === '运行中' ? 'running' : 'stopped'">
+              {{ device.status }}
+            </div>
+          </div>
         </el-col>
 
-        <!-- 2. 关键信息 一行排列 -->
+        <!-- 2. 关键信息 采用图片样式卡片 -->
         <el-col :span="12">
-          <div class="info-row">
-            <div class="info-item"><span class="label">状态：</span>{{ device.status }}</div>
-            <div class="info-item"><span class="label">设备编码：</span>{{ device.code }}</div>
-            <div class="info-item"><span class="label">设备名称：</span>{{ device.name }}</div>
-            <div class="info-item"><span class="label">设备类别：</span>{{ device.type }}</div>
-            <div class="info-item"><span class="label">型号：</span>{{ device.model }}</div>
-            <div class="info-item"><span class="label">区域名称：</span>{{ device.area }}</div>
-            <div class="info-item"><span class="label">厂商：</span>{{ device.vendor }}</div>
-            <div class="info-item"><span class="label">责任人：</span>{{ device.owner }}</div>
-            <div class="info-item"><span class="label">进场日期：</span>{{ device.inDate }}</div>
+          <div class="info-card">
+            <div class="info-card-header">
+              <span class="info-card-title">设备信息</span>
+              <span class="info-card-code">{{ device.code }}</span>
+            </div>
+            <div class="info-card-content">
+              <el-row :gutter="16">
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">设备名称：</span>
+                    <span class="value">{{ device.name }}</span>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">设备类别：</span>
+                    <span class="value">{{ device.type }}</span>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">型号：</span>
+                    <span class="value">{{ device.model }}</span>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">区域名称：</span>
+                    <span class="value">{{ device.area }}</span>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">厂商：</span>
+                    <span class="value">{{ device.vendor }}</span>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">责任人：</span>
+                    <span class="value">{{ device.owner }}</span>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">进场日期：</span>
+                    <span class="value">{{ device.inDate }}</span>
+                  </div>
+                </el-col>
+                <el-col :span="12">
+                  <div class="info-card-item">
+                    <span class="label">资产编码：</span>
+                    <span class="value">ZC-2023-001</span>
+                  </div>
+                </el-col>
+              </el-row>
+            </div>
           </div>
         </el-col>
 
@@ -354,16 +406,85 @@ const pushTable = [
   margin-bottom:16px;
 }
 
-/* 第二行 一行排列关键信息 */
-.info-row{
-  display:flex;
-  flex-wrap:wrap;
-  gap:16px 32px;
-  font-size:14px;
+/* 设备图片容器 */
+.device-image-container {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-.info-item .label{
-  font-weight:bold;
-  color:#333;
+
+/* 设备状态徽章 */
+.device-status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+}
+
+.device-status-badge.running {
+  background-color: #67c23a;
+}
+
+.device-status-badge.stopped {
+  background-color: #f56c6c;
+}
+
+/* 信息卡片样式 */
+.info-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ebeef5;
+}
+
+.info-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #dcdfe6;
+}
+
+.info-card-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.info-card-code {
+  font-size: 14px;
+  color: #409eff;
+  font-weight: 500;
+}
+
+.info-card-content {
+  padding: 4px 0;
+}
+
+.info-card-item {
+  display: flex;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.info-card-item .label {
+  font-weight: bold;
+  color: #606266;
+  min-width: 70px;
+  font-size: 13px;
+}
+
+.info-card-item .value {
+  color: #303133;
+  font-size: 13px;
+  flex: 1;
 }
 
 /* 第三行 环形饼图 */
