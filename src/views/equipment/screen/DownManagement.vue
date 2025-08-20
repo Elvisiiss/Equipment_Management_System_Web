@@ -118,7 +118,8 @@
         <el-table-column prop="workshopName" label="车间" width="120" />
         <el-table-column prop="productionLineName" label="产线" width="120" />
         <el-table-column prop="mtbf" label="MTBF(h)" width="100" sortable />
-        <el-table-column prop="mttr" label="MTTR(h)" width="100" sortable />
+        <el-table-column prop="mttrHuman" label="人员MTTR(h)" width="110" sortable />
+        <el-table-column prop="mttrDevice" label="设备MTTR(h)" width="110" sortable />
         <el-table-column prop="failureCnt" label="故障次数" width="100" sortable />
         <el-table-column prop="totalRunTime" label="总运行时长(h)" width="120" sortable />
         <el-table-column prop="totalRepairTime" label="总修复时长(h)" width="120" sortable />
@@ -256,7 +257,8 @@ async function fetchData() {
     workshopName: '冲压车间',
     productionLineName: '冲压一线',
     mtbf: (Math.random() * 400 + 100).toFixed(2),
-    mttr: (Math.random() * 5 + 1).toFixed(2),
+    mttrHuman: (Math.random() * 5 + 1).toFixed(2),    // 人员 MTTR
+    mttrDevice: (Math.random() * 3 + 0.5).toFixed(2), // 设备 MTTR
     failureCnt: Math.floor(Math.random() * 10 + 1),
     totalRunTime: (Math.random() * 8000 + 2000).toFixed(2),
     totalRepairTime: (Math.random() * 30 + 5).toFixed(2)
@@ -270,10 +272,11 @@ function renderChart(data) {
     if (!chartIns) chartIns = echarts.init(chartRef.value)
     const x = data.map(d => d.machineName)
     const mtbf = data.map(d => +d.mtbf)
-    const mttr = data.map(d => +d.mttr)
+    const mttrHuman = data.map(d => +d.mttrHuman)
+    const mttrDevice = data.map(d => +d.mttrDevice)
     chartIns.setOption({
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      legend: { data: ['MTBF', 'MTTR'] },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+      legend: { data: ['MTBF', '人员MTTR', '设备MTTR'] },
       grid: { left: 40, right: 40, bottom: 60, top: 40, containLabel: true },
       xAxis: { type: 'category', data: x, axisLabel: { interval: 0, rotate: 45 } },
       yAxis: [
@@ -281,8 +284,9 @@ function renderChart(data) {
         { type: 'value', name: 'MTTR(h)', position: 'right' }
       ],
       series: [
-        { name: 'MTBF', type: 'bar', data: mtbf },
-        { name: 'MTTR', type: 'bar', yAxisIndex: 1, data: mttr, barMaxWidth: 30 }
+        { name: 'MTBF', type: 'line', data: mtbf },
+        { name: '人员MTTR', type: 'line', yAxisIndex: 1, data: mttrHuman },
+        { name: '设备MTTR', type: 'line', yAxisIndex: 1, data: mttrDevice }
       ]
     })
   })
