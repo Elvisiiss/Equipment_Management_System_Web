@@ -1,12 +1,12 @@
 <template>
   <!-- 资产看板 - 科技风 -->
-  <div class="asset-screen">
+  <div class="asset-screen" ref="screenContainer">
     <!-- 顶部导航栏 -->
     <div class="navbar">
       <div class="nav-item">时间{{ currentTime }}</div>
       <h1 class="title">资产管理中心</h1>
       <div class="nav-item">
-        <el-button type="text" @click="handleFullScreenChange">全屏切换</el-button>
+        <el-button type="text" @click="handleFullScreenChange">{{ isFullScreen ? '退出全屏' : '全屏切换' }}</el-button>
       </div>
     </div>
 
@@ -96,6 +96,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
+import screenfull from 'screenfull'
 
 const router = useRouter()
 
@@ -128,9 +129,29 @@ onBeforeUnmount(() => {
 })
 
 /* ------------------ 全屏相关逻辑 ------------------ */
+const screenContainer = ref()
+const isFullScreen = ref(false)
+
 const handleFullScreenChange = () => {
-  // 这里需要根据实际项目中的全屏逻辑进行调整
-  console.log('全屏切换')
+  if (!screenfull.isEnabled) {
+    console.warn('您的浏览器不支持全屏功能')
+    return
+  }
+
+  if (screenfull.isFullscreen) {
+    screenfull.exit()
+    isFullScreen.value = false
+  } else {
+    screenfull.request(screenContainer.value)
+    isFullScreen.value = true
+  }
+}
+
+// 监听全屏变化
+if (screenfull.isEnabled) {
+  screenfull.on('change', () => {
+    isFullScreen.value = screenfull.isFullscreen
+  })
 }
 
 /* ------------------ 卡片 ------------------ */
@@ -161,6 +182,15 @@ const typeChartRef = ref()
 const lifeChartRef = ref()
 const trendChartRef = ref()
 
+// 计算百分比
+const calculatePercentages = (data) => {
+  const total = data.reduce((sum, item) => sum + item.value, 0)
+  return data.map(item => ({
+    ...item,
+    percentage: ((item.value / total) * 100).toFixed(1) + '%'
+  }))
+}
+
 const initChart = (dom, option) => {
   const chart = echarts.init(dom)
   chart.setOption(option)
@@ -183,18 +213,36 @@ onMounted(() => {
     }
   }
 
+  // 类型分布饼图数据
+  const typeData = [
+    { name: '已验收', value: 432, itemStyle: { color: '#67C23A' } },
+    { name: '待验收', value: 42, itemStyle: { color: '#E6A23C' } },
+    { name: '样机', value: 15, itemStyle: { color: '#909399' } },
+    { name: '闲置', value: 32, itemStyle: { color: '#F56C6C' } }
+  ]
+
+  const typeDataWithPercentage = calculatePercentages(typeData)
+
   // 类型分布饼图
   initChart(typeChartRef.value, {
     ...darkTheme,
-    tooltip: { trigger: 'item' },
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
+    },
     legend: {
       orient: 'vertical',
       right: 10,
       top: 'center',
-      textStyle: {color: '#fff'}
+      textStyle: {color: '#fff'},
+      formatter: (name) => {
+        const item = typeDataWithPercentage.find(d => d.name === name)
+        return `${name}: ${item.percentage}`
+      }
     },
     series: [
       {
+        name: '台账类型',
         type: 'pie',
         radius: ['40%', '70%'],
         label: {show: false, position: 'center'},
@@ -203,32 +251,47 @@ onMounted(() => {
             show: true,
             fontSize: 18,
             fontWeight: 'bold',
-            color: '#fff'
+            color: '#fff',
+            formatter: '{b}\n{c} ({d}%)'
           }
         },
         labelLine: {show: false},
-        data: [
-          { name: '已验收', value: 432, itemStyle: { color: '#67C23A' } },
-          { name: '待验收', value: 42, itemStyle: { color: '#E6A23C' } },
-          { name: '样机', value: 15, itemStyle: { color: '#909399' } },
-          { name: '闲置', value: 32, itemStyle: { color: '#F56C6C' } }
-        ]
+        data: typeData
       }
     ]
   })
 
+  // 寿命分布饼图数据
+  const lifeData = [
+    { name: '1 年', value: 80, itemStyle: { color: '#5B8FF9' } },
+    { name: '2 年', value: 150, itemStyle: { color: '#5AD8A6' } },
+    { name: '3 年', value: 200, itemStyle: { color: '#5D7092' } },
+    { name: '4 年', value: 70, itemStyle: { color: '#F6BD16' } },
+    { name: '5 年及以上', value: 21, itemStyle: { color: '#E86452' } }
+  ]
+
+  const lifeDataWithPercentage = calculatePercentages(lifeData)
+
   // 寿命分布饼图
   initChart(lifeChartRef.value, {
     ...darkTheme,
-    tooltip: { trigger: 'item' },
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
+    },
     legend: {
       orient: 'vertical',
       right: 10,
       top: 'center',
-      textStyle: {color: '#fff'}
+      textStyle: {color: '#fff'},
+      formatter: (name) => {
+        const item = lifeDataWithPercentage.find(d => d.name === name)
+        return `${name}: ${item.percentage}`
+      }
     },
     series: [
       {
+        name: '寿命上限',
         type: 'pie',
         radius: ['40%', '70%'],
         label: {show: false, position: 'center'},
@@ -237,17 +300,12 @@ onMounted(() => {
             show: true,
             fontSize: 18,
             fontWeight: 'bold',
-            color: '#fff'
+            color: '#fff',
+            formatter: '{b}\n{c} ({d}%)'
           }
         },
         labelLine: {show: false},
-        data: [
-          { name: '1 年', value: 80, itemStyle: { color: '#5B8FF9' } },
-          { name: '2 年', value: 150, itemStyle: { color: '#5AD8A6' } },
-          { name: '3 年', value: 200, itemStyle: { color: '#5D7092' } },
-          { name: '4 年', value: 70, itemStyle: { color: '#F6BD16' } },
-          { name: '5 年及以上', value: 21, itemStyle: { color: '#E86452' } }
-        ]
+        data: lifeData
       }
     ]
   })
@@ -499,5 +557,13 @@ onMounted(() => {
 
 :deep(.el-table__empty-block) {
   background: rgba(16, 42, 87, 0.3);
+}
+
+// 全屏样式
+:fullscreen {
+  .asset-screen {
+    padding: 20px;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  }
 }
 </style>
