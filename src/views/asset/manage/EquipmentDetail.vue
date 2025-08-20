@@ -24,30 +24,43 @@
         </div>
       </el-col>
 
-      <!-- 说明书/图纸 -->
+      <!-- 说明书/图纸 - 改为下载按钮 -->
       <el-col :span="8">
         <div class="doc-buttons">
-          <el-button circle @click="showDoc('manual')">
-            <el-icon :size="18"><Document /></el-icon>
-          </el-button>
-          <span>设备说明书</span>
+          <el-tooltip effect="dark" content="下载设备说明书" placement="bottom">
+            <el-button
+                :icon="Document"
+                :disabled="!device.manualFiles"
+                class="doc-btn"
+                @click="downloadDoc('manual')"
+            >
+              下载说明书
+            </el-button>
+          </el-tooltip>
 
-          <el-button circle @click="showDoc('drawing')">
-            <el-icon :size="18"><Picture /></el-icon>
-          </el-button>
-          <span>设备图纸</span>
+          <el-tooltip effect="dark" content="下载设备图纸" placement="bottom">
+            <el-button
+                :icon="Picture"
+                :disabled="!device.drawingFiles"
+                class="doc-btn"
+                @click="downloadDoc('drawing')"
+            >
+              下载图纸
+            </el-button>
+          </el-tooltip>
         </div>
       </el-col>
     </el-row>
 
-    <!-- 第二行：设备主信息 -->
+    <!-- 设备主信息 -->
     <el-card class="full-width-card">
       <el-row :gutter="20" align="middle">
         <el-col :span="6">
           <el-image
-              src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80"
+              :src="device.imageUrl"
               fit="cover"
               style="width:100%; height:180px;border-radius:6px"
+              :alt="device.name"
           />
         </el-col>
         <el-col :span="12">
@@ -70,6 +83,7 @@
           <div class="qr-container">
             <div ref="qrRef">
               <vue-qr :text="device.qrText" :size="160" />
+              <div class="qr-code-text">{{ device.code }}</div>
             </div>
             <el-button @click="downloadQR" style="margin-top:15px">导出二维码</el-button>
           </div>
@@ -77,7 +91,7 @@
       </el-row>
     </el-card>
 
-    <!-- 第三行：BOM 备件清单 -->
+    <!-- BOM 备件清单 -->
     <el-card class="full-width-card">
       <template #header>
         <div class="card-header">
@@ -109,7 +123,7 @@
       </div>
     </el-card>
 
-    <!-- 第四行：模治具清单 -->
+    <!-- 模治具清单 -->
     <el-card class="full-width-card">
       <template #header>
         <div class="card-header">
@@ -142,7 +156,7 @@
       </div>
     </el-card>
 
-    <!-- 第五行：生命周期履历 -->
+    <!-- 生命周期履历 -->
     <el-card class="full-width-card">
       <template #header>
         <div class="card-header">
@@ -176,7 +190,7 @@
       </div>
     </el-card>
 
-    <!-- 第六行：点检任务 -->
+    <!-- 点检任务 -->
     <el-card class="full-width-card">
       <template #header>
         <div class="card-header">
@@ -218,7 +232,7 @@
       </div>
     </el-card>
 
-    <!-- 第七行：保养信息 -->
+    <!-- 保养信息 -->
     <el-card class="full-width-card">
       <template #header>
         <div class="card-header">
@@ -258,17 +272,6 @@
         </div>
       </div>
     </el-card>
-
-    <!-- 弹窗：说明书/图纸 -->
-    <el-dialog
-        v-model="docVisible"
-        width="70%"
-        :title="docTitle"
-        destroy-on-close
-    >
-      <img v-if="docType==='drawing'" :src="docImage" style="width:100%" />
-      <div v-else v-html="docContent" />
-    </el-dialog>
 
     <!-- 验收弹窗 -->
     <el-dialog v-model="acceptVisible" title="验收" width="500">
@@ -399,13 +402,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {ref, reactive, computed, onMounted} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import vueQr from 'vue-qr/src/packages/vue-qr.vue'
 import html2canvas from 'html2canvas'
-import { ElMessage } from 'element-plus'
-import { Document, Picture, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
-import { deviceAPI } from '@/api/ckAPI'
+import {ElMessage} from 'element-plus'
+import {
+  Document, Picture, ArrowUp, ArrowDown
+} from '@element-plus/icons-vue'
+import {getDeviceDetail, getFileInfo} from '@/api/equipment/EquipmentDetail'
 
 const router = useRouter()
 const route = useRoute()
@@ -418,79 +423,122 @@ const isCheckTaskCollapsed = ref(false)
 const isMaintainInfoCollapsed = ref(false)
 
 // 分页配置
-const bomPage = reactive({ currentPage: 1, pageSize: 5 })
-const mouldPage = reactive({ currentPage: 1, pageSize: 5 })
-const lifeCyclePage = reactive({ currentPage: 1, pageSize: 5 })
-const checkPage = reactive({ currentPage: 1, pageSize: 5 })
-const maintainPage = reactive({ currentPage: 1, pageSize: 5 })
+const bomPage = reactive({currentPage: 1, pageSize: 5})
+const mouldPage = reactive({currentPage: 1, pageSize: 5})
+const lifeCyclePage = reactive({currentPage: 1, pageSize: 5})
+const checkPage = reactive({currentPage: 1, pageSize: 5})
+const maintainPage = reactive({currentPage: 1, pageSize: 5})
 
 /* 查询条件 */
 const query = reactive({
-  code: route.query.code || 'C4-51-12'
+  code: route.query.code || 'MC-2025-0008785'
 })
 
 /* 设备对象 */
 const device = reactive({
   imageUrl: '',
-  status: '运行中',
-  assetCode: 'ZC202308001',
-  code: 'C4-51-12',
-  name: '自动贴片机',
-  areaName: 'C4车间 / 51产线 / 贴片工段',
-  category: '贴片设备',
-  model: 'TPJ-5000',
-  vendor: '三星电子',
-  inDate: '2023-06-15',
-  owner: '张工',
-  qrText: '设备ID: C4-51-12 | 名称: 自动贴片机'
+  status: '',
+  assetCode: '',
+  code: '',
+  name: '',
+  areaName: '',
+  category: '',
+  model: '',
+  vendor: '',
+  inDate: '',
+  owner: '',
+  qrText: '',
+  drawingFiles: '',
+  manualFiles: ''
 })
 
-/* 表格数据 */
+/* 表格假数据 */
 const bomList = ref([
-  { spareCode: 'BJ001', spareName: '贴片头', usage: 2, stock: 5, areaName: '贴片区域' },
-  { spareCode: 'BJ002', spareName: '传送带', usage: 1, stock: 3, areaName: '传送区域' },
-  { spareCode: 'BJ003', spareName: '控制板', usage: 1, stock: 8, areaName: '控制区域' },
-  { spareCode: 'BJ004', spareName: '吸嘴', usage: 12, stock: 25, areaName: '贴片区域' },
-  { spareCode: 'BJ005', spareName: '传感器', usage: 4, stock: 10, areaName: '检测区域' },
-  { spareCode: 'BJ006', spareName: '电机', usage: 3, stock: 7, areaName: '驱动区域' }
+  {spareCode: 'BJ001', spareName: '贴片头', usage: 2, stock: 5, areaName: '贴片区域'},
+  {spareCode: 'BJ002', spareName: '传送带', usage: 1, stock: 3, areaName: '传送区域'},
+  {spareCode: 'BJ003', spareName: '控制板', usage: 1, stock: 8, areaName: '控制区域'},
+  {spareCode: 'BJ004', spareName: '吸嘴', usage: 12, stock: 25, areaName: '贴片区域'},
+  {spareCode: 'BJ005', spareName: '传感器', usage: 4, stock: 10, areaName: '检测区域'},
+  {spareCode: 'BJ006', spareName: '电机', usage: 3, stock: 7, areaName: '驱动区域'}
 ])
 
 const mouldList = ref([
-  { mouldCode: 'MJ001', mouldName: 'SMT模板', usage: 1, stock: 2, productModel: 'Model A', areaName: '贴片区域' },
-  { mouldCode: 'MJ002', mouldName: '回流焊夹具', usage: 2, stock: 4, productModel: 'Model B', areaName: '焊接区域' },
-  { mouldCode: 'MJ003', mouldName: '测试治具', usage: 1, stock: 3, productModel: 'Model C', areaName: '测试区域' },
-  { mouldCode: 'MJ004', mouldName: '组装夹具', usage: 3, stock: 5, productModel: 'Model D', areaName: '组装区域' },
-  { mouldCode: 'MJ005', mouldName: '包装治具', usage: 2, stock: 4, productModel: 'Model E', areaName: '包装区域' }
+  {mouldCode: 'MJ001', mouldName: 'SMT模板', usage: 1, stock: 2, productModel: 'Model A', areaName: '贴片区域'},
+  {mouldCode: 'MJ002', mouldName: '回流焊夹具', usage: 2, stock: 4, productModel: 'Model B', areaName: '焊接区域'},
+  {mouldCode: 'MJ003', mouldName: '测试治具', usage: 1, stock: 3, productModel: 'Model C', areaName: '测试区域'},
+  {mouldCode: 'MJ004', mouldName: '组装夹具', usage: 3, stock: 5, productModel: 'Model D', areaName: '组装区域'},
+  {mouldCode: 'MJ005', mouldName: '包装治具', usage: 2, stock: 4, productModel: 'Model E', areaName: '包装区域'}
 ])
 
 const lifeCycleList = ref([
-  { stage: '采购', submitter: '采购部-李经理', submitTime: '2023-05-10', approver: '王总', approveTime: '2023-05-12', remark: '设备采购申请', areaName: '总部' },
-  { stage: '验收', submitter: '设备部-张工', submitTime: '2023-06-18', approver: '赵经理', approveTime: '2023-06-20', remark: '设备验收合格', areaName: 'C4车间' },
-  { stage: '安装', submitter: '设备部-张工', submitTime: '2023-06-22', approver: '赵经理', approveTime: '2023-06-22', remark: '设备安装完成', areaName: '51产线' },
-  { stage: '调试', submitter: '设备部-王工', submitTime: '2023-06-25', approver: '赵经理', approveTime: '2023-06-26', remark: '设备调试完成', areaName: '51产线' },
-  { stage: '运行', submitter: '生产部-刘主管', submitTime: '2023-06-28', approver: '', approveTime: '', remark: '设备投入生产', areaName: '贴片工段' },
-  { stage: '保养', submitter: '设备部-张工', submitTime: '2023-08-01', approver: '赵经理', approveTime: '2023-08-01', remark: '月度保养完成', areaName: '贴片工段' }
+  {
+    stage: '采购',
+    submitter: '采购部-李经理',
+    submitTime: '2023-05-10',
+    approver: '王总',
+    approveTime: '2023-05-12',
+    remark: '设备采购申请',
+    areaName: '总部'
+  },
+  {
+    stage: '验收',
+    submitter: '设备部-张工',
+    submitTime: '2023-06-18',
+    approver: '赵经理',
+    approveTime: '2023-06-20',
+    remark: '设备验收合格',
+    areaName: 'C4车间'
+  },
+  {
+    stage: '安装',
+    submitter: '设备部-张工',
+    submitTime: '2023-06-22',
+    approver: '赵经理',
+    approveTime: '2023-06-22',
+    remark: '设备安装完成',
+    areaName: '51产线'
+  },
+  {
+    stage: '调试',
+    submitter: '设备部-王工',
+    submitTime: '2023-06-25',
+    approver: '赵经理',
+    approveTime: '2023-06-26',
+    remark: '设备调试完成',
+    areaName: '51产线'
+  },
+  {
+    stage: '运行',
+    submitter: '生产部-刘主管',
+    submitTime: '2023-06-28',
+    approver: '',
+    approveTime: '',
+    remark: '设备投入生产',
+    areaName: '贴片工段'
+  },
+  {
+    stage: '保养',
+    submitter: '设备部-张工',
+    submitTime: '2023-08-01',
+    approver: '赵经理',
+    approveTime: '2023-08-01',
+    remark: '月度保养完成',
+    areaName: '贴片工段'
+  }
 ])
 
 const checkList = ref([
-  { time: '08:00', content: '检查设备运行状态', checker: '张工', period: '早班', status: '已执行', areaName: '贴片区域' },
-  { time: '12:00', content: '检查设备温度', checker: '李工', period: '中班', status: '未执行', areaName: '贴片区域' },
-  { time: '16:00', content: '检查传送带', checker: '王工', period: '晚班', status: '未执行', areaName: '传送区域' }
+  {time: '08:00', content: '检查设备运行状态', checker: '张工', period: '早班', status: '已执行', areaName: '贴片区域'},
+  {time: '12:00', content: '检查设备温度', checker: '李工', period: '中班', status: '未执行', areaName: '贴片区域'},
+  {time: '16:00', content: '检查传送带', checker: '王工', period: '晚班', status: '未执行', areaName: '传送区域'}
 ])
 
 const maintainList = ref([
-  { date: '2023-08-18', content: '月度保养', maintainer: '张工', status: '已完成', areaName: '贴片区域' },
-  { date: '2023-08-18', content: '润滑保养', maintainer: '王工', status: '进行中', areaName: '传送区域' }
+  {date: '2023-08-18', content: '月度保养', maintainer: '张工', status: '已完成', areaName: '贴片区域'},
+  {date: '2023-08-18', content: '润滑保养', maintainer: '王工', status: '进行中', areaName: '传送区域'}
 ])
 
-/* 说明书/图纸弹窗 */
-const docVisible = ref(false)
-const docTitle = ref('')
-const docType = ref('')
-const docImage = ref('')
-const docContent = ref('')
-
-/* 验收弹窗 */
+/* 弹窗表单数据 */
 const acceptVisible = ref(false)
 const acceptForm = reactive({
   result: '合格',
@@ -500,7 +548,6 @@ const acceptForm = reactive({
   attachments: []
 })
 
-/* 转移弹窗 */
 const transferVisible = ref(false)
 const transferForm = reactive({
   targetArea: [],
@@ -508,14 +555,12 @@ const transferForm = reactive({
   attachments: []
 })
 
-/* 闲置弹窗 */
 const idleVisible = ref(false)
 const idleForm = reactive({
   description: '',
   attachments: []
 })
 
-/* 报废弹窗 */
 const scrapVisible = ref(false)
 const scrapForm = reactive({
   description: '',
@@ -536,7 +581,8 @@ const statusTagType = computed(() => {
     待机: 'info',
     闲置: 'warning',
     报废: 'danger',
-    '转移中': 'primary'
+    '转移中': 'primary',
+    验收: 'info'
   }
   return map[device.status] || ''
 })
@@ -546,28 +592,28 @@ const areaOptions = [
   {
     value: 'C2车间',
     label: 'C2车间',
-    children: Array.from({ length: 6 }, (_, i) => ({
-      value: `C2车间${31+i}产线`,
-      label: `${31+i}产线`,
+    children: Array.from({length: 6}, (_, i) => ({
+      value: `C2车间${31 + i}产线`,
+      label: `${31 + i}产线`,
       children: [
-        { value: `C2车间${31+i}产线CFOG段`, label: 'CFOG段' },
-        { value: `C2车间${31+i}产线贴合段`, label: '贴合段' },
-        { value: `C2车间${31+i}产线组装段`, label: '组装段' },
-        { value: `C2车间${31+i}产线30米线`, label: '30米线' }
+        {value: `C2车间${31 + i}产线CFOG段`, label: 'CFOG段'},
+        {value: `C2车间${31 + i}产线贴合段`, label: '贴合段'},
+        {value: `C2车间${31 + i}产线组装段`, label: '组装段'},
+        {value: `C2车间${31 + i}产线30米线`, label: '30米线'}
       ]
     }))
   },
   {
     value: 'C4车间',
     label: 'C4车间',
-    children: Array.from({ length: 6 }, (_, i) => ({
-      value: `C4车间${51+i}产线`,
-      label: `${51+i}产线`,
+    children: Array.from({length: 6}, (_, i) => ({
+      value: `C4车间${51 + i}产线`,
+      label: `${51 + i}产线`,
       children: [
-        { value: `C4车间${51+i}产线CFOG段`, label: 'CFOG段' },
-        { value: `C4车间${51+i}产线贴合段`, label: '贴合段' },
-        { value: `C4车间${51+i}产线组装段`, label: '组装段' },
-        { value: `C4车间${51+i}产线30米线`, label: '30米线' }
+        {value: `C4车间${51 + i}产线CFOG段`, label: 'CFOG段'},
+        {value: `C4车间${51 + i}产线贴合段`, label: '贴合段'},
+        {value: `C4车间${51 + i}产线组装段`, label: '组装段'},
+        {value: `C4车间${51 + i}产线30米线`, label: '30米线'}
       ]
     }))
   }
@@ -590,47 +636,89 @@ async function searchDevice() {
 /* 加载详情 */
 async function loadDeviceDetail(code) {
   try {
-    // 模拟API请求
-    ElMessage.success(`加载设备 ${code} 信息成功`)
+    const response = await getDeviceDetail(code)
+
+    if (response.data.code === 'success') {
+      const deviceData = response.data.data
+
+      // 更新设备基本信息
+      device.status = deviceData.status
+      device.assetCode = deviceData.assetNumber
+      device.code = deviceData.mcNumber
+      device.name = deviceData.mcName
+      device.category = deviceData.deviceCategory
+      device.model = deviceData.model
+      device.areaName = deviceData.areaName
+      device.vendor = deviceData.manufacturer
+      device.owner = deviceData.dutyAdminName
+      device.inDate = deviceData.enterFactoryTime
+      device.drawingFiles = deviceData.drawingFiles
+      device.manualFiles = deviceData.manualFiles
+      device.qrText =
+`设备ID: ${deviceData.mcNumber}
+名称: ${deviceData.mcName}`
+
+      // 获取设备图片
+      if (deviceData.deviceImage) {
+        const imageResponse = await getFileInfo(deviceData.deviceImage)
+        if (imageResponse.data.code === 'success' && imageResponse.data.data.images.length > 0) {
+          // 处理base64图片数据
+          device.imageUrl = `data:image/${imageResponse.data.data.images[0].format};base64,${imageResponse.data.data.images[0].binaryData.data}`
+        }
+      }
+      //
+      // ElMessage.success(`加载设备 ${code} 信息成功`)
+    } else {
+      ElMessage.error('加载设备信息失败: ' + response.data.msg)
+    }
   } catch (error) {
     ElMessage.error('加载设备信息失败')
     console.error(error)
   }
 }
 
-/* 说明书/图纸弹窗 */
-function showDoc(type) {
-  docType.value = type
-  docTitle.value = type === 'manual' ? '设备说明书' : '设备图纸'
-  if (type === 'drawing') {
-    docImage.value = 'https://images.unsplash.com/photo-1603732551681-2e91159b9dc2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80'
-  } else {
-    docContent.value = `
-      <h3>自动贴片机使用说明书</h3>
-      <p>设备编码：${device.code}</p>
-      <p>型号：${device.model}</p>
-      <p>厂商：${device.vendor}</p>
-      <p>出厂日期：2023年4月</p>
-      <p>版本：V2.1</p>
-      <hr>
-      <h4>安全注意事项：</h4>
-      <ul>
-        <li>操作前请仔细阅读本说明书</li>
-        <li>设备运行时请勿打开防护门</li>
-        <li>定期检查设备接地情况</li>
-        <li>非专业人员请勿拆卸设备</li>
-      </ul>
-      <h4>操作指南：</h4>
-      <ol>
-        <li>开机前检查电源连接</li>
-        <li>启动设备控制软件</li>
-        <li>加载生产程序</li>
-        <li>执行设备自检</li>
-        <li>开始生产</li>
-      </ol>
-    `
+/* 下载文档 */
+function downloadDoc(type) {
+  const docTitle = type === 'manual' ? '设备说明书' : '设备图纸'
+  const fileId = type === 'manual' ? device.manualFiles : device.drawingFiles
+
+  if (!fileId) {
+    ElMessage.warning(`该${docTitle}不存在`)
+    return
   }
-  docVisible.value = true
+
+  ElMessage.info(`正在准备${docTitle}下载...`)
+
+  // 获取文件信息
+  getFileInfo(fileId)
+      .then(response => {
+        if (response.data.code === 'success' && response.data.data.images && response.data.data.images.length > 0) {
+          const files = response.data.data.images;
+
+          // 如果有多个文件，逐个下载
+          files.forEach((file, index) => {
+            const base64Data = file.binaryData.data;
+            const format = file.format;
+            const fileName = `${device.code}_${docTitle}${files.length > 1 ? `_${index + 1}` : ''}.${format}`;
+
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.href = `data:image/${format};base64,${base64Data}`;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          });
+
+          ElMessage.success(`${docTitle}下载完成，共${files.length}个文件`)
+        } else {
+          ElMessage.warning(`${docTitle}数据不存在`)
+        }
+      })
+      .catch(error => {
+        ElMessage.error(`获取${docTitle}失败`)
+        console.error(error)
+      })
 }
 
 /* 导出二维码 */
@@ -674,226 +762,128 @@ function openScrapDialog() {
   scrapVisible.value = true
 }
 
-/* 文件上传处理 */
-const beforeUpload = (file) => {
-  const validTypes = ['image/jpeg', 'image/png', 'image/gif',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/pdf']
-  const isLt10M = file.size / 1024 / 1024 < 10
-
-  if (!validTypes.includes(file.type)) {
-    ElMessage.error('只能上传图片、Word或PDF文件!')
-    return false
-  }
-
-  if (!isLt10M) {
-    ElMessage.error('文件大小不能超过 10MB!')
-    return false
-  }
-
-  return true
+/* 提交表单方法 */
+function submitAccept() {
+  // 验收提交逻辑
+  ElMessage.success('验收申请已提交')
+  acceptVisible.value = false
 }
 
-/* 跳转到详情页面 */
+function submitTransfer() {
+  // 转移提交逻辑
+  ElMessage.success('转移申请已提交')
+  transferVisible.value = false
+}
+
+function submitIdle() {
+  // 闲置提交逻辑
+  ElMessage.success('闲置申请已提交')
+  idleVisible.value = false
+}
+
+function submitScrap() {
+  // 报废提交逻辑
+  ElMessage.success('报废申请已提交')
+  scrapVisible.value = false
+}
+
+/* 其他方法 */
+function refreshCheck() {
+  ElMessage.success('点检任务已刷新')
+}
+
 function goToInspectionList() {
-  router.push('/inspection/manage/TaskList')
+  router.push('/inspection-list')
+}
+
+function refreshMaintain() {
+  ElMessage.success('保养信息已刷新')
 }
 
 function goToMaintenanceList() {
-  router.push('/maintenance/manage/ApprovalList')
+  router.push('/maintenance-list')
 }
 
-/* 提交事件 */
-async function submitAccept() {
-  try {
-    ElMessage.success('验收申请已提交，等待审核')
-    acceptVisible.value = false
-  } catch (error) {
-    ElMessage.error('提交失败')
-    console.error(error)
+function beforeUpload(file) {
+  const isLt10M = file.size / 1024 / 1024 < 10
+  if (!isLt10M) {
+    ElMessage.error('上传文件大小不能超过 10MB!')
+    return false
   }
+  return true
 }
 
-async function submitTransfer() {
-  if (!transferForm.targetArea || transferForm.targetArea.length === 0) {
-    ElMessage.warning('请选择目标区域')
-    return
-  }
-
-  try {
-    ElMessage.success('转移申请已提交，等待审核')
-    transferVisible.value = false
-  } catch (error) {
-    ElMessage.error('提交失败')
-    console.error(error)
-  }
-}
-
-async function submitIdle() {
-  if (!idleForm.description) {
-    ElMessage.warning('请填写申请说明')
-    return
-  }
-
-  try {
-    ElMessage.success('闲置申请已提交，等待审核')
-    idleVisible.value = false
-  } catch (error) {
-    ElMessage.error('提交失败')
-    console.error(error)
-  }
-}
-
-async function submitScrap() {
-  if (!scrapForm.description) {
-    ElMessage.warning('请填写申请说明')
-    return
-  }
-
-  try {
-    ElMessage.success('报废申请已提交，等待审核')
-    scrapVisible.value = false
-  } catch (error) {
-    ElMessage.error('提交失败')
-    console.error(error)
-  }
-}
-
-/* 刷新点检/保养 */
-async function refreshCheck() {
-  try {
-    ElMessage.success('点检任务已刷新')
-  } catch (error) {
-    ElMessage.error('刷新失败')
-    console.error(error)
-  }
-}
-
-async function refreshMaintain() {
-  try {
-    ElMessage.success('保养信息已刷新')
-  } catch (error) {
-    ElMessage.error('刷新失败')
-    console.error(error)
-  }
-}
-
+// 页面加载时获取设备详情
 onMounted(() => {
-  loadDeviceDetail(query.code)
+  if (query.code) {
+    loadDeviceDetail(query.code)
+  }
 })
 </script>
 
 <style scoped>
 .device-detail {
-  max-width: 1600px;
-  margin: 0 auto;
   padding: 20px;
-  background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  background-color: #f5f7fa;
+  min-height: 100vh;
 }
 
 .top-bar {
   margin-bottom: 20px;
-  padding: 15px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.doc-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.doc-btn {
+  margin-right: 5px;
 }
 
 .full-width-card {
   margin-bottom: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-:deep(.el-card__header) {
-  background-color: #f8f9fa;
-  padding: 15px 20px;
-  border-bottom: 1px solid #ebeef5;
-  font-weight: bold;
-  font-size: 16px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: bold;
 }
 
 .collapse-icon {
   cursor: pointer;
-  color: #606266;
-  transition: transform 0.3s;
 }
 
 .card-content {
-  padding: 20px;
-}
-
-.el-descriptions {
-  margin: 15px 0;
-}
-
-.qr-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin-top: 10px;
+  padding-top: 15px;
 }
 
 .pagination-container {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 15px;
-}
-
-.status-tag {
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin: 15px 0;
-}
-
-.doc-buttons {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.doc-buttons span {
-  font-size: 14px;
-  color: #606266;
-}
-
-.el-image {
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
-}
-
-.el-row {
-  margin-bottom: 10px;
-}
-
-.el-form--inline .el-form-item {
-  margin-right: 15px;
-  margin-bottom: 0;
+  text-align: right;
 }
 
 .no-data {
   text-align: center;
-  padding: 30px;
-  color: #909399;
+  padding: 20px;
+  color: #999;
+}
+
+.qr-container {
+  text-align: center;
+}
+
+.status-tag {
+  font-size: 14px;
+  padding: 4px 8px;
 }
 
 :deep(.el-input) {

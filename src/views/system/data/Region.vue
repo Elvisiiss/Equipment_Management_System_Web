@@ -14,19 +14,6 @@
       </span>
     </div>
 
-    <!-- 分页控件 -->
-    <div style="margin-bottom:12px">
-      <el-pagination
-          v-model:current-page="pageNum"
-          v-model:page-size="pageSize"
-          :page-sizes="[5, 10, 20]"
-          :total="total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          layout="total, sizes, prev, pager, next, jumper"
-      />
-    </div>
-
     <!-- 树状表格 -->
     <el-table
         ref="tableRef"
@@ -42,10 +29,10 @@
       <el-table-column prop="areaCode" label="区域编码" width="150" />
       <el-table-column prop="areaType" label="区域类型" width="120">
         <template #default="{ row }">
-          <span v-if="row.areaType === 0"> </span>
-          <span v-if="row.areaType === 'WORKSHOP'">车间</span>
-          <span v-if="row.areaType === 'LINE'">产线</span>
-          <span v-if="row.areaType === 'SECTION'">段</span>
+          <span v-if="row.areaType === 0">厂区</span>
+          <span v-if="row.areaType === 1">车间</span>
+          <span v-if="row.areaType === 2">产线</span>
+          <span v-if="row.areaType === 3">段</span>
         </template>
       </el-table-column>
       <el-table-column prop="id" label="区域ID" width="120" />
@@ -54,7 +41,7 @@
         <template #default="{row}">
           <!-- 厂区只能编辑 -->
           <template v-if="row.id === 0">
-            <el-button size="small" @click="openEdit(row)" disabled>编辑</el-button>
+            <el-button size="small" @click="openEdit(row)">编辑</el-button>
           </template>
           <!-- 其余节点可编辑、可删除 -->
           <template v-else>
@@ -115,11 +102,6 @@ const form = ref({
 const treeData = ref([])
 const loading = ref(false)
 const editingNode = ref(null)
-
-// 分页相关
-const pageNum = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
 
 // 表单验证规则
 const rules = reactive({
@@ -199,32 +181,6 @@ const loadTreeData = async () => {
   }
 }
 
-// 加载分页数据
-const loadPageData = async () => {
-  try {
-    const res = await regionAPI.page(pageNum.value, pageSize.value)
-    if (res.data.code === 'success') {
-      total.value = res.data.data.total
-    } else {
-      ElMessage.error(res.data.msg || '加载分页数据失败')
-    }
-  } catch (error) {
-    console.error('加载分页数据错误:', error)
-    ElMessage.error('加载分页数据失败')
-  }
-}
-
-/* ---------- 分页事件 ---------- */
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  loadPageData()
-}
-
-const handleCurrentChange = (val) => {
-  pageNum.value = val
-  loadPageData()
-}
-
 /* ---------- 工具函数 ---------- */
 // 递归查找节点
 const findNode = (arr, id) => {
@@ -284,16 +240,15 @@ const openAdd = () => {
 
   // 根据父节点类型自动设置子节点类型
   let childAreaType = null
-  console.log(editingNode.value.areaType)
   if (isFactoryNode(editingNode.value)) {
-    // 厂区下只能是车间（0）
-    childAreaType = 0
-  } else if (editingNode.value.areaType === 'WORKSHOP') {
-    // 车间下只能是产线（1）
+    // 厂区下只能是车间（1）
     childAreaType = 1
-  } else if (editingNode.value.areaType === 'LINE') {
-    // 产线下只能是段（2）
+  } else if (editingNode.value.areaType === 1) {
+    // 车间下只能是产线（2）
     childAreaType = 2
+  } else if (editingNode.value.areaType === 2) {
+    // 产线下只能是段（3）
+    childAreaType = 3
   }
 
   dialogType.value = 'add'
@@ -337,7 +292,6 @@ const handleSave = async () => {
     areaType: form.value.areaType,
     remark: form.value.remark.trim()
   }
-  console.log(submitData)
 
   try {
     loading.value = true
@@ -397,8 +351,6 @@ const handleDelete = async (row) => {
     if (res.data.code === 'success') {
       // 从本地树中移除节点
       removeNode(treeData.value, row.id)
-      // 更新分页总数
-      await loadPageData()
       ElMessage.success('删除成功')
     } else {
       ElMessage.error(res.data.msg || '删除失败')
@@ -416,7 +368,6 @@ const handleDelete = async (row) => {
 /* ---------- 初始化 ---------- */
 onMounted(() => {
   loadTreeData()
-  loadPageData()
 })
 </script>
 
