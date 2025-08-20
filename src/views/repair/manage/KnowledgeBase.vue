@@ -22,10 +22,10 @@
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="searchForm.type" placeholder="全部类型" clearable>
-            <el-option label="故障案例" value="故障案例" />
+            <el-option label="故障案例" value="FAULT_CASE" />
             <el-option label="SOP" value="SOP" />
-            <el-option label="技术资料" value="技术资料" />
-            <el-option label="维修经验" value="维修经验" />
+            <el-option label="技术资料" value="TECHNICAL_INFORMATION" />
+            <el-option label="维修经验" value="MAINTENANCE_EXPERIENCE" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -105,10 +105,10 @@
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="knowledgeForm.type" style="width: 100%">
-            <el-option label="故障案例" value="FAULT_ANALYSIS" />
-            <el-option label="SOP" value="MAINTENANCE_GUIDE" />
-            <el-option label="技术资料" value="TECHNICAL_DOCS" />
-            <el-option label="维修经验" value="REPAIR_EXPERIENCE" />
+            <el-option label="故障案例" value="故障案例" />
+            <el-option label="SOP" value="SOP" />
+            <el-option label="技术资料" value="技术资料" />
+            <el-option label="维修经验" value="维修经验" />
           </el-select>
         </el-form-item>
         <el-form-item label="内容">
@@ -170,10 +170,10 @@ const loadData = async () => {
     console.log('API返回的完整响应:', res); // 打印完整响应
     if (res.code === "success") {
       const typeMapping = {
-        FAULT_ANALYSIS: "故障案例",
-        MAINTENANCE_GUIDE: "SOP",
-        TECHNICAL_DOCS: "技术资料",
-        REPAIR_EXPERIENCE: "维修经验"
+        FAULT_CASE: "故障案例",
+        SOP: "SOP",
+        TECHNICAL_INFORMATION: "技术资料",
+        MAINTENANCE_EXPERIENCE: "维修经验"
       };
 
       knowledgeList.value = res.data.records.map(item => ({
@@ -225,6 +225,7 @@ const handleCreate = () => {
 const handleEdit = (item) => {
   editTitle.value = '编辑知识'
   isEdit.value = true
+  currentKnowledge.value = { ...item }
   Object.assign(knowledgeForm, item)
   editVisible.value = true
 }
