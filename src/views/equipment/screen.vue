@@ -6,9 +6,48 @@
       <div class="nav-item">时间{{ currentTime }}</div>
       <h1 class="title">设备监控中心</h1>
       <div class="nav-item">
-        <el-button type="text">车间</el-button>
-        <el-button type="text">产线</el-button>
-        <el-button type="text">全屏切换</el-button>
+        <!-- 车间下拉框 -->
+        <el-select
+            v-model="filterForm.workshop"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="车间"
+            clearable
+            @change="handleWorkshopChange"
+            class="nav-select"
+            style="width: 120px; margin-right: 10px;"
+        >
+          <el-option
+              v-for="ws in workshopOptions"
+              :key="ws.value"
+              :label="ws.label"
+              :value="ws.value"
+          ></el-option>
+        </el-select>
+
+        <!-- 产线下拉框 -->
+        <el-select
+            v-model="filterForm.line"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="产线"
+            clearable
+            :disabled="filterForm.workshop.length === 0"
+            @change="handleLineChange"
+            class="nav-select"
+            style="width: 120px; margin-right: 10px;"
+        >
+          <el-option
+              v-for="line in lineOptions"
+              :key="line.value"
+              :label="line.label"
+              :value="line.value"
+          ></el-option>
+        </el-select>
+
+        <el-button type="text" @click="handleFullScreenChange">全屏切换</el-button>
       </div>
     </div>
 
@@ -151,9 +190,9 @@ watch(() => route.currentRoute.value.path, (newPath) => {
   }
 })
 
-const handleFullScreenChange = (value) => {
+const handleFullScreenChange = () => {
   toggleFullScreen()
-  fullScreen.value = value
+  fullScreen.value = !fullScreen.value
 }
 
 // 筛选表单
@@ -174,7 +213,7 @@ const workshopOptions = ref([
 const lineOptions = ref([])
 
 const workshopLineMap = {
-  C2: ['31', '32', '333', '34', '35', '36'],
+  C2: ['31', '32', '33', '34', '35', '36'],
   C3: ['41', '42', '43', '44', '45', '46'],
   C4: ['51', '52', '53', '54', '55', '56'],
   C5: ['61', '62', '63', '64', '65', '66'],
@@ -240,44 +279,6 @@ const handleLineChange = () => {
 const handleFilter = () => {
   console.log('筛选条件:', filterForm)
 }
-
-const statCards = ref([
-  {
-    title: '设备总数',
-    number: 120,
-    color: 'rgba(16, 42, 87, 0.7)',
-    borderColor: '#409EFF',
-    icon: 'el-icon-cpu'
-  },
-  {
-    title: '运行中',
-    number: 82,
-    color: 'rgba(22, 80, 48, 0.7)',
-    borderColor: '#67C23A',
-    icon: 'el-icon-success'
-  },
-  {
-    title: '报警/故障',
-    number: 8,
-    color: 'rgba(91, 29, 39, 0.7)',
-    borderColor: '#F56C6C',
-    icon: 'el-icon-warning'
-  },
-  {
-    title: '脱机/离线',
-    number: 10,
-    color: 'rgba(102, 57, 0, 0.7)',
-    borderColor: '#909399',
-    icon: 'el-icon-disconnect'
-  },
-  {
-    title: '待机',
-    number: 20,
-    color: 'rgba(58, 58, 58, 0.7)',
-    borderColor: '#E6A23C',
-    icon: 'el-icon-time'
-  }
-])
 
 const typePieOption = ref({
   tooltip: {trigger: 'item'},
@@ -442,6 +443,8 @@ onMounted(() => {
       font-size: 14px;
       color: #fff;
       margin-right: 20px;
+      display: flex;
+      align-items: center;
     }
 
     .title {
@@ -510,29 +513,6 @@ onMounted(() => {
         min-height: 200px;
       }
 
-      .data-display {
-        display: flex;
-        justify-content: space-around;
-        padding: 10px 0;
-        background: rgba(16, 42, 87, 0.3);
-        border-top: 1px solid rgba(64, 158, 255, 0.2);
-
-        .data-item {
-          display: flex;
-          align-items: center;
-          font-size: 14px;
-
-          .data-label {
-            opacity: 0.8;
-          }
-
-          .data-value {
-            font-weight: bold;
-            margin-left: 5px;
-          }
-        }
-      }
-
       .trend-data-display {
         display: flex;
         justify-content: space-around;
@@ -586,6 +566,51 @@ onMounted(() => {
         }
       }
     }
+  }
+}
+
+// 导航栏下拉框样式
+:deep(.nav-select) {
+  .el-input__wrapper {
+    background: rgba(16, 42, 87, 0.7);
+    border: 1px solid rgba(64, 158, 255, 0.3);
+    box-shadow: 0 0 8px rgba(64, 158, 255, 0.3);
+    border-radius: 4px;
+    transition: all 0.3s;
+
+    &:hover {
+      box-shadow: 0 0 12px rgba(64, 158, 255, 0.5);
+    }
+  }
+
+  .el-input__inner {
+    color: #fff;
+    font-size: 14px;
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+  }
+
+  .el-select__tags {
+    .el-tag {
+      background: rgba(64, 158, 255, 0.3);
+      border-color: rgba(64, 158, 255, 0.5);
+      color: #fff;
+      box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
+    }
+  }
+
+  .el-tag__close {
+    color: #fff;
+    background: transparent;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  .el-icon {
+    color: rgba(255, 255, 255, 0.7);
   }
 }
 
