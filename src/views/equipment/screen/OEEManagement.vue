@@ -1,172 +1,190 @@
 <template>
   <div class="oee-app">
     <div class="control-panel">
-      <el-form :model="queryForm" inline label-width="90px" size="small">
-        <!-- 时间维度 -->
-        <el-form-item label="时间维度">
-          <el-radio-group v-model="timeType" @change="handleTimeTypeChange">
-            <el-radio-button label="day">日</el-radio-button>
-            <el-radio-button label="week">周</el-radio-button>
-            <el-radio-button label="month">月</el-radio-button>
-            <el-radio-button label="year">年</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
+      <el-form :model="queryForm" inline label-width="90px" size="small" class="compact-form">
+        <!-- 第一行 -->
+        <div class="form-row">
+          <!-- 时间维度 -->
+          <el-form-item label="时间维度" class="form-item-compact">
+            <el-radio-group v-model="timeType" @change="handleTimeTypeChange">
+              <el-radio-button label="day">日</el-radio-button>
+              <el-radio-button label="week">周</el-radio-button>
+              <el-radio-button label="month">月</el-radio-button>
+              <el-radio-button label="year">年</el-radio-button>
+            </el-radio-group>
+          </el-form-item>
 
-        <!-- 开始 / 结束 -->
-        <el-form-item label="开始时间">
-          <el-date-picker
-              v-if="timeType === 'day'"
-              v-model="startDate"
-              type="date"
-              placeholder="开始日期"
-              :disabled-date="dayEndDateDisabled"
-              @change="handleDayStartChange"
-          />
-          <el-date-picker
-              v-if="timeType === 'month'"
-              v-model="startMonth"
-              type="month"
-              placeholder="开始月份"
-              :disabled-date="monthEndDateDisabled"
-              @change="handleMonthStartChange"
-          />
-          <el-date-picker
-              v-if="timeType === 'year'"
-              v-model="startYear"
-              type="year"
-              placeholder="开始年份"
-              :disabled-date="yearEndDateDisabled"
-              @change="handleYearStartChange"
-          />
-          <el-select
-              v-if="timeType === 'week'"
-              v-model="startWeek"
-              placeholder="开始周"
-              @change="handleWeekStartChange"
-          >
-            <el-option
-                v-for="week in fixedWeekOptions"
-                :key="week.value"
-                :label="week.label"
-                :value="week.value"
-                :disabled="endWeek && week.value > endWeek"
+          <!-- 开始时间 -->
+          <el-form-item label="开始时间" class="form-item-compact">
+            <el-date-picker
+                v-if="timeType === 'day'"
+                v-model="startDate"
+                type="date"
+                placeholder="开始日期"
+                :disabled-date="dayEndDateDisabled"
+                @change="handleDayStartChange"
+                class="compact-picker"
             />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="结束时间">
-          <el-date-picker
-              v-if="timeType === 'day'"
-              v-model="endDate"
-              type="date"
-              placeholder="结束日期"
-              :disabled-date="dayStartDateDisabled"
-              @change="handleDayEndChange"
-          />
-          <el-date-picker
-              v-if="timeType === 'month'"
-              v-model="endMonth"
-              type="month"
-              placeholder="结束月份"
-              :disabled-date="monthStartDateDisabled"
-              @change="handleMonthEndChange"
-          />
-          <el-date-picker
-              v-if="timeType === 'year'"
-              v-model="endYear"
-              type="year"
-              placeholder="结束年份"
-              :disabled-date="yearStartDateDisabled"
-              @change="handleYearEndChange"
-          />
-          <el-select
-              v-if="timeType === 'week'"
-              v-model="endWeek"
-              placeholder="结束周"
-              @change="handleWeekEndChange"
-          >
-            <el-option
-                v-for="week in fixedWeekOptions"
-                :key="week.value"
-                :label="week.label"
-                :value="week.value"
-                :disabled="startWeek && week.value < startWeek"
+            <el-date-picker
+                v-if="timeType === 'month'"
+                v-model="startMonth"
+                type="month"
+                placeholder="开始月份"
+                :disabled-date="monthEndDateDisabled"
+                @change="handleMonthStartChange"
+                class="compact-picker"
             />
-          </el-select>
-        </el-form-item>
+            <el-date-picker
+                v-if="timeType === 'year'"
+                v-model="startYear"
+                type="year"
+                placeholder="开始年份"
+                :disabled-date="yearEndDateDisabled"
+                @change="handleYearStartChange"
+                class="compact-picker"
+            />
+            <el-select
+                v-if="timeType === 'week'"
+                v-model="startWeek"
+                placeholder="开始周"
+                @change="handleWeekStartChange"
+                class="compact-select"
+            >
+              <el-option
+                  v-for="week in fixedWeekOptions"
+                  :key="week.value"
+                  :label="week.label"
+                  :value="week.value"
+                  :disabled="endWeek && week.value > endWeek"
+              />
+            </el-select>
+          </el-form-item>
 
-        <!-- 车间 -->
-        <el-form-item label="车间">
-          <el-select v-model="workshop" placeholder="选择车间">
-            <el-option label="全部车间" value="all" />
-            <el-option label="一车间" value="workshop1" />
-            <el-option label="二车间" value="workshop2" />
-            <el-option label="三车间" value="workshop3" />
-          </el-select>
-        </el-form-item>
+          <!-- 结束时间 -->
+          <el-form-item label="结束时间" class="form-item-compact">
+            <el-date-picker
+                v-if="timeType === 'day'"
+                v-model="endDate"
+                type="date"
+                placeholder="结束日期"
+                :disabled-date="dayStartDateDisabled"
+                @change="handleDayEndChange"
+                class="compact-picker"
+            />
+            <el-date-picker
+                v-if="timeType === 'month'"
+                v-model="endMonth"
+                type="month"
+                placeholder="结束月份"
+                :disabled-date="monthStartDateDisabled"
+                @change="handleMonthEndChange"
+                class="compact-picker"
+            />
+            <el-date-picker
+                v-if="timeType === 'year'"
+                v-model="endYear"
+                type="year"
+                placeholder="结束年份"
+                :disabled-date="yearStartDateDisabled"
+                @change="handleYearEndChange"
+                class="compact-picker"
+            />
+            <el-select
+                v-if="timeType === 'week'"
+                v-model="endWeek"
+                placeholder="结束周"
+                @change="handleWeekEndChange"
+                class="compact-select"
+            >
+              <el-option
+                  v-for="week in fixedWeekOptions"
+                  :key="week.value"
+                  :label="week.label"
+                  :value="week.value"
+                  :disabled="startWeek && week.value < startWeek"
+              />
+            </el-select>
+          </el-form-item>
+        </div>
 
-        <!-- 产线 -->
-        <el-form-item label="产线">
-          <el-select v-model="productionLine" placeholder="选择产线">
-            <el-option label="全部产线" value="all" />
-            <el-option label="31产线" value="line31" />
-            <el-option label="32产线" value="line32" />
-            <el-option label="33产线" value="line33" />
-          </el-select>
-        </el-form-item>
+        <!-- 第二行 -->
+        <div class="form-row">
+          <!-- 车间 -->
+          <el-form-item label="车间" class="form-item-compact">
+            <el-select v-model="workshop" placeholder="选择车间" class="compact-select">
+              <el-option label="全部车间" value="all" />
+              <el-option label="一车间" value="workshop1" />
+              <el-option label="二车间" value="workshop2" />
+              <el-option label="三车间" value="workshop3" />
+            </el-select>
+          </el-form-item>
 
-        <!-- 工段 -->
-        <el-form-item label="工段">
-          <el-select v-model="workSection" placeholder="选择工段">
-            <el-option label="全部工段" value="all" />
-            <el-option label="CFOG段" value="section1" />
-            <el-option label="贴合段" value="section2" />
-            <el-option label="组装段" value="section3" />
-          </el-select>
-        </el-form-item>
+          <!-- 产线 -->
+          <el-form-item label="产线" class="form-item-compact">
+            <el-select v-model="productionLine" placeholder="选择产线" class="compact-select">
+              <el-option label="全部产线" value="all" />
+              <el-option label="31产线" value="line31" />
+              <el-option label="32产线" value="line32" />
+              <el-option label="33产线" value="line33" />
+            </el-select>
+          </el-form-item>
 
-        <!-- 设备名称 -->
-        <el-form-item label="设备名称">
-          <el-select v-model="equipment" placeholder="选择设备">
-            <el-option label="全部设备" value="all" />
-            <el-option label="冲压机-A型" value="press-a" />
-            <el-option label="焊接机器人-B型" value="welder-b" />
-            <el-option label="喷涂机-C型" value="painter-c" />
-          </el-select>
-        </el-form-item>
+          <!-- 工段 -->
+          <el-form-item label="工段" class="form-item-compact">
+            <el-select v-model="workSection" placeholder="选择工段" class="compact-select">
+              <el-option label="全部工段" value="all" />
+              <el-option label="CFOG段" value="section1" />
+              <el-option label="贴合段" value="section2" />
+              <el-option label="组装段" value="section3" />
+            </el-select>
+          </el-form-item>
+        </div>
 
-        <!-- 厂商 -->
-        <el-form-item label="厂商">
-          <el-select v-model="manufacturer" placeholder="选择设备厂商">
-            <el-option label="全部厂商" value="all" />
-            <el-option label="西门子" value="siemens" />
-            <el-option label="发那科" value="fanuc" />
-            <el-option label="ABB" value="abb" />
-          </el-select>
-        </el-form-item>
+        <!-- 第三行 -->
+        <div class="form-row">
+          <!-- 设备名称 -->
+          <el-form-item label="设备名称" class="form-item-compact">
+            <el-select v-model="equipment" placeholder="选择设备" class="compact-select">
+              <el-option label="全部设备" value="all" />
+              <el-option label="冲压机-A型" value="press-a" />
+              <el-option label="焊接机器人-B型" value="welder-b" />
+              <el-option label="喷涂机-C型" value="painter-c" />
+            </el-select>
+          </el-form-item>
 
-        <!-- 班次 -->
-        <el-form-item label="班次">
-          <el-select v-model="shift" placeholder="选择班次">
-            <el-option label="全部班次" value="all" />
-            <el-option label="白班 (8:00-20:00)" value="day" />
-            <el-option label="夜班 (20:00-8:00)" value="night" />
-          </el-select>
-        </el-form-item>
+          <!-- 厂商 -->
+          <el-form-item label="厂商" class="form-item-compact">
+            <el-select v-model="manufacturer" placeholder="选择设备厂商" class="compact-select">
+              <el-option label="全部厂商" value="all" />
+              <el-option label="西门子" value="siemens" />
+              <el-option label="发那科" value="fanuc" />
+              <el-option label="ABB" value="abb" />
+            </el-select>
+          </el-form-item>
 
-        <!-- 核算方式 -->
-        <el-form-item label="核算方式">
-          <el-select v-model="calculationMethod" placeholder="选择核算方式">
-            <el-option label="包含离线时长" value="include" />
-            <el-option label="不包含离线时长" value="exclude" />
-          </el-select>
-        </el-form-item>
+          <!-- 班次 -->
+          <el-form-item label="班次" class="form-item-compact">
+            <el-select v-model="shift" placeholder="选择班次" class="compact-select">
+              <el-option label="全部班次" value="all" />
+              <el-option label="白班 (8:00-20:00)" value="day" />
+              <el-option label="夜班 (20:00-8:00)" value="night" />
+            </el-select>
+          </el-form-item>
 
-        <!-- 按钮 -->
-        <el-form-item>
-          <el-button type="primary" @click="fetchData">查询数据</el-button>
-          <el-button @click="resetFilters">重置条件</el-button>
-        </el-form-item>
+          <!-- 核算方式 -->
+          <el-form-item label="核算方式" class="form-item-compact">
+            <el-select v-model="calculationMethod" placeholder="选择核算方式" class="compact-select">
+              <el-option label="包含离线时长" value="include" />
+              <el-option label="不包含离线时长" value="exclude" />
+            </el-select>
+          </el-form-item>
+
+          <!-- 按钮 -->
+          <el-form-item class="form-item-compact button-group">
+            <el-button type="primary" @click="fetchData" class="action-button">查询数据</el-button>
+            <el-button @click="resetFilters" class="action-button">重置条件</el-button>
+          </el-form-item>
+        </div>
       </el-form>
     </div>
 
@@ -756,9 +774,48 @@ body {
 .control-panel {
   background: white;
   border-radius: 12px;
-  padding: 25px;
+  padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   animation: fadeInLeft 0.8s ease;
+}
+
+.compact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.form-item-compact {
+  margin-bottom: 0;
+}
+
+.form-item-compact :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #333;
+  padding-right: 8px;
+}
+
+.form-item-compact :deep(.el-form-item__content) {
+  width: 180px;
+}
+
+.compact-select, .compact-picker {
+  width: 100%;
+}
+
+.button-group {
+  margin-left: auto;
+}
+
+.action-button {
+  padding: 8px 16px;
 }
 
 .chart-container {
@@ -861,9 +918,37 @@ body {
   }
 }
 
+@media (max-width: 1200px) {
+  .form-row {
+    gap: 8px;
+  }
+
+  .form-item-compact :deep(.el-form-item__content) {
+    width: 160px;
+  }
+}
+
 @media (max-width: 992px) {
-  .control-panel .el-form-item {
+  .form-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .form-item-compact {
     width: 100%;
+  }
+
+  .form-item-compact :deep(.el-form-item__content) {
+    width: 100%;
+  }
+
+  .button-group {
+    margin-left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
   }
 }
 </style>
