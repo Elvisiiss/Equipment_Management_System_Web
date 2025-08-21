@@ -47,7 +47,8 @@
           ></el-option>
         </el-select>
 
-        <el-button type="text" @click="handleFullScreenChange">全屏切换</el-button>
+        <!-- 修改这里：将文字按钮改为图标按钮 -->
+        <el-button type="text" @click="handleFullScreenChange" :icon="FullScreen" class="fullscreen-btn" />
       </div>
     </div>
 
@@ -138,6 +139,7 @@ import {
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import VChart from 'vue-echarts'
+import { FullScreen } from '@element-plus/icons-vue'
 
 // 注册图表
 echarts.use([
@@ -421,6 +423,17 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+// 添加全屏按钮样式
+.fullscreen-btn {
+  font-size: 25px;
+  color: #fff;
+  margin-left: 10px;
+
+  &:hover {
+    color: #409EFF;
+  }
+}
+
 .equipment-screen {
   height: 100vh;
   padding: 16px;
@@ -454,23 +467,40 @@ onMounted(() => {
     }
   }
 
+  // 修改这里：调整状态卡片样式
   .status-cards {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between; // 使卡片均匀分布
     margin-bottom: 20px;
+    width: 100%; // 确保占满一行
 
     .card {
-      padding: 10px 20px;
+      flex: 1; // 每个卡片平均分配空间
+      margin: 0 5px; // 卡片之间的间距
+      padding: 15px 10px;
       border-radius: 8px;
       color: #fff;
       text-align: center;
-      transition: background-color 0.3s;
+      transition: all 0.3s;
+      font-size: 16px;
+      font-weight: bold;
+      min-width: 0; // 防止内容溢出
+
+      &:first-child {
+        margin-left: 0;
+      }
+
+      &:last-child {
+        margin-right: 0;
+      }
 
       &:hover {
-        background-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
     }
   }
+
 
   .chart-row {
     flex: 1;
