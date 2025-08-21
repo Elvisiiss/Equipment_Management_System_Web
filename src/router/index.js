@@ -575,6 +575,12 @@ const routes = [
         meta: { title: '用户管理' },
     },
     {
+        path: '/system/manage/department_management',
+        name: 'department_management',
+        component: () => import('@/views/system/manage/departmentManagement.vue'),
+        meta: {title: '部门管理'},
+    },
+    {
         path: '/system/manage/regionManagement',
         name: 'regionManagement',
         component: () => import('@/views/system/manage/regionManagement.vue'),

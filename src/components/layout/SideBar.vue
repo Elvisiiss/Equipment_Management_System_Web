@@ -551,6 +551,12 @@ const menuItems = [
             permissionId: 1
           },
           {
+            path: '/system/manage/department_management',
+            name: 'department_management',
+            meta: {title: '部门管理'},
+            permissionId: 1
+          },
+          {
             path: '/system/manage/regionManagement',
             name: 'regionManagement',
             meta: {title: '区域管理'},

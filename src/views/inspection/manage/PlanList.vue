@@ -1,1029 +1,1379 @@
 <template>
-  <div class="plan-list-container">
-    <div class="header">
-      <h2>点检计划列表</h2>
-      <div class="actions">
-        <el-button type="primary" @click="openCreateDialog">
-          <el-icon><Plus /></el-icon>
-          创建计划
-        </el-button>
-        <el-button @click="handleGenerateTasks">
-          <el-icon><Refresh /></el-icon>
-          生成任务
-        </el-button>
+  <div class="app-container">
+    <!-- 主内容区（两列布局） -->
+    <div class="main-content">
+      <!-- 第一列：设备组织结构 -->
+      <div class="panel device-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="el-icon-menu"></i>
+            设备组织结构
+          </div>
+          <el-button type="primary" icon="refresh" circle @click="refreshData"></el-button>
+        </div>
+
+        <div class="selected-device" v-if="currentDevice">
+          当前设备: <strong>{{ currentDevice.name }}</strong>
+          <span v-if="currentDevice.workshop"> · {{ currentDevice.workshop }}车间</span>
+          <span v-if="currentDevice.line"> · {{ currentDevice.line }}产线</span>
+          <span v-if="currentDevice.segment"> · {{ currentDevice.segment }}</span>
+        </div>
+
+        <div class="panel-content">
+          <div class="table-container">
+            <el-table
+                :data="tableData"
+                row-key="id"
+                border
+                highlight-current-row
+                :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+                :default-expand-all="true"
+                @current-change="handleDeviceChange"
+                style="width: 100%"
+            >
+              <el-table-column prop="name" label="设备/段/产线/车间" min-width="300">
+                <template #default="{ row }">
+                  <span v-if="row.type === 'workshop'">
+                    <i class="el-icon-office-building workshop-icon"></i>
+                    <span>{{ row.name }}车间</span>
+                  </span>
+                  <span v-else-if="row.type === 'line'">
+                    <i class="el-icon-set-up line-icon"></i>
+                    <span>{{ row.name }}产线</span>
+                  </span>
+                  <span v-else-if="row.type === 'segment'">
+                    <i class="el-icon-s-operation segment-icon"></i>
+                    <span>{{ row.name }}</span>
+                  </span>
+                  <span v-else>
+                    <i class="el-icon-cpu device-icon"></i>
+                    <span>{{ row.name }}</span>
+                    <span class="status-indicator" :class="row.status ? 'status-active' : 'status-inactive'"></span>
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="filter-area">
-      <el-form :inline="true" :model="filterForm">
-        <el-form-item label="计划状态">
-          <el-select v-model="filterForm.status" placeholder="请选择状态" style="width: 120px">
-            <el-option
-                v-for="item in statusOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="计划类型">
-          <el-select v-model="filterForm.type" placeholder="请选择类型" style="width: 120px">
-            <el-option
-                v-for="item in typeOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-
-    <el-table
-        :data="planList"
-        border
-        style="width: 100%"
-        v-loading="loading"
-    >
-      <el-table-column prop="planNo" label="计划编号" width="120" />
-      <el-table-column prop="planName" label="计划名称" width="150" />
-      <el-table-column prop="policyName" label="关联策略" width="150" />
-      <el-table-column prop="type" label="计划类型" width="120">
-        <template #default="{row}">
-          <el-tag>{{ formatType(row.type) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="frequency" label="执行频率" width="120">
-        <template #default="{row}">
-          {{ formatFrequency(row.frequency) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="regionName" label="地区" width="120" />
-      <el-table-column prop="executor" label="执行人" width="120" />
-      <el-table-column prop="cycleType" label="循环方式" width="120">
-        <template #default="{row}">
-          {{ formatCycleType(row.cycleType) }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="startDate" label="开始日期" width="120" /> <!-- 仅日期 -->
-      <el-table-column prop="endDate" label="结束日期" width="120" /> <!-- 仅日期 -->
-      <el-table-column label="每日时段" width="120">
-        <template #default="{row}">
-          {{ row.dailyStartTime }} - {{ row.dailyEndTime }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="nextTime" label="下次执行时间" width="160" />
-      <el-table-column prop="status" label="状态" width="120">
-        <template #default="{row}">
-          <el-switch
-              v-model="row.status"
-              :active-value="1"
-              :inactive-value="0"
-              @change="handleStatusChange(row)"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column label="点检项目" width="120">
-        <template #default="{row}">
-          <el-button type="text" @click="viewPlanItems(row)">
-            {{ row.items?.length || 0 }}项
-          </el-button>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
-        <template #default="{row}">
+      <!-- 第二列：产品型号管理 -->
+      <div class="panel model-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="el-icon-s-grid"></i>
+            产品型号管理
+          </div>
           <el-button
               type="primary"
-              size="small"
-              @click="handleViewDetail(row)"
+              icon="plus"
+              @click="addProductModel"
+              :disabled="!currentDevice"
           >
-            详情
+            新增型号
           </el-button>
-          <el-button
-              type="success"
-              size="small"
-              @click="handleGeneratePlanTasks(row)"
-          >
-            生成任务
-          </el-button>
-          <el-button
-              type="danger"
-              size="small"
-              @click="handleDelete(row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        </div>
 
-    <div class="pagination">
-      <el-pagination
-          v-model:current-page="pagination.current"
-          v-model:page-size="pagination.size"
-          :total="pagination.total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-      />
+        <div class="panel-content">
+          <div class="table-container">
+            <el-table
+                :data="productModels"
+                border
+                highlight-current-row
+                @row-click="selectProductModel"
+                v-loading="productLoading"
+                style="width: 100%"
+            >
+              <el-table-column prop="modelCode" label="型号编码" width="180" sortable></el-table-column>
+              <el-table-column prop="templateName" label="关联参数模板" min-width="200">
+                <template #default="{ row }">
+                  <el-tag type="info">{{ row.templateName }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="点检计划" min-width="120">
+                <template #default="{ row }">
+                  <el-tag :type="row.inspectionPlan ? 'success' : 'warning'">
+                    {{ row.inspectionPlan ? '已配置' : '未配置' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="createTime" label="创建时间" width="180" sortable></el-table-column>
+              <el-table-column label="操作" width="280" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="text" size="small" @click.stop="showParamConfigDialog(row)">参数配置</el-button>
+                  <el-button type="text" size="small" @click.stop="showInspectionPlanDialog(row)">点检计划</el-button>
+                  <el-button type="text" size="small" @click.stop="editProductModel(row)">编辑</el-button>
+                  <el-button type="text" size="small" @click.stop="deleteProductModel(row)" style="color: #F56C6C">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 计划详情对话框 -->
+    <!-- 页脚 -->
+    <div class="footer">
+      © 2023 设备配置管理系统 | Vue3 + Element Plus 实现
+    </div>
+
+    <!-- 新增/编辑产品型号弹窗 -->
     <el-dialog
-        v-model="detailDialogVisible"
-        :title="`计划详情 - ${currentPlan.planNo}`"
-        width="70%"
+        v-model="productDialogVisible"
+        :title="isEditProduct ? '编辑产品型号' : '新增产品型号'"
+        width="500px"
+        :close-on-click-modal="false"
     >
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="计划编号">
-          {{ currentPlan.planNo }}
-        </el-descriptions-item>
-        <el-descriptions-item label="计划名称">
-          {{ currentPlan.planName }}
-        </el-descriptions-item>
-        <el-descriptions-item label="关联策略">
-          {{ currentPlan.policyName }}
-        </el-descriptions-item>
-        <el-descriptions-item label="计划类型">
-          {{ formatType(currentPlan.type) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="执行频率">
-          {{ formatFrequency(currentPlan.frequency) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="地区">
-          {{ currentPlan.regionName }}
-        </el-descriptions-item>
-        <el-descriptions-item label="执行人">
-          {{ currentPlan.executor }}
-        </el-descriptions-item>
-        <el-descriptions-item label="循环方式">
-          {{ formatCycleType(currentPlan.cycleType) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="开始日期">
-          {{ currentPlan.startDate }} <!-- 仅日期 -->
-        </el-descriptions-item>
-        <el-descriptions-item label="结束日期">
-          {{ currentPlan.endDate }} <!-- 仅日期 -->
-        </el-descriptions-item>
-        <el-descriptions-item label="每日时段">
-          {{ currentPlan.dailyStartTime }} - {{ currentPlan.dailyEndTime }}
-        </el-descriptions-item>
-        <el-descriptions-item label="下次执行时间">
-          {{ currentPlan.nextTime }}
-        </el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="currentPlan.status ? 'success' : 'danger'">
-            {{ currentPlan.status ? '启用' : '禁用' }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="创建时间">
-          {{ currentPlan.createTime }}
-        </el-descriptions-item>
-        <el-descriptions-item label="更新时间">
-          {{ currentPlan.updateTime }}
-        </el-descriptions-item>
-      </el-descriptions>
-
-      <div class="plan-items" v-if="currentPlan.items?.length">
-        <h3>点检项目 ({{ currentPlan.items.length }}项)</h3>
-        <el-table :data="currentPlan.items" border style="width: 100%">
-          <el-table-column prop="name" label="项目名称" width="150" />
-          <el-table-column prop="category" label="类别" width="120" />
-          <el-table-column prop="standard" label="执行标准" />
-          <el-table-column prop="method" label="执行方法" />
-          <el-table-column prop="problemHandling" label="问题处理" />
-          <el-table-column prop="handlingMethod" label="处理方式" />
-          <el-table-column prop="tools" label="处理工具" width="150" />
-        </el-table>
-      </div>
-
-      <template #footer>
-        <el-button @click="detailDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 点检项目对话框 -->
-    <el-dialog
-        v-model="itemsDialogVisible"
-        :title="`点检项目 - ${currentPlan.planName}`"
-        width="70%"
-    >
-      <el-table :data="currentPlan.items" border style="width: 100%">
-        <el-table-column prop="name" label="项目名称" width="150" />
-        <el-table-column prop="category" label="类别" width="120" />
-        <el-table-column prop="standard" label="执行标准" />
-        <el-table-column prop="method" label="执行方法" />
-        <el-table-column prop="problemHandling" label="问题处理" />
-        <el-table-column prop="handlingMethod" label="处理方式" />
-        <el-table-column prop="tools" label="处理工具" width="150" />
-      </el-table>
-
-      <template #footer>
-        <el-button @click="itemsDialogVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 创建/编辑计划对话框 -->
-    <el-dialog
-        v-model="createDialogVisible"
-        :title="isEditMode ? '编辑点检计划' : '创建点检计划'"
-        width="900px"
-        top="5vh"
-    >
-      <el-form :model="planForm" ref="planFormRef" label-width="120px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="计划编号" prop="planNo" required>
-              <el-input v-model="planForm.planNo" placeholder="请输入计划编号" />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="12">
-            <el-form-item label="计划名称" prop="planName" required>
-              <el-input v-model="planForm.planName" placeholder="请输入计划名称" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="计划类型" prop="type" required>
-              <el-select v-model="planForm.type" placeholder="请选择计划类型">
-                <el-option
-                    v-for="item in typeOptions.filter(opt => opt.value)"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="关联策略" prop="policyName">
-              <el-select v-model="planForm.policyName" placeholder="请选择关联策略">
-                <el-option label="设备日常点检策略" value="设备日常点检策略" />
-                <el-option label="开工检查策略" value="开工检查策略" />
-                <el-option label="设备月度维护策略" value="设备月度维护策略" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="地区" prop="regionName" required>
-              <el-select v-model="planForm.regionName" placeholder="请选择地区">
-                <el-option label="华东区" value="华东区" />
-                <el-option label="华南区" value="华南区" />
-                <el-option label="华区" value="华区" />
-                <el-option label="最北边" value="最北边" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="执行人" prop="executor" required>
-              <el-select v-model="planForm.executor" placeholder="请选择执行人">
-                <el-option label="张三" value="张三" />
-                <el-option label="李四" value="李四" />
-                <el-option label="王五" value="王五" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <!-- 巡检周期设置 -->
-        <el-form-item label="巡检周期">
-          <div class="cycle-section">
-            <div class="form-group">
-              <label>重复类型：</label>
-              <el-select v-model="planForm.repeat_type" @change="resetRepeatConfig">
-                <el-option value="none">不重复</el-option>
-                <el-option value="daily">每天</el-option>
-                <el-option value="weekly">每周</el-option>
-                <el-option value="monthly_date">每月（按日期）</el-option>
-                <el-option value="monthly_week">每月（按周）</el-option>
-                <el-option value="yearly">每年</el-option>
-                <el-option value="custom">自定义</el-option>
-              </el-select>
-            </div>
-
-            <!-- 每周重复配置 -->
-            <div v-if="planForm.repeat_type === 'weekly'" class="form-group">
-              <label>重复星期：</label>
-              <div class="weekdays">
-                <button
-                    v-for="(day, index) in weekdays"
-                    :key="index"
-                    type="button"
-                    :class="{ 'active': weeklyConfig.days.includes(index) }"
-                    @click="toggleWeekday(index)"
-                >
-                  {{ day }}
-                </button>
-              </div>
-            </div>
-
-            <!-- 每月按日期重复 -->
-            <div v-if="planForm.repeat_type === 'monthly_date'" class="form-group">
-              <label>每月日期：</label>
-              <el-input-number v-model="monthlyDateConfig.day" :min="1" :max="31" />
-            </div>
-
-            <!-- 每月按周重复 -->
-            <div v-if="planForm.repeat_type === 'monthly_week'" class="form-row">
-              <div class="form-group">
-                <label>第几周：</label>
-                <el-select v-model="monthlyWeekConfig.week">
-                  <el-option value="1">第一周</el-option>
-                  <el-option value="2">第二周</el-option>
-                  <el-option value="3">第三周</el-option>
-                  <el-option value="4">第四周</el-option>
-                  <el-option value="last">最后一周</el-option>
-                </el-select>
-              </div>
-
-              <div class="form-group">
-                <label>星期：</label>
-                <el-select v-model="monthlyWeekConfig.day">
-                  <el-option v-for="(day, index) in weekdays" :key="index" :value="index">{{ day }}</el-option>
-                </el-select>
-              </div>
-            </div>
-
-            <!-- 每年重复 -->
-            <div v-if="planForm.repeat_type === 'yearly'" class="form-row">
-              <div class="form-group">
-                <label>月份：</label>
-                <el-input-number v-model="yearlyConfig.month" :min="1" :max="12" />
-              </div>
-
-              <div class="form-group">
-                <label>日期：</label>
-                <el-input-number v-model="yearlyConfig.day" :min="1" :max="31" />
-              </div>
-            </div>
-
-            <!-- 自定义重复 -->
-            <div v-if="planForm.repeat_type === 'custom'" class="form-row">
-              <div class="form-group">
-                <label>间隔：</label>
-                <el-input-number v-model="customConfig.interval" :min="1" />
-              </div>
-
-              <div class="form-group">
-                <label>单位：</label>
-                <el-select v-model="customConfig.unit">
-                  <el-option value="day">天</el-option>
-                  <el-option value="week">周</el-option>
-                  <el-option value="month">月</el-option>
-                </el-select>
-              </div>
-            </div>
-
-            <!-- 自定义每周重复 -->
-            <div v-if="planForm.repeat_type === 'custom' && customConfig.unit === 'week'" class="form-group">
-              <label>重复星期：</label>
-              <div class="weekdays">
-                <button
-                    v-for="(day, index) in weekdays"
-                    :key="index"
-                    type="button"
-                    :class="{ 'active': customConfig.days.includes(index) }"
-                    @click="toggleCustomWeekday(index)"
-                >
-                  {{ day }}
-                </button>
-              </div>
-            </div>
-          </div>
+      <el-form :model="productForm" label-width="100px" ref="productFormRef">
+        <el-form-item label="型号编码" prop="modelCode" required>
+          <el-input v-model="productForm.modelCode" placeholder="请输入型号编码" />
         </el-form-item>
-
-        <!-- 结束条件 -->
-        <el-form-item label="结束条件">
-          <div class="end-condition">
-            <div class="form-group">
-              <label>结束类型：</label>
-              <el-select v-model="planForm.end_type">
-                <el-option value="never">永不结束</el-option>
-                <el-option value="after_occurrences">重复次数后结束</el-option>
-                <el-option value="on_date">指定日期结束</el-option>
-              </el-select>
-            </div>
-
-            <div v-if="planForm.end_type === 'after_occurrences'" class="form-group">
-              <label>重复次数：</label>
-              <el-input-number v-model="planForm.end_value" :min="1" />
-            </div>
-
-            <div v-if="planForm.end_type === 'on_date'" class="form-group">
-              <label>结束日期：</label>
-              <el-date-picker v-model="planForm.end_value" type="date" placeholder="选择日期" />
-            </div>
-          </div>
-        </el-form-item>
-
-        <!-- 开始时间和截止时间 -->
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="开始时间" prop="dailyStartTime" required>
-              <el-time-picker
-                  v-model="planForm.dailyStartTime"
-                  format="HH:mm"
-                  value-format="HH:mm"
-                  placeholder="选择时间"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="截止时间" prop="dailyEndTime" required>
-              <el-time-picker
-                  v-model="planForm.dailyEndTime"
-                  format="HH:mm"
-                  value-format="HH:mm"
-                  placeholder="选择时间"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-form-item label="状态" prop="status">
-          <el-switch
-              v-model="planForm.status"
-              :active-value="1"
-              :inactive-value="0"
-              active-text="启用"
-              inactive-text="禁用"
+        <el-form-item label="参数模板" prop="templateId" required>
+          <el-cascader
+              v-model="productForm.templateId"
+              :options="templateOptions"
+              :props="cascaderProps"
+              placeholder="请选择参数模板"
+              filterable
+              clearable
+              style="width: 100%"
           />
-        </el-form-item>
-
-        <el-form-item label="点检项目">
-          <div class="add-item-btn">
-            <el-button type="primary" @click="addInspectionItem" plain>
-              <el-icon><Plus /></el-icon> 添加点检项
-            </el-button>
-          </div>
-
-          <div
-              v-for="(item, index) in planForm.items"
-              :key="index"
-              class="plan-item-card"
-          >
-            <div class="item-header">
-              <span>点检项 {{ index + 1 }}</span>
-              <el-button
-                  type="danger"
-                  size="small"
-                  @click="removeItem(index)"
-                  circle
-              >
-                <el-icon><Delete /></el-icon>
-              </el-button>
-            </div>
-
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item
-                    :label="'名称'"
-                    :prop="`items[${index}].name`"
-                    :rules="{ required: true, message: '请输入名称' }"
-                >
-                  <el-input v-model="item.name" placeholder="点检项名称" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item :label="'类别'">
-                  <el-input v-model="item.category" placeholder="点检类别" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-
-            <el-form-item :label="'执行标准'">
-              <el-input v-model="item.standard" type="textarea" :rows="2" placeholder="执行标准" />
-            </el-form-item>
-
-            <el-form-item :label="'执行方法'">
-              <el-input v-model="item.method" type="textarea" :rows="2" placeholder="执行方法" />
-            </el-form-item>
-
-            <el-form-item :label="'问题处理'">
-              <el-input v-model="item.problemHandling" type="textarea" :rows="2" placeholder="问题处理方法" />
-            </el-form-item>
-
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-form-item :label="'处理方式'">
-                  <el-input v-model="item.handlingMethod" placeholder="处理方式" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item :label="'处理工具'">
-                  <el-input v-model="item.tools" placeholder="所需工具，用逗号分隔" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </div>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="createDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitPlanForm">
-          {{ isEditMode ? '更新计划' : '创建计划' }}
-        </el-button>
+        <el-button @click="productDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitProductModel">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 参数配置弹窗 -->
+    <el-dialog
+        v-model="paramDialogVisible"
+        :title="`${currentModel?.modelCode || ''} 重要参数配置`"
+        width="80%"
+        top="5vh"
+        :close-on-click-modal="false"
+    >
+      <div class="param-config-container">
+        <div class="param-tabs">
+          <el-button-group>
+            <el-button
+                :type="paramViewMode === 'list' ? 'primary' : ''"
+                @click="paramViewMode = 'list'"
+            >
+              列表视图
+            </el-button>
+            <el-button
+                :type="paramViewMode === 'json' ? 'primary' : ''"
+                @click="paramViewMode = 'json'"
+            >
+              JSON视图
+            </el-button>
+          </el-button-group>
+
+          <div class="param-actions">
+            <el-button type="primary" @click="addParam" :disabled="paramViewMode !== 'list'">
+              新增参数
+            </el-button>
+            <el-button
+                type="success"
+                @click="copyParamsToClipboard"
+                :disabled="!paramTable.length"
+            >
+              复制参数
+            </el-button>
+            <el-button
+                type="warning"
+                @click="pasteParamsFromClipboard"
+                :disabled="paramViewMode !== 'json'"
+            >
+              粘贴参数
+            </el-button>
+            <el-button type="danger" @click="save">保存配置</el-button>
+          </div>
+        </div>
+
+        <!-- 列表视图 -->
+        <div v-show="paramViewMode === 'list'" class="param-list-view">
+          <el-table
+              ref="tableRef"
+              :data="paramTable"
+              row-key="id"
+              border
+              v-loading="paramLoading"
+              style="width: 100%"
+          >
+            <!-- 拖拽手柄 -->
+            <el-table-column width="50" align="center">
+              <template #default>
+                <i class="drag-handle">⋮⋮</i>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="序号" width="60" type="index" align="center"></el-table-column>
+
+            <el-table-column label="参数名称" width="180">
+              <template #default="{ row }">
+                <el-input v-model="row.name" placeholder="请输入名称" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="参数类型" width="120">
+              <template #default="{ row }">
+                <el-select v-model="row.type">
+                  <el-option label="数值" value="number" />
+                  <el-option label="文本" value="text" />
+                  <el-option label="布尔" value="boolean" />
+                </el-select>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="寄存器地址" width="180">
+              <template #default="{ row }">
+                <el-input v-model="row.registerAddress" placeholder="0x0000" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="默认值" width="150">
+              <template #default="{ row }">
+                <el-input
+                    v-if="row.type === 'text'"
+                    v-model="row.default"
+                    placeholder="默认值"
+                />
+                <el-input-number
+                    v-else-if="row.type === 'number'"
+                    v-model="row.default"
+                    :min="0"
+                    :precision="2"
+                    style="width: 100%"
+                />
+                <el-switch v-else v-model="row.default" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="下限" width="120">
+              <template #default="{ row }">
+                <el-input-number
+                    v-if="row.type === 'number'"
+                    v-model="row.minValue"
+                    :min="0"
+                    :precision="2"
+                    style="width: 100%"
+                />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="上限" width="120">
+              <template #default="{ row }">
+                <el-input-number
+                    v-if="row.type === 'number'"
+                    v-model="row.maxValue"
+                    :min="0"
+                    :precision="2"
+                    style="width: 100%"
+                />
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="单位" width="100">
+              <template #default="{ row }">
+                <el-input v-model="row.unit" placeholder="单位" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="是否必填" width="90" align="center">
+              <template #default="{ row }">
+                <el-checkbox v-model="row.required" />
+              </template>
+            </el-table-column>
+
+            <el-table-column label="操作" width="90" align="center">
+              <template #default="{ $index }">
+                <el-button type="danger" link @click="removeParam($index)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <!-- JSON视图 -->
+        <div v-show="paramViewMode === 'json'" class="param-json-view">
+          <el-input
+              type="textarea"
+              :rows="20"
+              placeholder="请输入JSON格式的参数配置"
+              v-model="paramJson"
+          ></el-input>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 点检计划配置弹窗 -->
+    <el-dialog
+        v-model="inspectionPlanDialogVisible"
+        :title="`${currentModel?.modelCode || ''} 点检计划配置`"
+        width="80%"
+        top="5vh"
+        :close-on-click-modal="false"
+    >
+      <div class="inspection-plan-container">
+        <el-form :model="inspectionPlanForm" label-width="120px">
+          <el-form-item label="计划名称" required>
+            <el-input v-model="inspectionPlanForm.name" placeholder="请输入点检计划名称" />
+          </el-form-item>
+
+          <el-form-item label="执行频率" required>
+            <el-radio-group v-model="inspectionPlanForm.frequencyType">
+              <el-radio label="daily">每天一次</el-radio>
+              <el-radio label="multiple">一天多次</el-radio>
+            </el-radio-group>
+          </el-form-item>
+
+          <el-form-item
+              label="执行时间"
+              required
+              v-if="inspectionPlanForm.frequencyType === 'daily'"
+          >
+            <el-time-picker
+                v-model="inspectionPlanForm.singleTime"
+                format="HH:mm"
+                value-format="HH:mm"
+                placeholder="选择时间"
+            />
+          </el-form-item>
+
+          <el-form-item
+              label="执行时间点"
+              required
+              v-if="inspectionPlanForm.frequencyType === 'multiple'"
+          >
+            <el-time-select
+                v-model="inspectionPlanForm.multipleTimes"
+                multiple
+                placeholder="选择多个时间点"
+                start="08:00"
+                end="22:00"
+                step="00:30"
+                format="HH:mm"
+            />
+          </el-form-item>
+
+          <el-form-item label="循环周期（天）" required>
+            <el-input-number
+                v-model="inspectionPlanForm.cycle"
+                :min="1"
+                :step="1"
+                style="width: 100%"
+                placeholder="输入循环周期"
+            />
+          </el-form-item>
+
+          <el-form-item label="启用状态">
+            <el-switch v-model="inspectionPlanForm.enabled" />
+          </el-form-item>
+        </el-form>
+
+        <div style="margin-top: 20px;">
+          <el-tabs v-model="inspectionTab">
+            <el-tab-pane label="自动点检项" name="auto">
+              <el-button
+                  type="primary"
+                  size="small"
+                  @click="addAutoInspectionItem"
+                  style="margin-bottom: 10px;"
+              >
+                添加自动点检项
+              </el-button>
+              <el-table
+                  :data="inspectionPlanForm.autoItems"
+                  border
+                  style="width: 100%;"
+              >
+                <el-table-column label="序号" type="index" width="60"></el-table-column>
+                <el-table-column label="参数选择" width="200">
+                  <template #default="{ row }">
+                    <el-select v-model="row.paramId">
+                      <el-option
+                          v-for="param in paramTable"
+                          :key="param.id"
+                          :label="param.name"
+                          :value="param.id"
+                      />
+                    </el-select>
+                  </template>
+                </el-table-column>
+                <el-table-column label="检查条件" width="200">
+                  <template #default="{ row }">
+                    <el-select v-model="row.condition">
+                      <el-option label="等于" value="eq" />
+                      <el-option label="大于" value="gt" />
+                      <el-option label="小于" value="lt" />
+                      <el-option label="大于等于" value="gte" />
+                      <el-option label="小于等于" value="lte" />
+                      <el-option label="在范围内" value="between" />
+                    </el-select>
+                  </template>
+                </el-table-column>
+                <el-table-column label="目标值" width="150">
+                  <template #default="{ row }">
+                    <el-input v-model="row.targetValue" placeholder="输入目标值" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100">
+                  <template #default="{ $index }">
+                    <el-button
+                        type="danger"
+                        size="small"
+                        icon="delete"
+                        @click="removeAutoInspectionItem($index)"
+                    />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-tab-pane>
+
+            <el-tab-pane label="手动点检项" name="manual">
+              <el-button
+                  type="primary"
+                  size="small"
+                  @click="addManualInspectionItem"
+                  style="margin-bottom: 10px;"
+              >
+                添加手动点检项
+              </el-button>
+              <el-table
+                  :data="inspectionPlanForm.manualItems"
+                  border
+                  style="width: 100%;"
+              >
+                <el-table-column label="序号" type="index" width="60"></el-table-column>
+                <el-table-column label="点检项名称" width="200">
+                  <template #default="{ row }">
+                    <el-input v-model="row.name" placeholder="输入点检项名称" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="点检内容" width="300">
+                  <template #default="{ row }">
+                    <el-input
+                        v-model="row.content"
+                        placeholder="输入点检内容"
+                        type="textarea"
+                        :rows="2"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100">
+                  <template #default="{ $index }">
+                    <el-button
+                        type="danger"
+                        size="small"
+                        icon="delete"
+                        @click="removeManualInspectionItem($index)"
+                    />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+          <el-button @click="exportInspectionPlan">导出计划</el-button>
+          <el-button type="warning" @click="importInspectionPlan">导入计划</el-button>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="inspectionPlanDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveInspectionPlan">保存计划</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 导入点检计划弹窗 -->
+    <el-dialog
+        v-model="importInspectionDialogVisible"
+        title="导入点检计划"
+        width="500px"
+    >
+      <el-input
+          type="textarea"
+          :rows="10"
+          v-model="importInspectionJson"
+          placeholder="请粘贴JSON格式的点检计划配置"
+      />
+      <template #footer>
+        <el-button @click="importInspectionDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmImportInspection">确认导入</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import {ref, onMounted, reactive} from 'vue'
-import {Plus, Refresh, Delete} from '@element-plus/icons-vue'
-import {getPlanList, updatePlanStatus, deletePlan, generateTasks} from '@/api/inspection'
-import {ElMessage} from 'element-plus'
+import { ref, reactive, nextTick, onMounted, watch } from 'vue'
+import {
+  ElMessage,
+  ElMessageBox,
+  ElTable,
+  ElTableColumn,
+  ElDialog,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElCascader,
+  ElSelect,
+  ElOption,
+  ElInputNumber,
+  ElSwitch,
+  ElCheckbox,
+  ElTag,
+  ElButton,
+  ElButtonGroup,
+  ElTimePicker,
+  ElTimeSelect,
+  ElTabs,
+  ElTabPane
+} from 'element-plus'
+import Sortable from 'sortablejs' // 需安装：npm install sortablejs
 
-const loading = ref(false)
-const planList = ref([])
-const filterForm = ref({
-  status: '',
-  type: ''
+// 1. 响应式变量定义
+// 设备树数据
+const tableData = ref([])
+const currentDevice = ref(null)
+// 产品型号数据
+const productModels = ref([])
+const currentModel = ref(null)
+const productLoading = ref(false)
+const paramLoading = ref(false)
+// 弹窗相关
+const productDialogVisible = ref(false)
+const isEditProduct = ref(false)
+const productForm = reactive({
+  id: null,
+  modelCode: '',
+  templateId: null
 })
-const pagination = ref({
-  current: 1,
-  size: 10,
-  total: 0
-})
-const detailDialogVisible = ref(false)
-const itemsDialogVisible = ref(false)
-const createDialogVisible = ref(false)
-const isEditMode = ref(false)
-const planFormRef = ref()
+const productFormRef = ref(null)
+// 参数配置弹窗
+const paramDialogVisible = ref(false)
+const paramViewMode = ref('list') // 'list' 或 'json'
+const paramJson = ref('')
+// 参数模板选项
+const templateOptions = ref([
+  {
+    value: '1',
+    label: '产品型号1',
+    children: [
+      { value: '11', label: '模板1' },
+      { value: '12', label: '模板2' }
+    ]
+  },
+  {
+    value: '2',
+    label: '产品型号2',
+    children: [
+      { value: '21', label: '模板1' },
+      { value: '22', label: '模板2' }
+    ]
+  },
+  {
+    value: '3',
+    label: '产品型号3',
+    children: [
+      { value: '31', label: '模板1' },
+      { value: '32', label: '模板2' }
+    ]
+  },
+  {
+    value: '4',
+    label: '产品型号4',
+    children: [
+      { value: '41', label: '模板1' },
+      { value: '42', label: '模板2' }
+    ]
+  },
+  {
+    value: '5',
+    label: '产品型号5',
+    children: [
+      { value: '51', label: '模板1' },
+      { value: '52', label: '模板2' }
+    ]
+  }
+])
+const cascaderProps = {
+  expandTrigger: 'hover',
+  value: 'value',
+  label: 'label',
+  children: 'children'
+}
+// 参数表格相关
+const paramTable = ref([])
+const tableRef = ref(null)
+let sortable = null // 拖拽实例
 
-const currentPlan = ref({
-  planNo: '',
-  planName: '',
-  policyName: '',
-  type: '',
-  frequency: '',
-  regionName: '',
-  executor: '',
-  cycleType: '',
-  startTime: '',
-  endTime: '',
-  nextTime: '',
-  status: 0,
-  createTime: '',
-  updateTime: '',
-  devices: [],
-  items: []
-})
-
-// 状态选项
-const statusOptions = [
-  {label: '全部', value: ''},
-  {label: '启用', value: '1'},
-  {label: '禁用', value: '0'}
-]
-
-// 类型选项
-const typeOptions = [
-  {label: '全部', value: ''},
-  {label: '日常点检', value: 'DAILY'},
-  {label: '周检', value: 'WEEKLY'},
-  {label: '月检', value: 'MONTHLY'},
-  {label: '季度检', value: 'QUARTERLY'},
-  {label: '年检', value: 'YEARLY'}
-]
-
-// 工作日名称
-const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-
-// 计划表单 - 新增字段
-const planForm = reactive({
-  planNo: '',
-  planName: '',
-  policyName: '设备日常点检策略',
-  type: 'DAILY',
-  regionName: '华东区',
-  executor: '张三',
-  status: 1,
-  // 新增巡检周期相关字段
-  repeat_type: 'daily',
-  end_type: 'never',
-  end_value: null,
-  dailyStartTime: '08:00',
-  dailyEndTime: '18:00',
-  items: [] // 初始为空，在打开对话框时添加
-})
-
-// 各种重复类型的配置
-const weeklyConfig = reactive({ days: [] })
-const monthlyDateConfig = reactive({ day: 1 })
-const monthlyWeekConfig = reactive({ week: '1', day: 1 })
-const yearlyConfig = reactive({ month: 1, day: 1 })
-const customConfig = reactive({
-  unit: 'day',
-  interval: 1,
-  days: []
+// 点检计划相关
+const inspectionPlanDialogVisible = ref(false)
+const importInspectionDialogVisible = ref(false)
+const importInspectionJson = ref('')
+const inspectionTab = ref('auto')
+const inspectionPlanForm = reactive({
+  name: '',
+  frequencyType: 'daily', // daily: 每天一次, multiple: 一天多次
+  singleTime: '10:00',
+  multipleTimes: ['08:00', '12:00', '16:00'],
+  cycle: 1,
+  enabled: true,
+  autoItems: [],
+  manualItems: []
 })
 
-// 获取计划列表
-const fetchPlanList = async () => {
+// 监听JSON视图变化，同步到表格数据
+watch(paramJson, (newVal) => {
   try {
-    loading.value = true
-    const params = {
-      ...filterForm.value,
-      pageNum: pagination.value.current,
-      pageSize: pagination.value.size
+    if (newVal) {
+      const parsed = JSON.parse(newVal)
+      if (Array.isArray(parsed)) {
+        paramTable.value = parsed
+      }
     }
-    const res = await getPlanList(params)
-    planList.value = res.data.list
-    pagination.value.total = res.data.total
-  } catch (error) {
-    console.error('获取计划列表失败:', error)
-    ElMessage.error('获取计划列表失败')
-  } finally {
-    loading.value = false
+  } catch (e) {
+    // JSON解析错误时不处理
   }
-}
+})
 
-// 格式化类型显示
-const formatType = (type) => {
-  const typeMap = {
-    DAILY: '日常点检',
-    WEEKLY: '周检',
-    MONTHLY: '月检',
-    QUARTERLY: '季度检',
-    YEARLY: '年检'
+// 监听表格数据变化，同步到JSON视图
+watch(paramTable, (newVal) => {
+  if (paramViewMode.value === 'json') {
+    paramJson.value = JSON.stringify(newVal, null, 2)
   }
-  return typeMap[type] || type
+}, { deep: true })
+
+// 2. 核心方法
+// 初始化设备树
+const initDeviceTree = () => {
+  tableData.value = [
+    {
+      id: 1001,
+      name: 'C2',
+      type: 'workshop',
+      children: [
+        {
+          id: 1002,
+          name: '31',
+          type: 'line',
+          children: [
+            {
+              id: 1003,
+              name: 'CFOG段',
+              type: 'segment',
+              children: [
+                { id: 1, name: '精密清洗设备', type: 'device', deviceCode: 'DEV-C2-31-CFOG-101', status: true },
+                { id: 2, name: '全自动COG机', type: 'device', deviceCode: 'DEV-C2-31-CFOG-102', status: true }
+              ]
+            }
+          ]
+        },
+        {
+          id: 1004,
+          name: '32',
+          type: 'line',
+          children: [
+            {
+              id: 1005,
+              name: '贴合段',
+              type: 'segment',
+              children: [
+                { id: 3, name: '高精度FOG机', type: 'device', deviceCode: 'DEV-C2-32-TH-201', status: true }
+              ]
+            }
+          ]
+        },
+        { id: 4, name: '车间监控设备', type: 'device', deviceCode: 'DEV-C2-MON-001', status: true }
+      ]
+    },
+    {
+      id: 2001,
+      name: 'C3',
+      type: 'workshop',
+      children: [
+        {
+          id: 2002,
+          name: '41',
+          type: 'line',
+          children: [
+            {
+              id: 2003,
+              name: '组装段',
+              type: 'segment',
+              children: [
+                { id: 5, name: '智能组装机', type: 'device', deviceCode: 'DEV-C3-41-ASM-301', status: true },
+                { id: 6, name: '视觉检测设备', type: 'device', deviceCode: 'DEV-C3-41-ASM-302', status: false }
+              ]
+            }
+          ]
+        },
+        { id: 7, name: '中央控制设备', type: 'device', deviceCode: 'DEV-C3-CTRL-001', status: true }
+      ]
+    },
+    { id: 3001, name: '独立测试设备', type: 'device', deviceCode: 'DEV-IND-TEST-001', status: true }
+  ]
 }
 
-// 格式化频率显示
-const formatFrequency = (frequency) => {
-  if (!frequency) return ''
-  const [value, unit] = frequency.split('|')
-  const unitMap = {
-    DAY: '天',
-    WEEK: '周',
-    MONTH: '月'
+// 刷新数据
+const refreshData = () => {
+  initDeviceTree()
+  ElMessage.success('设备数据已刷新')
+}
+
+// 选择设备（仅设备类型有效）
+const handleDeviceChange = (device) => {
+  if (!device || device.type !== 'device') return
+  currentDevice.value = device
+  currentModel.value = null
+  paramTable.value = []
+  loadProductModels(device.id) // 加载该设备的产品型号
+}
+
+// 加载产品型号（模拟接口）
+const loadProductModels = (deviceId) => {
+  productLoading.value = true
+  setTimeout(() => {
+    productModels.value = [
+      {
+        id: 'PM001',
+        modelCode: 'MOD-001',
+        templateId: '11',
+        templateName: '标准清洗模板',
+        createTime: '2023-06-01',
+        updateTime: '2023-08-15',
+        inspectionPlan: true
+      },
+      {
+        id: 'PM002',
+        modelCode: 'MOD-002',
+        templateId: '12',
+        templateName: '快速清洗模板',
+        createTime: '2023-07-10',
+        updateTime: '2023-08-10',
+        inspectionPlan: false
+      },
+      {
+        id: 'PM003',
+        modelCode: 'MOD-003',
+        templateId: '21',
+        templateName: 'COG标准模板',
+        createTime: '2023-07-15',
+        updateTime: '2023-08-12',
+        inspectionPlan: true
+      }
+    ]
+    productLoading.value = false
+  }, 500)
+}
+
+// 选择产品型号
+const selectProductModel = (model) => {
+  currentModel.value = model
+}
+
+// 显示参数配置弹窗
+const showParamConfigDialog = (model) => {
+  currentModel.value = model
+  paramLoading.value = true
+  paramDialogVisible.value = true
+
+  // 根据模板ID加载不同参数
+  setTimeout(() => {
+    switch (model.templateId) {
+      case '11':
+        paramTable.value = [
+          { id: 1, name: '清洗时间', type: 'number', registerAddress: '0x1001', default: 30, minValue: 10, maxValue: 60, unit: 's', required: true },
+          { id: 2, name: '清洗温度', type: 'number', registerAddress: '0x1002', default: 60, minValue: 40, maxValue: 80, unit: '℃', required: true },
+          { id: 3, name: '喷淋压力', type: 'number', registerAddress: '0x1003', default: 0.3, minValue: 0.1, maxValue: 0.5, unit: 'MPa', required: false }
+        ]
+        break
+      case '12':
+        paramTable.value = [
+          { id: 4, name: '清洗时间', type: 'number', registerAddress: '0x1001', default: 15, minValue: 5, maxValue: 30, unit: 's', required: true },
+          { id: 5, name: '清洗温度', type: 'number', registerAddress: '0x1002', default: 70, minValue: 50, maxValue: 85, unit: '℃', required: true },
+          { id: 6, name: '喷淋压力', type: 'number', registerAddress: '0x1003', default: 0.4, minValue: 0.2, maxValue: 0.6, unit: 'MPa', required: false },
+          { id: 7, name: '干燥时间', type: 'number', registerAddress: '0x1004', default: 10, minValue: 5, maxValue: 20, unit: 's', required: false }
+        ]
+        break
+      default:
+        paramTable.value = [
+          { id: 8, name: '压力参数', type: 'number', registerAddress: '0x2001', default: 15, minValue: 5, maxValue: 30, unit: 'kg', required: true },
+          { id: 9, name: '温度控制', type: 'number', registerAddress: '0x2002', default: 25, minValue: 15, maxValue: 35, unit: '℃', required: true },
+          { id: 10, name: '速度设置', type: 'number', registerAddress: '0x2003', default: 100, minValue: 50, maxValue: 200, unit: 'rpm', required: false }
+        ]
+    }
+    paramJson.value = JSON.stringify(paramTable.value, null, 2)
+    paramLoading.value = false
+    nextTick(initDrag) // 初始化拖拽
+  }, 800)
+}
+
+// 显示点检计划配置弹窗
+const showInspectionPlanDialog = (model) => {
+  currentModel.value = model
+  inspectionPlanDialogVisible.value = true
+
+  // 初始化点检计划表单
+  Object.assign(inspectionPlanForm, {
+    name: `${model.modelCode} 点检计划`,
+    frequencyType: 'daily',
+    singleTime: '10:00',
+    multipleTimes: ['08:00', '12:00', '16:00'],
+    cycle: 1,
+    enabled: true,
+    autoItems: [],
+    manualItems: []
+  })
+
+  // 如果模型已有点检计划，加载它
+  if (model.inspectionPlan) {
+    // 这里模拟从后端加载数据
+    inspectionPlanForm.autoItems = [
+      {
+        id: 1,
+        paramId: 2,
+        condition: 'between',
+        targetValue: '40-80'
+      },
+      {
+        id: 2,
+        paramId: 3,
+        condition: 'gte',
+        targetValue: '0.3'
+      }
+    ]
+
+    inspectionPlanForm.manualItems = [
+      {
+        id: 1,
+        name: '设备外观检查',
+        content: '检查设备表面是否有损伤、锈蚀等情况'
+      },
+      {
+        id: 2,
+        name: '连接部位检查',
+        content: '检查各连接部位是否松动、泄漏'
+      }
+    ]
   }
-  return `每${value}${unitMap[unit] || unit}`
+
+  // 加载当前模型的参数以便在自动点检项中选择
+  showParamConfigDialog(model).then(() => {
+    // 参数加载完成后的处理
+  });
 }
 
-// 格式化循环方式
-const formatCycleType = (cycleType) => {
-  const cycleMap = {
-    DAILY: '每天',
-    WEEKLY: '每周',
-    MONTHLY: '每月',
-    QUARTERLY: '每季度',
-    YEARLY: '每年',
-    CUSTOM: '自定义'
+// 新增产品型号
+const addProductModel = () => {
+  isEditProduct.value = false
+  productForm.id = null
+  productForm.modelCode = ''
+  productForm.templateId = null
+  productDialogVisible.value = true
+}
+
+// 编辑产品型号
+const editProductModel = (model) => {
+  isEditProduct.value = true
+  productForm.id = model.id
+  productForm.modelCode = model.modelCode
+  productForm.templateId = [model.templateId.substring(0, 1), model.templateId] // 级联选择器格式
+  productDialogVisible.value = true
+}
+
+// 删除产品型号
+const deleteProductModel = (model) => {
+  ElMessageBox.confirm(
+      `确定删除产品型号【${model.modelCode}】? 此操作不可恢复。`,
+      '删除确认',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning', confirmButtonClass: 'el-button--danger' }
+  ).then(() => {
+    productModels.value = productModels.value.filter(p => p.id !== model.id)
+    if (currentModel.value?.id === model.id) {
+      currentModel.value = null
+      paramTable.value = []
+    }
+    ElMessage.success('产品型号删除成功')
+  }).catch(() => {
+    ElMessage.info('已取消删除')
+  })
+}
+
+// 提交产品型号（新增/编辑）
+const submitProductModel = () => {
+  if (!productForm.modelCode || !productForm.templateId) {
+    ElMessage.error('请填写完整信息')
+    return
   }
-  return cycleMap[cycleType] || cycleType
-}
 
-// 查询
-const handleSearch = () => {
-  pagination.value.current = 1
-  fetchPlanList()
-}
-
-// 重置
-const handleReset = () => {
-  filterForm.value = {
-    status: '',
-    type: ''
+  // 匹配模板名称
+  let templateName = ''
+  for (const group of templateOptions.value) {
+    const match = group.children.find(t => t.value === productForm.templateId[1])
+    if (match) {
+      templateName = match.label
+      break
+    }
   }
-  handleSearch()
-}
 
-// 分页大小变化
-const handleSizeChange = (size) => {
-  pagination.value.size = size
-  fetchPlanList()
-}
-
-// 当前页变化
-const handleCurrentChange = (current) => {
-  pagination.value.current = current
-  fetchPlanList()
-}
-
-// 打开创建对话框
-const openCreateDialog = (plan) => {
-  resetPlanForm() // 重置表单
-
-  if (plan) {
-    // 编辑模式
-    isEditMode.value = true
-    Object.assign(planForm, {
-      ...plan,
-      items: plan.items ? [...plan.items] : []
+  if (isEditProduct.value) {
+    // 编辑：更新现有数据
+    const index = productModels.value.findIndex(p => p.id === productForm.id)
+    if (index !== -1) {
+      productModels.value[index] = {
+        ...productModels.value[index],
+        modelCode: productForm.modelCode,
+        templateId: productForm.templateId[1],
+        templateName,
+        updateTime: new Date().toISOString().split('T')[0]
+      }
+    }
+  } else {
+    // 新增：添加新数据
+    productModels.value.push({
+      id: `PM${Date.now()}`,
+      modelCode: productForm.modelCode,
+      templateId: productForm.templateId[1],
+      templateName,
+      createTime: new Date().toISOString().split('T')[0],
+      updateTime: new Date().toISOString().split('T')[0],
+      inspectionPlan: false
     })
-  } else {
-    // 创建模式
-    isEditMode.value = false
-    // 创建时自动添加一个点检项
-    addInspectionItem()
   }
-  createDialogVisible.value = true
+
+  productDialogVisible.value = false
+  ElMessage.success(`产品型号${isEditProduct.value ? '更新' : '添加'}成功`)
 }
 
-// 重置计划表单
-const resetPlanForm = () => {
-  Object.assign(planForm, {
-    planNo: '',
-    planName: '',
-    policyName: '设备日常点检策略',
-    type: 'DAILY',
-    regionName: '华东区',
-    executor: '张三',
-    status: 1,
-    repeat_type: 'daily',
-    end_type: 'never',
-    end_value: null,
-    dailyStartTime: '08:00',
-    dailyEndTime: '18:00',
-    items: [] // 初始为空
-  })
-
-  // 重置重复配置
-  resetRepeatConfig()
-}
-
-// 添加点检项
-const addInspectionItem = () => {
-  planForm.items.push({
+// 新增参数
+const addParam = () => {
+  paramTable.value.push({
+    id: Date.now(),
     name: '',
-    category: '',
-    standard: '',
-    method: '',
-    problemHandling: '',
-    handlingMethod: '',
-    tools: ''
+    type: 'text',
+    registerAddress: '',
+    default: '',
+    minValue: null,
+    maxValue: null,
+    unit: '',
+    required: false
+  })
+  nextTick(initDrag)
+}
+
+// 删除参数
+const removeParam = (index) => {
+  paramTable.value.splice(index, 1)
+  nextTick(initDrag)
+}
+
+// 保存参数配置
+const save = () => {
+  console.log('保存配置：', currentModel.value.modelCode, paramTable.value)
+  ElMessage.success('参数配置已保存！')
+  paramDialogVisible.value = false
+}
+
+// 复制参数到剪贴板
+const copyParamsToClipboard = async () => {
+  try {
+    const jsonStr = JSON.stringify(paramTable.value, null, 2)
+    await navigator.clipboard.writeText(jsonStr)
+    ElMessage.success('参数已复制到剪贴板')
+  } catch (err) {
+    ElMessage.error('复制失败: ' + err.message)
+  }
+}
+
+// 从剪贴板粘贴参数
+const pasteParamsFromClipboard = async () => {
+  try {
+    const text = await navigator.clipboard.readText()
+    const parsed = JSON.parse(text)
+    if (Array.isArray(parsed)) {
+      paramTable.value = parsed
+      paramJson.value = JSON.stringify(parsed, null, 2)
+      ElMessage.success('参数已从剪贴板粘贴')
+    } else {
+      ElMessage.error('剪贴板内容不是有效的参数数组')
+    }
+  } catch (err) {
+    ElMessage.error('粘贴失败: ' + err.message)
+  }
+}
+
+// 初始化表格拖拽
+const initDrag = () => {
+  const tbody = tableRef.value?.$el.querySelector('.el-table__body tbody')
+  if (!tbody) return
+  if (sortable) sortable.destroy() // 销毁旧实例
+
+  sortable = Sortable.create(tbody, {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: ({ newIndex, oldIndex }) => {
+      // 调整参数数组顺序
+      const [target] = paramTable.value.splice(oldIndex, 1)
+      paramTable.value.splice(newIndex, 0, target)
+    }
   })
 }
 
-// 删除点检项
-const removeItem = (index) => {
-  if (planForm.items.length > 1) {
-    planForm.items.splice(index, 1)
-  } else {
-    ElMessage.warning('至少保留一个点检项')
+// 点检计划相关方法
+const addAutoInspectionItem = () => {
+  inspectionPlanForm.autoItems.push({
+    id: Date.now(),
+    paramId: paramTable.value.length ? paramTable.value[0].id : null,
+    condition: 'eq',
+    targetValue: ''
+  })
+}
+
+const removeAutoInspectionItem = (index) => {
+  inspectionPlanForm.autoItems.splice(index, 1)
+}
+
+const addManualInspectionItem = () => {
+  inspectionPlanForm.manualItems.push({
+    id: Date.now(),
+    name: '',
+    content: ''
+  })
+}
+
+const removeManualInspectionItem = (index) => {
+  inspectionPlanForm.manualItems.splice(index, 1)
+}
+
+const saveInspectionPlan = () => {
+  if (!inspectionPlanForm.name) {
+    ElMessage.error('请输入计划名称')
+    return
   }
-}
 
-// 切换星期选择
-const toggleWeekday = (index) => {
-  const idx = weeklyConfig.days.indexOf(index)
-  if (idx > -1) {
-    weeklyConfig.days.splice(idx, 1)
-  } else {
-    weeklyConfig.days.push(index)
-    weeklyConfig.days.sort()
+  if (inspectionPlanForm.autoItems.length === 0 && inspectionPlanForm.manualItems.length === 0) {
+    ElMessage.error('请至少添加一个点检项')
+    return
   }
-}
 
-// 切换自定义重复的星期选择
-const toggleCustomWeekday = (index) => {
-  const idx = customConfig.days.indexOf(index)
-  if (idx > -1) {
-    customConfig.days.splice(idx, 1)
-  } else {
-    customConfig.days.push(index)
-    customConfig.days.sort()
+  // 保存点检计划到当前模型
+  const index = productModels.value.findIndex(p => p.id === currentModel.value.id)
+  if (index !== -1) {
+    productModels.value[index] = {
+      ...productModels.value[index],
+      inspectionPlan: true,
+      inspectionPlanData: { ...inspectionPlanForm }
+    }
   }
+
+  ElMessage.success('点检计划已保存')
+  inspectionPlanDialogVisible.value = false
 }
 
-// 重置重复配置
-const resetRepeatConfig = () => {
-  weeklyConfig.days = []
-  monthlyDateConfig.day = 1
-  monthlyWeekConfig.week = '1'
-  monthlyWeekConfig.day = 1
-  yearlyConfig.month = 1
-  yearlyConfig.day = 1
-  customConfig.unit = 'day'
-  customConfig.interval = 1
-  customConfig.days = []
-}
-
-// 提交计划表单
-const submitPlanForm = async () => {
+const exportInspectionPlan = async () => {
   try {
-    // 表单验证
-    await planFormRef.value.validate()
-
-    // 模拟API调用
-    ElMessage.success(isEditMode.value ? '计划更新成功' : '计划创建成功')
-
-    // 关闭对话框
-    createDialogVisible.value = false
-
-    // 刷新列表
-    fetchPlanList()
-  } catch (error) {
-    console.error('表单验证失败', error)
+    const jsonStr = JSON.stringify(inspectionPlanForm, null, 2)
+    console.log(jsonStr)
+    await navigator.clipboard.writeText(jsonStr)
+    ElMessage.success('点检计划已导出到剪贴板')
+  } catch (err) {
+    ElMessage.error('导出失败: ' + err.message)
   }
 }
 
-// 状态变更
-const handleStatusChange = async (plan) => {
+const importInspectionPlan = () => {
+  importInspectionDialogVisible.value = true
+  importInspectionJson.value = ''
+}
+
+const confirmImportInspection = () => {
   try {
-    await updatePlanStatus(plan.planNo, plan.status)
-    ElMessage.success('状态更新成功')
-  } catch (error) {
-    console.error('更新计划状态失败:', error)
-    // 恢复原状态
-    plan.status = plan.status ? 0 : 1
-    ElMessage.error('状态更新失败')
+    if (!importInspectionJson.value) {
+      ElMessage.error('请输入JSON内容')
+      return
+    }
+
+    const planData = JSON.parse(importInspectionJson.value)
+    Object.assign(inspectionPlanForm, planData)
+    importInspectionDialogVisible.value = false
+    ElMessage.success('点检计划导入成功')
+  } catch (err) {
+    ElMessage.error('导入失败: 无效的JSON格式')
   }
 }
 
-// 查看详情
-const handleViewDetail = (plan) => {
-  currentPlan.value = {...plan}
-  detailDialogVisible.value = true
-}
-
-// 查看点检项目
-const viewPlanItems = (plan) => {
-  currentPlan.value = {...plan}
-  itemsDialogVisible.value = true
-}
-
-// 删除计划
-const handleDelete = async (plan) => {
-  try {
-    await deletePlan(plan.planNo)
-    ElMessage.success('计划删除成功')
-    await fetchPlanList()
-  } catch (error) {
-    console.error('删除计划失败:', error)
-    ElMessage.error('删除计划失败')
-  }
-}
-
-// 生成所有计划任务
-const handleGenerateTasks = async () => {
-  try {
-    await generateTasks()
-    ElMessage.success('任务生成成功')
-    await fetchPlanList()
-  } catch (error) {
-    console.error('生成任务失败:', error)
-    ElMessage.error('生成任务失败')
-  }
-}
-
-// 生成单个计划任务
-const handleGeneratePlanTasks = async (plan) => {
-  try {
-    await generateTasks(plan.planNo)
-    ElMessage.success('任务生成成功')
-    await fetchPlanList()
-  } catch (error) {
-    console.error('生成任务失败:', error)
-    ElMessage.error('生成任务失败')
-  }
-}
-
+// 3. 生命周期钩子
 onMounted(() => {
-  fetchPlanList()
+  initDeviceTree() // 初始化设备树数据
 })
 </script>
 
-<style scoped lang="scss">
-.plan-list-container {
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+<style scoped>
+/* 组件内部样式（scoped 隔离） */
+.panel {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+.device-panel {
+  width: 350px;
+  margin-right: 16px;
+}
 
-    h2 {
-      margin: 0;
-      font-size: 18px;
-      color: #333;
-    }
+.model-panel {
+  flex: 1;
+}
 
-    .actions {
-      display: flex;
-      gap: 10px;
-    }
+.panel-header {
+  padding: 16px;
+  border-bottom: 1px solid #ebeef5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.panel-title i {
+  margin-right: 8px;
+  color: #409EFF;
+}
+
+.panel-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-container {
+  flex: 1;
+  overflow: auto;
+  padding: 0 16px 16px;
+}
+
+.action-buttons {
+  padding: 16px;
+  border-top: 1px solid #ebeef5;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.el-table {
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.drag-handle {
+  cursor: move;
+  font-size: 16px;
+  color: #909399;
+  user-select: none;
+  padding: 0 8px;
+}
+
+.workshop-icon {
+  margin-right: 8px;
+  color: #67c23a;
+}
+
+.line-icon {
+  margin-right: 8px;
+  color: #e6a23c;
+}
+
+.segment-icon {
+  margin-right: 8px;
+  color: #9c27b0;
+}
+
+.device-icon {
+  margin-right: 8px;
+  color: #409EFF;
+}
+
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-active {
+  background-color: #67c23a;
+}
+
+.status-inactive {
+  background-color: #f56c6c;
+}
+
+.selected-device {
+  padding: 8px 16px;
+  background-color: #f5f7fa;
+  border-bottom: 1px solid #ebeef5;
+  font-size: 14px;
+}
+
+.selected-device strong {
+  color: #409EFF;
+}
+
+/* 参数配置弹窗样式 */
+.param-config-container {
+  display: flex;
+  flex-direction: column;
+  height: 70vh;
+}
+
+.param-tabs {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.param-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.param-list-view,
+.param-json-view {
+  flex: 1;
+  overflow: auto;
+}
+
+/* 点检计划弹窗样式 */
+.inspection-plan-container {
+  height: 70vh;
+  overflow: auto;
+}
+
+/* 设备树表格层级样式（深度选择器） */
+.el-table :deep(.el-table__row--level-0) {
+  background-color: #f5f7fa !important;
+  font-weight: 600;
+}
+
+.el-table :deep(.el-table__row--level-1) {
+  background-color: #f0f9ff !important;
+}
+
+.el-table :deep(.el-table__row--level-2) {
+  background-color: #fafafa !important;
+}
+
+.el-table :deep(.el-table__row--level-3) {
+  background-color: #ffffff !important;
+}
+
+.el-table :deep(.el-table__row--current) > td {
+  background-color: #ecf5ff !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .model-panel {
+    width: 380px;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-content {
+    flex-direction: column;
   }
 
-  .filter-area {
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f5f7fa;
-    border-radius: 4px;
+  .device-panel,
+  .model-panel {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 16px;
+    height: 300px;
   }
+}
+</style>
 
-  .pagination {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
-  }
+<style>
+/* 全局样式（无scoped，影响整个项目） */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+}
 
-  .plan-devices,
-  .plan-items {
-    margin-top: 20px;
+body {
+  background-color: #f0f2f5;
+  height: 100vh;
+  overflow: hidden;
+}
 
-    h3 {
-      margin: 20px 0 10px;
-      font-size: 16px;
-      color: #333;
-    }
-  }
+.app-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  .form-tip {
-    font-size: 12px;
-    color: #999;
-    margin-top: 5px;
-  }
+.header {
+  background: linear-gradient(135deg, #409EFF 0%, #1e88e5 100%);
+  color: white;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
 
-  .add-item-btn {
-    margin-bottom: 15px;
-  }
+.logo {
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: bold;
+}
 
-  .plan-item-card {
-    border: 1px solid #ebeef5;
-    border-radius: 4px;
-    padding: 15px;
-    margin: 15px 0;
-    background-color: #f8f9fa;
-    position: relative;
-  }
+.logo i {
+  margin-right: 12px;
+  font-size: 28px;
+}
 
-  .item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #dcdfe6;
-  }
+.system-title {
+  font-size: 18px;
+  margin-left: 20px;
+  opacity: 0.9;
+}
 
-  /* 新增：周期设置样式 */
-  .cycle-section, .end-condition {
-    padding: 15px;
-    background-color: #f9fafb;
-    border-radius: 8px;
-    margin-bottom: 15px;
-  }
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 16px;
+}
 
-  .form-group {
-    margin-bottom: 15px;
-  }
-
-  .form-row {
-    display: flex;
-    gap: 15px;
-  }
-
-  .form-row .form-group {
-    flex: 1;
-  }
-
-  .weekdays {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-  }
-
-  .weekdays button {
-    flex: 1;
-    min-width: 60px;
-    padding: 8px 5px;
-    background-color: #edf2f7;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .weekdays button:hover {
-    background-color: #e2e8f0;
-  }
-
-  .weekdays button.active {
-    background-color: #3498db;
-    color: white;
-    font-weight: bold;
-    border-color: #3498db;
-  }
+.footer {
+  text-align: center;
+  padding: 16px;
+  color: #909399;
+  font-size: 12px;
+  border-top: 1px solid #ebeef5;
 }
 </style>
