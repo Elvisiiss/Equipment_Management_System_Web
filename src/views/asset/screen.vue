@@ -6,7 +6,11 @@
       <div class="nav-item">时间{{ currentTime }}</div>
       <h1 class="title">资产管理中心</h1>
       <div class="nav-item">
-        <el-button type="text" @click="handleFullScreenChange">{{ isFullScreen ? '退出全屏' : '全屏切换' }}</el-button>
+        <el-button type="text" @click="handleFullScreenChange">
+          <el-icon :size="20">
+            <FullScreen />
+          </el-icon>
+        </el-button>
       </div>
     </div>
 
@@ -93,6 +97,7 @@
 </template>
 
 <script setup>
+import { FullScreen, CloseBold } from '@element-plus/icons-vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
