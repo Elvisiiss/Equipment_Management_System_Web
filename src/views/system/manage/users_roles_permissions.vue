@@ -16,10 +16,6 @@
             <el-icon><UserFilled /></el-icon>
             <span>角色列表</span>
           </el-menu-item>
-          <el-menu-item index="role-sidebar-list">
-            <el-icon><Menu /></el-icon>
-            <span>角色-侧边栏列表</span>
-          </el-menu-item>
           <el-menu-item index="permission-management">
             <el-icon><Lock /></el-icon>
             <span>权限管理</span>
@@ -77,7 +73,15 @@
               :row-class-name="tableRowClassName"
           >
             <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="userName" label="用户名"></el-table-column>
+            <el-table-column prop="userName" label="账户"></el-table-column>
+            <el-table-column prop="name" label="姓名"></el-table-column>
+            <el-table-column prop="department" label="部门"></el-table-column>
+            <el-table-column prop="phone" label="手机号"></el-table-column>
+            <el-table-column prop="gender" label="性别">
+              <template #default="scope">
+                {{ scope.row.gender === 1 ? '男' : scope.row.gender === 2 ? '女' : '未知' }}
+              </template>
+            </el-table-column>
             <el-table-column prop="email" label="邮箱"></el-table-column>
             <el-table-column label="角色">
               <template #default="scope">
@@ -91,6 +95,7 @@
                 </el-tag>
               </template>
             </el-table-column>
+            <el-table-column prop="remark" label="备注"></el-table-column>
             <el-table-column label="状态">
               <template #default="scope">
                 <el-switch
@@ -143,7 +148,7 @@
         <div v-if="activeMenu === 'role-list'" class="content-wrapper">
           <div class="content-header">
             <h2>角色列表</h2>
-            <el-button type="primary" @click="handleShowAddRoleDialog(false)">
+            <el-button type="primary" @click="handleShowAddRoleDialog">
               <el-icon><Plus /></el-icon>
               新增角色
             </el-button>
@@ -176,7 +181,7 @@
                 {{ getUserCountByRole(scope.row.id) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="200">
+            <el-table-column label="操作" width="250">
               <template #default="scope">
                 <el-button
                     size="small"
@@ -187,7 +192,7 @@
                 <el-button
                     size="small"
                     type="primary"
-                    @click="handleRolePermissions(scope.row, false)"
+                    @click="handleRolePermissions(scope.row)"
                 >
                   权限配置
                 </el-button>
@@ -211,82 +216,6 @@
               :page-size="rolePageSize"
               layout="total, sizes, prev, pager, next, jumper"
               :total="filteredRoles.length"
-              class="pagination"
-          ></el-pagination>
-        </div>
-
-        <!-- 角色-侧边栏列表页面 -->
-        <div v-if="activeMenu === 'role-sidebar-list'" class="content-wrapper">
-          <div class="content-header">
-            <h2>角色-侧边栏列表</h2>
-            <el-button type="primary" @click="handleShowAddRoleDialog(true)">
-              <el-icon><Plus /></el-icon>
-              新增角色
-            </el-button>
-          </div>
-
-          <div class="search-bar">
-            <el-input
-                v-model="sidebarRoleSearchQuery"
-                placeholder="搜索角色"
-                prefix-icon="Search"
-                class="search-input"
-            ></el-input>
-          </div>
-
-          <el-table
-              :data="paginatedSidebarRoles"
-              border
-              style="width: 100%; margin-top: 16px;"
-          >
-            <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="roleName" label="角色名称"></el-table-column>
-            <el-table-column prop="description" label="角色描述"></el-table-column>
-            <el-table-column label="侧边栏权限数量">
-              <template #default="scope">
-                {{ getSidebarPermissionCount(scope.row.permissionIds) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="用户数量">
-              <template #default="scope">
-                {{ getUserCountByRole(scope.row.id) }}
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="200">
-              <template #default="scope">
-                <el-button
-                    size="small"
-                    @click="handleEditSidebarRole(scope.row)"
-                >
-                  编辑
-                </el-button>
-                <el-button
-                    size="small"
-                    type="primary"
-                    @click="handleRolePermissions(scope.row, true)"
-                >
-                  侧边栏权限配置
-                </el-button>
-                <el-button
-                    size="small"
-                    type="danger"
-                    @click="handleDeleteRole(scope.row.id)"
-                    :disabled="scope.row.id === 1"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <el-pagination
-              @size-change="handleSidebarRoleSizeChange"
-              @current-change="handleSidebarRoleCurrentChange"
-              :current-page="sidebarRoleCurrentPage"
-              :page-sizes="[10, 20, 50]"
-              :page-size="sidebarRolePageSize"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="filteredSidebarRoles.length"
               class="pagination"
           ></el-pagination>
         </div>
@@ -329,17 +258,17 @@
 
     <!-- 新增/编辑用户对话框 -->
     <el-dialog
-        title="用户信息"
+        :title="formUser.id ? '编辑用户' : '新增用户'"
         v-model="showAddUserDialog"
-        width="500px"
+        width="600px"
     >
       <el-form
           :model="formUser"
           :rules="userRules"
           ref="userFormRef"
-          label-width="100px"
+          label-width="80px"
       >
-        <el-form-item label="用户名" prop="userName">
+        <el-form-item label="账户" prop="userName">
           <el-input v-model="formUser.userName" :disabled="!!formUser.id"></el-input>
         </el-form-item>
         <el-form-item
@@ -348,6 +277,22 @@
             v-if="!formUser.id"
         >
           <el-input v-model="formUser.password" type="password"></el-input>
+        </el-form-item>
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="formUser.name"></el-input>
+        </el-form-item>
+        <el-form-item label="部门" prop="department">
+          <el-input v-model="formUser.department"></el-input>
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="formUser.phone"></el-input>
+        </el-form-item>
+        <el-form-item label="性别" prop="gender">
+          <el-select v-model="formUser.gender" placeholder="请选择性别">
+            <el-option label="男" :value="1"></el-option>
+            <el-option label="女" :value="2"></el-option>
+            <el-option label="未知" :value="0"></el-option>
+          </el-select>
         </el-form-item>
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="formUser.email"></el-input>
@@ -365,6 +310,13 @@
                 :value="role.id"
             ></el-option>
           </el-select>
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input
+              v-model="formUser.remark"
+              type="textarea"
+              :rows="3"
+          ></el-input>
         </el-form-item>
         <el-form-item label="状态">
           <el-switch
@@ -439,7 +391,7 @@
         </el-form-item>
         <el-form-item label="权限设置" prop="permissionIds">
           <el-tree
-              :data="isSidebarRole ? sidebarPermissionTree : nonSidebarPermissionTree"
+              :data="permissionTree"
               show-checkbox
               node-key="id"
               :default-checked-keys="formRole.permissionIds"
@@ -461,7 +413,7 @@
 
     <!-- 角色权限配置对话框 -->
     <el-dialog
-        :title="isSidebarPermission ? '角色侧边栏权限配置' : '角色权限配置'"
+        title="角色权限配置"
         v-model="showRolePermissionsDialog"
         width="600px"
     >
@@ -470,7 +422,7 @@
       </div>
 
       <el-tree
-          :data="isSidebarPermission ? sidebarPermissionTree : nonSidebarPermissionTree"
+          :data="permissionTree"
           show-checkbox
           node-key="id"
           :default-checked-keys="currentRolePermissions"
@@ -527,7 +479,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import {
-  User, UserFilled, Lock, Menu,
+  User, UserFilled, Lock,
   Plus,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -558,18 +510,31 @@ const formUser = ref({
   id: undefined,
   userName: '',
   password: '',
+  name: '',
+  department: '',
+  phone: '',
+  gender: 0,
   email: '',
   roleIds: [],
+  remark: '',
   status: 0
 });
 const userRules = ref({
   userName: [
-    {required: true, message: '请输入用户名', trigger: 'blur'},
-    {min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur'}
+    {required: true, message: '请输入账户', trigger: 'blur'},
+    {min: 3, max: 20, message: '账户长度在 3 到 20 个字符', trigger: 'blur'}
   ],
   password: [
     {required: true, message: '请输入密码', trigger: 'blur'},
     {min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur'}
+  ],
+  name: [
+    {required: true, message: '请输入姓名', trigger: 'blur'},
+    {min: 2, max: 10, message: '姓名长度在 2 到 10 个字符', trigger: 'blur'}
+  ],
+  phone: [
+    {required: true, message: '请输入手机号', trigger: 'blur'},
+    {pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur'}
   ],
   email: [
     {required: true, message: '请输入邮箱', trigger: 'blur'},
@@ -596,20 +561,13 @@ const roleRules = ref({
   permissionIds: [{required: true, message: '请至少选择一个权限', trigger: 'change'}]
 });
 const roleFormRef = ref(null);
-const isSidebarRole = ref(false); // 标识当前是侧边栏角色还是普通角色
 const isEditRole = ref(false); // 标识当前是编辑还是新增角色
-
-// 角色-侧边栏管理相关状态
-const sidebarRoleSearchQuery = ref('');
-const sidebarRoleCurrentPage = ref(1);
-const sidebarRolePageSize = ref(10);
 
 // 权限配置相关状态
 const showRolePermissionsDialog = ref(false);
 const currentRoleForPermissions = ref(null);
 const currentRolePermissions = ref([]);
 const selectedPermissions = ref([]);
-const isSidebarPermission = ref(false); // 标识当前配置的是侧边栏权限还是普通权限
 
 // 权限管理相关状态
 const showEditPermissionDialog = ref(false);
@@ -647,37 +605,8 @@ const resetPasswordRules = ref({
 const resetPasswordFormRef = ref(null);
 const userIdToReset = ref(null);
 
-// 权限树形结构数据 - 所有权限
+// 权限树形结构数据 - 所有权限（已按需求重组）
 const allPermissionTree = ref([
-  {
-    id: 'user',
-    label: '用户权限',
-    children: [
-      {id: 1, label: '查看用户信息 (user:view)'},
-      {id: 2, label: '创建新用户 (user:create)'},
-      {id: 3, label: '编辑用户信息 (user:edit)'},
-      {id: 4, label: '删除用户 (user:delete)'}
-    ]
-  },
-  {
-    id: 'role',
-    label: '角色权限',
-    children: [
-      {id: 5, label: '管理角色权限 (role:manage)'}
-    ]
-  },
-  {
-    id: 'device',
-    label: '设备权限',
-    children: [
-      {id: 6, label: '查看设备信息 (device:view)'},
-      {id: 7, label: '添加新设备 (device:create)'},
-      {id: 8, label: '编辑设备信息 (device:edit)'},
-      {id: 9, label: '删除设备 (device:delete)'},
-      {id: 10, label: '分配设备 (device:assign)'},
-      {id: 11, label: '设备维护管理 (device:maintenance)'}
-    ]
-  },
   {
     id: 'sidebar',
     label: '侧边栏权限',
@@ -822,7 +751,21 @@ const allPermissionTree = ref([
           },
           {
             id: 41,
-            label: '设备管理 (side:equipment:EquipmentManage)'
+            label: '设备管理 (side:equipment:EquipmentManage)',
+            children: [
+              {
+                id: 'device',
+                label: '设备权限',
+                children: [
+                  {id: 6, label: '查看设备信息 (device:view)'},
+                  {id: 7, label: '添加新设备 (device:create)'},
+                  {id: 8, label: '编辑设备信息 (device:edit)'},
+                  {id: 9, label: '删除设备 (device:delete)'},
+                  {id: 10, label: '分配设备 (device:assign)'},
+                  {id: 11, label: '设备维护管理 (device:maintenance)'}
+                ]
+              }
+            ]
           }
         ]
       },
@@ -1068,7 +1011,26 @@ const allPermissionTree = ref([
               },
               {
                 id: 97,
-                label: '用户管理 (side:system:manage:users_roles_permissions)'
+                label: '用户管理 (side:system:manage:users_roles_permissions)',
+                children: [
+                  {
+                    id: 'user',
+                    label: '用户权限',
+                    children: [
+                      {id: 1, label: '查看用户信息 (user:view)'},
+                      {id: 2, label: '创建新用户 (user:create)'},
+                      {id: 3, label: '编辑用户信息 (user:edit)'},
+                      {id: 4, label: '删除用户 (user:delete)'}
+                    ]
+                  },
+                  {
+                    id: 'role',
+                    label: '角色权限',
+                    children: [
+                      {id: 5, label: '管理角色权限 (role:manage)'}
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1098,24 +1060,19 @@ const allPermissionTree = ref([
   }
 ]);
 
-// 侧边栏权限树（只包含侧边栏相关权限）
-const sidebarPermissionTree = computed(() => {
-  // 找到侧边栏权限节点
-  const sidebarNode = allPermissionTree.value.find(node => node.id === 'sidebar');
-  return sidebarNode ? [sidebarNode] : [];
-});
-
-// 非侧边栏权限树（不包含侧边栏相关权限）
-const nonSidebarPermissionTree = computed(() => {
-  // 过滤掉侧边栏权限节点
-  return allPermissionTree.value.filter(node => node.id !== 'sidebar');
+// 权限树（包含所有权限）
+const permissionTree = computed(() => {
+  return allPermissionTree.value;
 });
 
 // 计算属性 - 筛选用户
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
     const matchesSearch = user.userName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase());
+        user.name.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
+        user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
+        user.department.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
+        user.phone.includes(userSearchQuery.value);
     const matchesRole = !userRoleFilter.value || user.roleIds.includes(Number(userRoleFilter.value));
     const matchesStatus = !userStatusFilter.value || user.status === Number(userStatusFilter.value);
 
@@ -1145,21 +1102,6 @@ const paginatedRoles = computed(() => {
   return filteredRoles.value.slice(start, end);
 });
 
-// 计算属性 - 筛选角色-侧边栏
-const filteredSidebarRoles = computed(() => {
-  return roles.value.filter(role => {
-    return role.roleName.toLowerCase().includes(sidebarRoleSearchQuery.value.toLowerCase()) ||
-        role.description.toLowerCase().includes(sidebarRoleSearchQuery.value.toLowerCase());
-  });
-});
-
-// 分页后的角色-侧边栏数据
-const paginatedSidebarRoles = computed(() => {
-  const start = (sidebarRoleCurrentPage.value - 1) * sidebarRolePageSize.value;
-  const end = start + sidebarRolePageSize.value;
-  return filteredSidebarRoles.value.slice(start, end);
-});
-
 // 生命周期钩子
 onMounted(() => {
   fetchUsers();
@@ -1175,14 +1117,11 @@ const handleMenuSelect = (index) => {
     userCurrentPage.value = 1;
   } else if (index === 'role-list') {
     roleCurrentPage.value = 1;
-  } else if (index === 'role-sidebar-list') {
-    sidebarRoleCurrentPage.value = 1;
   }
 };
 
 // 方法 - 显示新增角色对话框
-const handleShowAddRoleDialog = (isSidebar) => {
-  isSidebarRole.value = isSidebar;
+const handleShowAddRoleDialog = () => {
   isEditRole.value = false;
   formRole.value = {
     id: undefined,
@@ -1308,14 +1247,6 @@ const handleRoleCurrentChange = (val) => {
 
 const handleEditRole = (role) => {
   isEditRole.value = true;
-  isSidebarRole.value = false;
-  formRole.value = {...role};
-  showAddRoleDialog.value = true;
-};
-
-const handleEditSidebarRole = (role) => {
-  isEditRole.value = true;
-  isSidebarRole.value = true;
   formRole.value = {...role};
   showAddRoleDialog.value = true;
 };
@@ -1359,48 +1290,14 @@ const submitRoleForm = async () => {
   }
 };
 
-// 方法 - 角色-侧边栏管理
-const handleSidebarRoleSizeChange = (val) => {
-  sidebarRolePageSize.value = val;
-  sidebarRoleCurrentPage.value = 1;
-};
-
-const handleSidebarRoleCurrentChange = (val) => {
-  sidebarRoleCurrentPage.value = val;
-};
-
 // 权限配置相关方法
-const handleRolePermissions = async (role, isSidebar) => {
+const handleRolePermissions = async (role) => {
   try {
     currentRoleForPermissions.value = {...role};
-    isSidebarPermission.value = isSidebar;
 
     // 调用API获取角色的所有权限
     const response = await AuthAPI.getRolePermissions(role.id);
     let permissionIds = response.data.data || [];
-
-    // 收集所有侧边栏权限ID
-    const sidebarPermissionIds = [];
-    const collectSidebarPermissionIds = (nodes) => {
-      nodes.forEach(node => {
-        if (typeof node.id === 'number') {
-          sidebarPermissionIds.push(node.id);
-        }
-        if (node.children && node.children.length) {
-          collectSidebarPermissionIds(node.children);
-        }
-      });
-    };
-    collectSidebarPermissionIds(sidebarPermissionTree.value);
-
-    // 根据是否是侧边栏权限配置进行过滤
-    if (isSidebar) {
-      // 侧边栏页只保留侧边栏权限
-      permissionIds = permissionIds.filter(id => sidebarPermissionIds.includes(id));
-    } else {
-      // 角色页排除侧边栏权限
-      permissionIds = permissionIds.filter(id => !sidebarPermissionIds.includes(id));
-    }
 
     currentRolePermissions.value = [...permissionIds];
     selectedPermissions.value = [...permissionIds];
@@ -1536,29 +1433,6 @@ const getRoleType = (roleId) => {
 
 const getUserCountByRole = (roleId) => {
   return users.value.filter(u => u.roleIds.includes(roleId)).length;
-};
-
-// 计算侧边栏权限数量
-const getSidebarPermissionCount = (permissionIds) => {
-  if (!permissionIds || !permissionIds.length) return 0;
-
-  // 收集所有侧边栏权限ID
-  const sidebarPermissionIds = [];
-  const collectSidebarPermissionIds = (nodes) => {
-    nodes.forEach(node => {
-      if (typeof node.id === 'number') {
-        sidebarPermissionIds.push(node.id);
-      }
-      if (node.children && node.children.length) {
-        collectSidebarPermissionIds(node.children);
-      }
-    });
-  };
-
-  collectSidebarPermissionIds(sidebarPermissionTree.value);
-
-  // 计算交集数量
-  return permissionIds.filter(id => sidebarPermissionIds.includes(id)).length;
 };
 
 const tableRowClassName = ({row}) => {
