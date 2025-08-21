@@ -388,7 +388,7 @@ const menuItems = [
     permissionId: 1,
     children: [
       {
-        path: '/mold/manage',
+        path: '/mold/MoldManagement',
         name: 'manage',
         meta: {title: '管理'},
         permissionId: 1,

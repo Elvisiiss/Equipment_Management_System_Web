@@ -344,6 +344,19 @@ const routes = [
         meta: { title: '模具/治工具管理', icon: HomeFilled },
     },
     {
+        path: '/mold/MoldManagement',
+        name: 'MoldManagement',
+        component: () => import('@/views/mold/data/pages/MoldManagement.vue'),
+        meta: { title: '模/治具管理' },
+    },
+    {
+        path: '/mold/detail/:id',
+        name: 'MoldDetail',
+        component: () => import('@/views/mold/data/pages/MoldDetail.vue'),
+        props: true,
+        meta: { title: '模/治具详情' },
+    },
+    {
         path: '/mold/manage',
         name: 'manage',
         component: () => import('@/views/mold/manage.vue'),
