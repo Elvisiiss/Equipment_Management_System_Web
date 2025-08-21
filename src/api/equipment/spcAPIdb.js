@@ -1,7 +1,13 @@
 // 生成模拟设备列表
 const generateDeviceList = (params) => {
     const workshops = ['C2', 'C3', 'C4', 'C5', 'C6']
-    const lines = ['31', '32', '33', '34', '35', '36', '41', '42', '43', '44', '45', '46']
+    const lineMap = {
+        'C2': ['31', '32', '33', '34', '35', '36'],
+        'C3': ['41', '42', '43', '44', '45', '46'],
+        'C4': ['51', '52', '53', '54', '55', '56'],
+        'C5': ['61', '62', '63', '64', '65', '66'],
+        'C6': ['71', '72', '73', '74', '75', '76']
+    }
     const segments = ['CFOG段', '贴合段', '组装段', '30米线段']
     const names = [
         '精密清洗设备', '全自动COG机', '高精度FOG机', '视觉检测设备',
@@ -18,10 +24,15 @@ const generateDeviceList = (params) => {
 
     for (let i = 0; i < total; i++) {
         const workshop = filteredWorkshops[Math.floor(Math.random() * filteredWorkshops.length)]
+        const lines = lineMap[workshop] || []
+        const line = lines[Math.floor(Math.random() * lines.length)]
+        const segment = segments[Math.floor(Math.random() * segments.length)]
         const name = names[Math.floor(Math.random() * names.length)]
         const model = models[Math.floor(Math.random() * models.length)]
 
-        // 应用名称和型号筛选
+        // 应用筛选条件
+        if (params.line && params.line !== line) continue
+        if (params.segment && params.segment !== segment) continue
         if (params.name && !name.includes(params.name)) continue
         if (params.model && !model.includes(params.model)) continue
 
@@ -30,8 +41,8 @@ const generateDeviceList = (params) => {
             name,
             deviceCode: `DEV-${workshop}-${1000 + i}`,
             workshop,
-            line: lines[Math.floor(Math.random() * lines.length)],
-            segment: segments[Math.floor(Math.random() * segments.length)],
+            line,
+            segment,
             model,
             status: statuses[Math.floor(Math.random() * statuses.length)],
             output: Math.floor(Math.random() * 10000) + 5000,
@@ -54,7 +65,7 @@ const generateDeviceList = (params) => {
     }
 }
 
-// 生成设备详情
+// 生成设备详情（保持不变）
 const generateDeviceDetail = (deviceId) => {
     // 产量及状态参数
     const output = [

@@ -2,14 +2,78 @@
   <div class="spc-container">
     <!-- 顶部查询区域 -->
     <div class="filter-container">
-      <el-form :inline="true" :model="filterForm" class="filter-form">
+      <div class="filter-header">
+        <h2 v-if="!isStarredPage">SPC设备监控</h2>
+        <h2 v-else>特别关注设备</h2>
+        <div class="header-buttons">
+          <el-button
+              v-if="isStarredPage"
+              type="primary"
+              icon="arrow-left"
+              @click="isStarredPage = false"
+          >
+            返回设备列表
+          </el-button>
+          <el-button
+              v-if="!isStarredPage"
+              type="warning"
+              icon="star"
+              @click="switchToStarredPage"
+          >
+            切换到特别关注页面
+          </el-button>
+        </div>
+      </div>
+
+      <el-form :inline="true" :model="filterForm" class="filter-form" v-if="!isStarredPage">
         <el-form-item label="车间">
-          <el-select v-model="filterForm.workshop" placeholder="请选择车间" clearable style="width: 200px">
+          <el-select
+              v-model="filterForm.workshop"
+              placeholder="请选择车间"
+              clearable
+              style="width: 200px"
+              @change="handleWorkshopChange"
+          >
             <el-option
                 v-for="ws in workshopOptions"
                 :key="ws"
                 :label="`${ws}车间`"
                 :value="ws"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="产线">
+          <el-select
+              v-model="filterForm.line"
+              placeholder="请选择产线"
+              clearable
+              style="width: 200px"
+              :disabled="!filterForm.workshop"
+              @change="handleLineChange"
+          >
+            <el-option
+                v-for="line in lineOptions"
+                :key="line"
+                :label="line"
+                :value="line"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="工段">
+          <el-select
+              v-model="filterForm.segment"
+              placeholder="请选择工段"
+              clearable
+              style="width: 200px"
+              :disabled="!filterForm.line"
+          >
+            <el-option
+                v-for="segment in segmentOptions"
+                :key="segment"
+                :label="segment"
+                :value="segment"
             ></el-option>
           </el-select>
         </el-form-item>
@@ -41,7 +105,7 @@
     <div class="device-container">
       <div class="device-cards">
         <div
-            v-for="device in deviceList"
+            v-for="device in displayedDeviceList"
             :key="device.id"
             class="device-card"
             @click="showDeviceDetail(device)"
@@ -51,14 +115,23 @@
               {{ device.name }}
               <div class="device-code">{{ device.deviceCode }}</div>
             </div>
-            <div class="device-status" :class="getStatusClass(device.status)">
-              {{ device.status }}
+            <div class="device-status-area">
+              <div class="device-status" :class="getStatusClass(device.status)">
+                {{ device.status }}
+              </div>
+              <el-button
+                  v-if="!isStarredPage"
+                  class="star-btn"
+                  :icon="isDeviceStarred(device.id) ? 'star' : 'star'"
+                  :type="isDeviceStarred(device.id) ? 'warning' : 'text'"
+                  @click.stop="toggleDeviceStar(device)"
+              ></el-button>
             </div>
           </div>
 
           <div class="device-starred-params">
             <div v-if="starredParams[device.id] && starredParams[device.id].length > 0" class="starred-title">
-              <i class="el-icon-star-on"></i> 特别关注参数
+              <i class="star-on"></i> 特别关注参数
             </div>
             <div v-if="starredParams[device.id] && starredParams[device.id].length > 0" class="starred-items">
               <div v-for="(param, index) in starredParams[device.id]" :key="index" class="starred-item">
@@ -75,12 +148,12 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="deviceList.length === 0" class="empty-container">
-        <el-empty description="暂无设备数据"></el-empty>
+      <div v-if="displayedDeviceList.length === 0" class="empty-container">
+        <el-empty :description="isStarredPage ? '暂无特别关注设备' : '暂无设备数据'"></el-empty>
       </div>
 
       <!-- 分页控件 -->
-      <div class="pagination-container" v-if="total > 0">
+      <div class="pagination-container" v-if="total > 0 && !isStarredPage">
         <el-pagination
             background
             layout="prev, pager, next"
@@ -122,8 +195,7 @@
               <el-table-column prop="updateTime" label="更新时间" width="180"></el-table-column>
               <el-table-column label="操作" width="250" align="center">
                 <template #default="{ row }">
-                  <el-button size="small" type="primary" @click="showRealTimeChart(row)">实时曲线</el-button>
-                  <el-button size="small" @click="showHistoryQuery(row)">历史查询</el-button>
+                  <el-button size="small" type="primary" @click="showDataChart(row)">数据曲线</el-button>
                   <el-checkbox
                       v-model="row.starred"
                       :true-label="1"
@@ -174,8 +246,7 @@
                       :false-label="0"
                       @change="handleStarChange(row)"
                   >特别关注</el-checkbox>
-                  <el-button size="small" type="primary" @click="showRealTimeChart(row)">实时曲线</el-button>
-                  <el-button size="small" @click="showHistoryQuery(row)">历史查询</el-button>
+                  <el-button size="small" type="primary" @click="showDataChart(row)">数据曲线</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -220,8 +291,7 @@
                       :false-label="0"
                       @change="handleStarChange(row)"
                   >特别关注</el-checkbox>
-                  <el-button size="small" type="primary" @click="showRealTimeChart(row)">实时曲线</el-button>
-                  <el-button size="small" @click="showHistoryQuery(row)">历史查询</el-button>
+                  <el-button size="small" type="primary" @click="showDataChart(row)">数据曲线</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -266,8 +336,7 @@
                       :false-label="0"
                       @change="handleStarChange(row)"
                   >特别关注</el-checkbox>
-                  <el-button size="small" type="primary" @click="showRealTimeChart(row)">实时曲线</el-button>
-                  <el-button size="small" @click="showHistoryQuery(row)">历史查询</el-button>
+                  <el-button size="small" type="primary" @click="showDataChart(row)">数据曲线</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -312,8 +381,7 @@
                       :false-label="0"
                       @change="handleStarChange(row)"
                   >特别关注</el-checkbox>
-                  <el-button size="small" type="primary" @click="showRealTimeChart(row)">实时曲线</el-button>
-                  <el-button size="small" @click="showHistoryQuery(row)">历史查询</el-button>
+                  <el-button size="small" type="primary" @click="showDataChart(row)">数据曲线</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -340,19 +408,24 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getSPCDeviceList, getSPCDeviceDetail } from '@/api/equipment/spcAPI.js'
+import {ref, reactive, onMounted, nextTick, watch, computed} from 'vue'
+import {ElMessage} from 'element-plus'
+import {getSPCDeviceList, getSPCDeviceDetail} from '@/api/equipment/spcAPI.js'
+import {getLineOptionsByWorkshop, getSegmentOptions} from '@/api/eqAPI.js'
 
 // 查询表单
 const filterForm = reactive({
   workshop: '',
+  line: '',
+  segment: '',
   model: '',
   name: ''
 })
 
 // 车间选项
 const workshopOptions = ['C2', 'C3', 'C4', 'C5', 'C6']
+const lineOptions = ref([])
+const segmentOptions = ref([])
 
 // 设备列表
 const deviceList = ref([])
@@ -373,16 +446,93 @@ const currentTabTotal = ref(0)
 
 // 特别关注参数存储，按设备ID区分
 const starredParams = ref({})
+// 特别关注设备存储
+const starredDevices = ref(new Set())
+
+// 是否在特别关注页面
+const isStarredPage = ref(false)
 
 // 状态样式映射
 const getStatusClass = (status) => {
   switch (status) {
-    case '运行中': return 'status-running'
-    case '待机中': return 'status-standby'
-    case '故障中': return 'status-fault'
-    case '维护中': return 'status-maintenance'
-    default: return ''
+    case '运行中':
+      return 'status-running'
+    case '待机中':
+      return 'status-standby'
+    case '故障中':
+      return 'status-fault'
+    case '维护中':
+      return 'status-maintenance'
+    default:
+      return ''
   }
+}
+
+// 计算显示的设备列表
+const displayedDeviceList = computed(() => {
+  if (isStarredPage.value) {
+    return deviceList.value.filter(device => starredDevices.value.has(device.id))
+  }
+  return deviceList.value
+})
+
+// 检查设备是否被特别关注
+const isDeviceStarred = (deviceId) => {
+  return starredDevices.value.has(deviceId)
+}
+
+// 切换设备特别关注状态
+const toggleDeviceStar = (device) => {
+  if (starredDevices.value.has(device.id)) {
+    starredDevices.value.delete(device.id)
+    ElMessage.success(`已取消关注 ${device.name}`)
+  } else {
+    starredDevices.value.add(device.id)
+    ElMessage.success(`已特别关注 ${device.name}`)
+  }
+
+  // 保存到localStorage
+  localStorage.setItem('starredDevices', JSON.stringify(Array.from(starredDevices.value)))
+}
+
+// 切换到特别关注页面
+const switchToStarredPage = () => {
+  isStarredPage.value = true
+  // 不需要重新加载数据，因为displayedDeviceList是计算属性
+}
+
+// 车间变化处理
+const handleWorkshopChange = async (workshop) => {
+  if (workshop) {
+    try {
+      lineOptions.value = await getLineOptionsByWorkshop(workshop)
+    } catch (error) {
+      ElMessage.error('获取产线数据失败')
+      lineOptions.value = []
+    }
+  } else {
+    lineOptions.value = []
+    filterForm.line = ''
+    filterForm.segment = ''
+  }
+  filterForm.line = ''
+  filterForm.segment = ''
+}
+
+// 产线变化处理
+const handleLineChange = async (line) => {
+  if (line) {
+    try {
+      segmentOptions.value = await getSegmentOptions()
+    } catch (error) {
+      ElMessage.error('获取工段数据失败')
+      segmentOptions.value = []
+    }
+  } else {
+    filterForm.segment = ''
+    segmentOptions.value = []
+  }
+  filterForm.segment = ''
 }
 
 // 加载设备列表
@@ -392,6 +542,8 @@ const loadDeviceList = async () => {
       page: currentPage.value,
       size: pageSize.value,
       workshop: filterForm.workshop,
+      line: filterForm.line,
+      segment: filterForm.segment,
       model: filterForm.model,
       name: filterForm.name
     }
@@ -413,8 +565,12 @@ const handleSearch = () => {
 // 重置查询条件
 const resetFilter = () => {
   filterForm.workshop = ''
+  filterForm.line = ''
+  filterForm.segment = ''
   filterForm.model = ''
   filterForm.name = ''
+  lineOptions.value = []
+  segmentOptions.value = []
   handleSearch()
 }
 
@@ -504,21 +660,30 @@ const handleStarChange = (row) => {
     // 移除特别关注
     starredParams.value[deviceId].splice(existingIndex, 1)
   }
+
+  // 保存到localStorage
+  localStorage.setItem('starredParams', JSON.stringify(starredParams.value))
 }
 
-// 实时曲线按钮
-const showRealTimeChart = (param) => {
-  ElMessage.info(`显示 ${param.param} 的实时曲线`)
-}
-
-// 历史查询按钮
-const showHistoryQuery = (param) => {
-  ElMessage.info(`查询 ${param.param} 的历史数据`)
+// 数据曲线按钮（合并实时和历史）
+const showDataChart = (param) => {
+  ElMessage.info(`显示 ${param.param} 的数据曲线（实时和历史数据）`)
 }
 
 // 初始化加载设备列表
 onMounted(() => {
   loadDeviceList()
+
+  // 从localStorage加载特别关注数据
+  const savedStarredParams = localStorage.getItem('starredParams')
+  if (savedStarredParams) {
+    starredParams.value = JSON.parse(savedStarredParams)
+  }
+
+  const savedStarredDevices = localStorage.getItem('starredDevices')
+  if (savedStarredDevices) {
+    starredDevices.value = new Set(JSON.parse(savedStarredDevices))
+  }
 })
 </script>
 
@@ -527,6 +692,23 @@ onMounted(() => {
   padding: 20px;
   background-color: #f5f7fa;
   min-height: calc(100vh - 40px);
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.filter-header h2 {
+  margin: 0;
+  color: #303133;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
 }
 
 .filter-container {
@@ -583,6 +765,16 @@ onMounted(() => {
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid #b3d8ff;
+}
+
+.device-status-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.star-btn {
+  padding: 6px;
 }
 
 .device-name {
@@ -743,6 +935,12 @@ onMounted(() => {
     display: flex;
     gap: 10px;
     margin-top: 10px;
+  }
+
+  .filter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 }
 </style>
