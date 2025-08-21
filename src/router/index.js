@@ -420,7 +420,7 @@ const routes = [
     {
         path: '/parts/manage',
         name: 'parts-manage',
-        component: () => import('@/views/parts/manage.vue'),
+        component: () => import('@/views/parts/data/PartsManagement.vue'),
         meta: { title: '管理' },
     },
     {

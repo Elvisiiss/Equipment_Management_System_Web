@@ -13,7 +13,7 @@
     <el-card class="filter-card">
       <el-form :inline="true" :model="filterForm">
         <el-form-item label="治具类型">
-          <el-select v-model="filterForm.type" placeholder="请选择">
+          <el-select v-model="filterForm.type" placeholder="请选择" style="width: 180px">
             <el-option
                 v-for="item in fixtureTypes"
                 :key="item.value"
@@ -23,7 +23,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="filterForm.status" placeholder="请选择">
+          <el-select v-model="filterForm.status" placeholder="请选择" style="width: 180px">
             <el-option label="全部" value=""></el-option>
             <el-option label="正常" value="normal"></el-option>
             <el-option label="Hold" value="hold"></el-option>
@@ -31,7 +31,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="检测群组">
-          <el-select v-model="filterForm.group" placeholder="请选择">
+          <el-select v-model="filterForm.group" placeholder="请选择" style="width: 180px">
             <el-option
                 v-for="group in fixtureGroups"
                 :key="group.id"
