@@ -6,8 +6,16 @@
         <!-- 基础筛选项 -->
         <el-form-item label="设备编码">
           <el-input
-              v-model="filterForm.deviceCode"
+              v-model="filterForm.mcNumber"
               placeholder="请输入设备编码"
+              clearable
+              @input="handleSearch"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="设备名称">
+          <el-input
+              v-model="filterForm.mcName"
+              placeholder="请输入设备名称"
               clearable
               @input="handleSearch"
           ></el-input>
@@ -15,7 +23,6 @@
         <el-form-item label="状态">
           <el-select
               v-model="filterForm.status"
-              multiple
               placeholder="请选择状态"
               clearable
               @change="handleSearch"
@@ -34,78 +41,64 @@
               @input="handleSearch"
           ></el-input>
         </el-form-item>
-        <el-form-item label="设备名称">
+        <el-form-item label="寿命上限(年)">
           <el-input
-              v-model="filterForm.name"
-              placeholder="请输入设备名称"
+              v-model="filterForm.maxDayDuration"
+              type="number"
+              min="0"
+              placeholder="请输入寿命上限(年)"
               clearable
               @input="handleSearch"
           ></el-input>
         </el-form-item>
-        <el-form-item label="寿命上限">
-          <el-select
-              v-model="filterForm.lifespan"
-              placeholder="请选择寿命上限"
-              clearable
-              @change="handleSearch"
-          >
-            <el-option label="1年" value="1"></el-option>
-            <el-option label="2年" value="2"></el-option>
-            <el-option label="3年" value="3"></el-option>
-            <el-option label="4年" value="4"></el-option>
-            <el-option label="5年及以上" value="5"></el-option>
-          </el-select>
-        </el-form-item>
 
-        <!-- 三级筛选（车间/产线/工段）- 搜索部分保持原样 -->
+        <!-- 三级筛选（车间/产线/工段） -->
         <el-form-item label="车间">
           <el-select
-              v-model="filterForm.workshop"
+              v-model="filterForm.workshopId"
               placeholder="请选择车间"
               clearable
               @change="handleWorkshopChange"
           >
             <el-option
                 v-for="ws in workshopOptions"
-                :key="ws"
-                :label="`${ws}车间`"
-                :value="ws"
+                :key="ws.id"
+                :label="ws.areaName"
+                :value="ws.id"
             ></el-option>
           </el-select>
         </el-form-item>
 
         <el-form-item label="产线">
           <el-select
-              v-model="filterForm.line"
-              multiple
+              v-model="filterForm.lineId"
               placeholder="请选择产线"
               clearable
-              :disabled="!filterForm.workshop"
+              :disabled="!filterForm.workshopId"
               @change="handleLineChange"
           >
             <el-option
                 v-for="line in lineOptions"
-                :key="line"
-                :label="`${line}产线`"
-                :value="line"
+                :key="line.id"
+                :label="line.areaName"
+                :value="line.id"
             ></el-option>
           </el-select>
         </el-form-item>
 
         <el-form-item label="工段">
           <el-select
-              v-model="filterForm.segment"
-              multiple
+              v-model="filterForm.sectionId"
               placeholder="请选择工段"
               clearable
-              :disabled="!filterForm.workshop"
+              :disabled="!filterForm.lineId"
               @change="handleSearch"
           >
             <el-option
-                v-for="segment in segmentOptions"
-                :key="segment"
-                :label="segment"
-                :value="segment"
+                v-for="section in sectionOptions"
+                :key="section.id"
+                :label="section.areaName"
+                :value="section.id"
             ></el-option>
           </el-select>
         </el-form-item>
@@ -137,7 +130,7 @@
     <!-- 设备表格区 -->
     <div class="table-container">
       <div class="table-header">
-        <div class="total-text">共 {{ pagination.total }} 台设备</div>
+        <div class="total-text">共 {{ tableData.length }} 台设备</div>
         <el-button type="text" icon="el-icon-refresh" @click="refreshData">刷新</el-button>
       </div>
 
@@ -165,11 +158,11 @@
           <template #default="{ row }">
             <span v-if="row.type === 'workshop'">
               <i class="el-icon-office-building workshop-icon"></i>
-              <span>{{ row.name }}车间</span>
+              <span>{{ row.name }}</span>
             </span>
             <span v-else-if="row.type === 'line'">
               <i class="el-icon-set-up line-icon"></i>
-              <span>{{ row.name }}产线</span>
+              <span>{{ row.name }}</span>
             </span>
             <span v-else-if="row.type === 'segment'">
               <i class="el-icon-s-operation segment-icon"></i>
@@ -210,7 +203,7 @@
         <el-table-column prop="lifespan" label="寿命上限" width="120">
           <template #default="{ row }">
             <span v-if="row.type === 'device'">
-              {{ row.lifespan ? `${row.lifespan}年` : '-' }}
+              {{ row.lifespan ? `${Math.round(row.lifespan/365)}年` : '-' }}
             </span>
           </template>
         </el-table-column>
@@ -226,19 +219,6 @@
           </template>
         </el-table-column>
       </el-table>
-
-      <!-- 分页控件 -->
-      <div class="pagination" v-if="pagination.total > 0">
-        <el-pagination
-            :current-page="pagination.page"
-            :page-size="pagination.size"
-            :total="pagination.total"
-            layout="total, sizes, prev, pager, next, jumper"
-            :page-sizes="[10, 20, 50, 100]"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-        ></el-pagination>
-      </div>
     </div>
 
     <!-- 新增/编辑设备弹窗 -->
@@ -266,7 +246,7 @@
               <!-- 弹窗内三级选择器保留 -->
               <el-form-item label="车间" required>
                 <el-select
-                    v-model="deviceForm.workshop"
+                    v-model="deviceForm.workshopId"
                     placeholder="请选择车间"
                     clearable
                     @change="handleDialogWorkshopChange"
@@ -274,47 +254,47 @@
                 >
                   <el-option
                       v-for="ws in workshopOptions"
-                      :key="ws"
-                      :label="`${ws}车间`"
-                      :value="ws"
+                      :key="ws.id"
+                      :label="ws.areaName"
+                      :value="ws.id"
                   ></el-option>
                 </el-select>
               </el-form-item>
 
               <el-form-item label="产线" required>
                 <el-select
-                    v-model="deviceForm.line"
+                    v-model="deviceForm.lineId"
                     placeholder="请选择产线"
                     clearable
-                    :disabled="!deviceForm.workshop || isEditMode"
+                    :disabled="!deviceForm.workshopId || isEditMode"
                 >
                   <el-option
                       v-for="line in dialogLineOptions"
-                      :key="line"
-                      :label="`${line}产线`"
-                      :value="line"
+                      :key="line.id"
+                      :label="line.areaName"
+                      :value="line.id"
                   ></el-option>
                 </el-select>
               </el-form-item>
 
               <el-form-item label="工段" required>
                 <el-select
-                    v-model="deviceForm.segment"
+                    v-model="deviceForm.sectionId"
                     placeholder="请选择工段"
                     clearable
-                    :disabled="!deviceForm.workshop || isEditMode"
+                    :disabled="!deviceForm.workshopId || isEditMode"
                 >
                   <el-option
-                      v-for="segment in segmentOptions"
-                      :key="segment"
-                      :label="segment"
-                      :value="segment"
+                      v-for="section in dialogSectionOptions"
+                      :key="section.id"
+                      :label="section.areaName"
+                      :value="section.id"
                   ></el-option>
                 </el-select>
               </el-form-item>
 
               <!-- 显示合并后的区域名称 -->
-              <el-form-item label="区域名称" v-if="deviceForm.workshop || deviceForm.line || deviceForm.segment">
+              <el-form-item label="区域名称" v-if="deviceForm.workshopId || deviceForm.lineId || deviceForm.sectionId">
                 <el-input
                     v-model="computedAreaName"
                     placeholder="区域名称"
@@ -323,13 +303,13 @@
               </el-form-item>
 
               <el-form-item label="设备名称" required>
-                <el-input v-model="deviceForm.name" placeholder="请输入设备名称"></el-input>
+                <el-input v-model="deviceForm.mcName" placeholder="请输入设备名称"></el-input>
               </el-form-item>
               <el-form-item label="设备编码" required>
-                <el-input v-model="deviceForm.deviceCode" placeholder="请输入设备唯一编码"></el-input>
+                <el-input v-model="deviceForm.mcNumber" placeholder="请输入设备唯一编码"></el-input>
               </el-form-item>
               <el-form-item label="资产编码">
-                <el-input v-model="deviceForm.assetCode" placeholder="请输入资产编码"></el-input>
+                <el-input v-model="deviceForm.assetNumber" placeholder="请输入资产编码"></el-input>
               </el-form-item>
             </el-form>
 
@@ -338,7 +318,7 @@
                 <el-input v-model="deviceForm.manufacturer" placeholder="请输入厂商名称"></el-input>
               </el-form-item>
               <el-form-item label="类别">
-                <el-select v-model="deviceForm.category" placeholder="请选择设备类别">
+                <el-select v-model="deviceForm.deviceCategory" placeholder="请选择设备类别">
                   <el-option label="清洗机" value="清洗机"></el-option>
                   <el-option label="COG机" value="COG机"></el-option>
                   <el-option label="FOG机" value="FOG机"></el-option>
@@ -360,18 +340,17 @@
             </el-form>
 
             <el-form :model="deviceForm" label-width="100px" label-position="top">
-              <el-form-item label="寿命上限">
-                <el-select v-model="deviceForm.lifespan" placeholder="请选择寿命上限">
-                  <el-option label="1年" value="1"></el-option>
-                  <el-option label="2年" value="2"></el-option>
-                  <el-option label="3年" value="3"></el-option>
-                  <el-option label="4年" value="4"></el-option>
-                  <el-option label="5年及以上" value="5"></el-option>
-                </el-select>
+              <el-form-item label="寿命上限(年)">
+                <el-input
+                    v-model="deviceForm.lifespan"
+                    type="number"
+                    min="0"
+                    placeholder="请输入寿命上限(年)"
+                ></el-input>
               </el-form-item>
               <el-form-item label="入库时间">
                 <el-date-picker
-                    v-model="deviceForm.inTime"
+                    v-model="deviceForm.enterFactoryTime"
                     type="date"
                     placeholder="选择日期"
                     value-format="YYYY-MM-DD"
@@ -497,17 +476,21 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, ElEmpty } from 'element-plus'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
+import { useRouter } from 'vue-router'
+
 // 导入API
 import {
-  getDevicesByPage,
-  getDeviceDetail,
+  getAreaTree,
+  getChildAreas,
+  getDeviceTree,
   addDevice,
   updateDevice,
-  removeDevice,
-  getWorkshopOptions,
-  getLineOptionsByWorkshop,
-  getSegmentOptions
-} from '@/api/eqAPI'
+  deleteDevice,
+  getDeviceDetail
+} from '@/api/equipment/EquipmentLedger'
+
+// 在setup中获取路由实例
+const router = useRouter()
 
 // 1. 核心状态管理
 // 弹窗控制
@@ -518,33 +501,34 @@ const isSearched = ref(false) // 是否进行过搜索
 
 // 筛选表单
 const filterForm = reactive({
-  deviceCode: '',
-  name: '', // Add name search field
-  status: [],
+  mcNumber: '',
+  mcName: '',
+  status: '',
   manufacturer: '',
-  lifespan: '',
-  workshop: '',
-  line: [],
-  segment: []
+  maxDayDuration: '',
+  workshopId: '',
+  lineId: '',
+  sectionId: ''
 })
 
 // 设备表单（新增/编辑共用）
 const deviceForm = reactive({
   id: null,
-  name: '',
-  deviceCode: '',
-  assetCode: '',
+  mcName: '',
+  mcNumber: '',
+  assetNumber: '',
   manufacturer: '',
-  category: '',
+  deviceCategory: '',
   model: '',
   status: '',
   lifespan: '',
-  inTime: '',
+  enterFactoryTime: '',
+  inCharge: '',
   acceptTime: '',
   acceptor: '',
-  workshop: '',
-  line: '',
-  segment: ''
+  workshopId: '',
+  lineId: '',
+  sectionId: ''
 })
 
 // 计算属性：合并车间、产线、工段为区域名称
@@ -555,22 +539,15 @@ const computedAreaName = computed(() => {
 // 选项数据
 const workshopOptions = ref([]) // 车间选项
 const lineOptions = ref([]) // 产线选项
-const segmentOptions = ref([]) // 工段选项
+const sectionOptions = ref([]) // 工段选项
 const dialogLineOptions = ref([]) // 弹窗中产线选项
-
-// 分页配置
-const pagination = reactive({
-  page: 1,
-  size: 20,
-  total: 0
-})
+const dialogSectionOptions = ref([]) // 弹窗中工段选项
 
 // 数据存储
 const tableData = ref([]) // 树形表格数据
 const instructionManualList = ref([]) // 说明书文件列表
 const drawingList = ref([]) // 图纸文件列表
 let fileIdCounter = 1 // 文件ID计数器（确保唯一）
-
 
 // 2. 计算属性
 // 设备状态样式映射
@@ -587,98 +564,212 @@ const getStatusClass = (status) => {
 // 合并车间、产线、工段为区域名称
 const getAreaName = (row) => {
   const parts = []
-  if (row.workshop) parts.push(`${row.workshop}车间`)
-  if (row.line) parts.push(`${row.line}产线`)
-  if (row.segment) parts.push(row.segment)
+  if (row.workshopName) parts.push(row.workshopName)
+  if (row.lineName) parts.push(row.lineName)
+  if (row.sectionName) parts.push(row.sectionName)
   return parts.length > 0 ? parts.join('/') : '-'
 }
 
-
 // 3. 初始化
 onMounted(() => {
-  // 初始加载选项数据，但不加载设备数据
-  loadOptions()
+  // 初始加载选项数据
+  loadWorkshopOptions()
 })
 
-// 加载选项数据
-const loadOptions = async () => {
+// 加载车间选项
+const loadWorkshopOptions = async () => {
   try {
-    workshopOptions.value = await getWorkshopOptions()
-    segmentOptions.value = await getSegmentOptions()
+    const response = await getAreaTree()
+    workshopOptions.value = response.data.data
   } catch (error) {
-    ElMessage.error('加载选项数据失败')
+    ElMessage.error('加载车间数据失败: ' + error.message)
   }
 }
 
+// 加载产线选项
+const loadLineOptions = async (workshopId) => {
+  try {
+    const response = await getChildAreas(workshopId)
+    lineOptions.value = response.data
+  } catch (error) {
+    ElMessage.error('加载产线数据失败: ' + error.message)
+  }
+}
+
+// 加载工段选项
+const loadSectionOptions = async (lineId) => {
+  try {
+    const response = await getChildAreas(lineId)
+    sectionOptions.value = response.data
+  } catch (error) {
+    ElMessage.error('加载工段数据失败: ' + error.message)
+  }
+}
 
 // 4. 事件处理函数
 // 三级筛选联动
 const handleWorkshopChange = async () => {
   // 切换车间时清空产线和工段
-  filterForm.line = []
-  filterForm.segment = []
+  filterForm.lineId = ''
+  filterForm.sectionId = ''
+  lineOptions.value = []
+  sectionOptions.value = []
 
-  if (filterForm.workshop) {
-    try {
-      lineOptions.value = await getLineOptionsByWorkshop(filterForm.workshop)
-    } catch (error) {
-      ElMessage.error('加载产线数据失败')
-    }
-  } else {
-    lineOptions.value = []
+  if (filterForm.workshopId) {
+    await loadLineOptions(filterForm.workshopId)
   }
 
   // 触发搜索
   handleSearch()
 }
 
-const handleLineChange = () => {
-  // 产线变化时触发搜索
+const handleLineChange = async () => {
+  // 切换产线时清空工段
+  filterForm.sectionId = ''
+  sectionOptions.value = []
+
+  if (filterForm.lineId) {
+    await loadSectionOptions(filterForm.lineId)
+  }
+
+  // 触发搜索
   handleSearch()
 }
 
 // 弹窗内车间变化处理
 const handleDialogWorkshopChange = async () => {
-  if (deviceForm.workshop) {
+  if (deviceForm.workshopId) {
     try {
-      dialogLineOptions.value = await getLineOptionsByWorkshop(deviceForm.workshop)
+      const response = await getChildAreas(deviceForm.workshopId)
+      dialogLineOptions.value = response.data
     } catch (error) {
-      ElMessage.error('加载产线数据失败')
+      ElMessage.error('加载产线数据失败: ' + error.message)
     }
   } else {
     dialogLineOptions.value = []
-    deviceForm.line = []
-    deviceForm.segment = []
+    deviceForm.lineId = ''
+    deviceForm.sectionId = ''
   }
 }
 
 // 筛选查询
 const handleSearch = async () => {
   try {
+    // 如果没有选择车间，提示用户确认
+    // if (!filterForm.workshopId) {
+    //   try {
+    //     await ElMessageBox.confirm(
+    //         '您没有选择车间，将查询所有车间数据，数据量较大，确认继续吗？',
+    //         '提示',
+    //         {
+    //           confirmButtonText: '确定',
+    //           cancelButtonText: '取消',
+    //           type: 'warning'
+    //         }
+    //     )
+    //   } catch {
+    //     // 用户取消查询
+    //     return
+    //   }
+    // }
+
     isSearched.value = true
+
+    // 构建请求参数
     const params = {
-      page: pagination.page,
-      size: pagination.size,
-      filterForm: { ...filterForm }
+      currentNodeId: filterForm.workshopId || '',
+      mcNumber: filterForm.mcNumber,
+      mcName: filterForm.mcName,
+      manufacturer: filterForm.manufacturer,
+      status: filterForm.status
     }
 
-    const result = await getDevicesByPage(params)
-    tableData.value = result.list
-    pagination.total = result.total
+    // 如果有寿命上限，转换为天数
+    if (filterForm.maxDayDuration) {
+      params.maxDayDuration = filterForm.maxDayDuration * 365
+    }
+
+    const response = await getDeviceTree(params)
+    tableData.value = convertToTreeTableData(response.data.data)
   } catch (error) {
-    ElMessage.error('查询数据失败')
+    ElMessage.error('查询数据失败: ' + error.message)
   }
+}
+
+// 将API返回的数据转换为树形表格数据
+const convertToTreeTableData = (data) => {
+  const convertNode = (node) => {
+    let type = ''
+    if (node.areaType === 'WORKSHOP') {
+      type = 'workshop'
+    } else if (node.areaType === 'LINE') {
+      type = 'line'
+    } else if (node.areaType === 'SECTION') {
+      type = 'segment'
+    }
+
+    const tableNode = {
+      id: node.id,
+      name: node.areaName,
+      type: type,
+      children: []
+    }
+
+    // 如果有设备，将设备添加到children中
+    if (node.devices && node.devices.length > 0) {
+      node.devices.forEach(device => {
+        tableNode.children.push({
+          ...device,
+          type: 'device',
+          // 将设备字段映射到表格字段
+          name: device.mcName,
+          deviceCode: device.mcNumber,
+          assetCode: device.assetNumber,
+          manufacturer: device.manufacturer,
+          category: device.deviceCategory,
+          model: device.model,
+          status: device.status,
+          lifespan: device.dayDuration,
+          inTime: device.enterFactoryTime,
+          // 以下字段API未提供，暂时留空
+          inCharge: '',
+          acceptTime: '',
+          acceptor: '',
+          workshopName: findAreaNameById(node.devices[0].areaId, 'WORKSHOP'),
+          lineName: findAreaNameById(node.devices[0].areaId, 'LINE'),
+          sectionName: findAreaNameById(node.devices[0].areaId, 'SECTION')
+        })
+      })
+    }
+
+    // 递归处理子节点
+    if (node.subNodes && node.subNodes.length > 0) {
+      node.subNodes.forEach(subNode => {
+        tableNode.children.push(convertNode(subNode))
+      })
+    }
+
+    return tableNode
+  }
+
+  return data.map(node => convertNode(node))
+}
+
+// 根据区域ID查找区域名称（简化实现，实际应根据API响应数据结构调整）
+const findAreaNameById = (areaId, areaType) => {
+  // 这里需要根据实际情况实现，可能需要额外的API调用或数据结构
+  return ''
 }
 
 // 重置筛选条件
 const resetFilter = () => {
   Object.keys(filterForm).forEach(key => {
-    filterForm[key] = Array.isArray(filterForm[key]) ? [] : ''
+    filterForm[key] = ''
   })
   lineOptions.value = []
+  sectionOptions.value = []
   isSearched.value = false
   tableData.value = []
-  pagination.total = 0
 }
 
 // 刷新数据
@@ -687,26 +778,16 @@ const refreshData = () => {
   ElMessage.success('数据刷新成功')
 }
 
-// 分页事件
-const handleSizeChange = (size) => {
-  pagination.size = size
-  pagination.page = 1
-  handleSearch()
-}
-const handleCurrentChange = (page) => {
-  pagination.page = page
-  handleSearch()
-}
-
 // 设备操作（新增/编辑/删除/详情）
 const handleAdd = () => {
   // 重置表单，进入新增模式
   isEditMode.value = false
   currentEditId.value = null
   Object.keys(deviceForm).forEach(key => {
-    deviceForm[key] = Array.isArray(deviceForm[key]) ? [] : (key === 'id' ? null : '')
+    deviceForm[key] = ''
   })
   dialogLineOptions.value = []
+  dialogSectionOptions.value = []
   instructionManualList.value = []
   drawingList.value = []
   dialogVisible.value = true
@@ -714,8 +795,10 @@ const handleAdd = () => {
 
 const handleEdit = async (row) => {
   try {
-    // 回显数据，进入编辑模式
-    const targetDev = await getDeviceDetail(row.id)
+    // 获取设备详情
+    const response = await getDeviceDetail(row.id)
+    const targetDev = response.data
+
     if (!targetDev) {
       ElMessage.error('设备数据不存在')
       return
@@ -723,25 +806,21 @@ const handleEdit = async (row) => {
 
     isEditMode.value = true
     currentEditId.value = row.id
-    Object.assign(deviceForm, { ...targetDev }) // 表单赋值
+    Object.assign(deviceForm, { ...targetDev })
 
     // 加载弹窗内产线选项
-    if (deviceForm.workshop) {
-      dialogLineOptions.value = await getLineOptionsByWorkshop(deviceForm.workshop)
+    if (deviceForm.workshopId) {
+      const response = await getChildAreas(deviceForm.workshopId)
+      dialogLineOptions.value = response.data
     }
 
     instructionManualList.value = []
     drawingList.value = []
     dialogVisible.value = true
   } catch (error) {
-    ElMessage.error('加载设备详情失败')
+    ElMessage.error('加载设备详情失败: ' + error.message)
   }
 }
-
-import { useRouter } from 'vue-router'
-
-// 在setup中获取路由实例
-const router = useRouter()
 
 const handleDetail = (row) => {
   // 跳转到设备详情页，传递设备编码作为参数
@@ -760,12 +839,13 @@ const handleDelete = async (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      await removeDevice(row.id)
+      // 调用API删除设备
+      await deleteDevice(row.id)
       // 删除成功后重新查询
       handleSearch()
       ElMessage.success('设备删除成功')
     } catch (error) {
-      ElMessage.error('删除设备失败')
+      ElMessage.error('删除设备失败: ' + error.message)
     }
   }).catch(() => {
     ElMessage.info('已取消删除')
@@ -775,13 +855,19 @@ const handleDelete = async (row) => {
 // 提交设备表单（新增或编辑）
 const submitDevice = async () => {
   try {
+    // 转换寿命上限为天数
+    const submitData = {
+      ...deviceForm,
+      dayDuration: deviceForm.lifespan ? deviceForm.lifespan * 365 : null
+    }
+
     if (isEditMode.value) {
-      await updateDevice(deviceForm)
+      // 调用API更新设备
+      await updateDevice(currentEditId.value, submitData)
       ElMessage.success('设备更新成功')
     } else {
-      // 为新设备生成ID
-      deviceForm.id = Date.now()
-      await addDevice(deviceForm)
+      // 调用API新增设备
+      await addDevice(submitData)
       ElMessage.success('设备添加成功')
     }
     dialogVisible.value = false
@@ -876,7 +962,7 @@ const handleDrawingUpload = (file) => {
 // 文件操作
 const downloadFile = (file) => {
   // 模拟文件下载
-  const blob = new Blob([file.raw], { type: file.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+  const blob = new Blob([file.raw], {type: file.type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
   saveAs(blob, file.name)
 }
 
@@ -894,10 +980,6 @@ const deleteFile = (file, type, index) => {
   ElMessage.success('文件已删除')
 }
 </script>
-
-<style scoped>
-/* 样式保持不变，省略 */
-</style>
 
 <style scoped>
 /* 全局样式重置 */
@@ -1279,13 +1361,13 @@ body {
 /* 修改app-container高度 */
 .app-container {
   min-height: 100vh; /* 改为最小高度为视口高度 */
-  height: auto;      /* 高度自动扩展 */
+  height: auto; /* 高度自动扩展 */
 }
 
 /* 为表格容器设置固定高度和滚动 */
 .table-container {
   height: calc(100vh - 300px); /* 根据你的布局调整这个值 */
-  overflow: auto;              /* 启用滚动 */
+  overflow: auto; /* 启用滚动 */
   padding: 0 20px 20px;
 }
 

@@ -13,7 +13,7 @@
     <div class="filter-area">
       <el-form :inline="true" :model="filterForm">
         <el-form-item label="异常状态">
-          <el-select v-model="filterForm.status" placeholder="请选择状态">
+          <el-select v-model="filterForm.status" placeholder="请选择状态" style="width: 180px">
             <el-option
               v-for="item in statusOptions"
               :key="item.value"
@@ -23,7 +23,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="异常级别">
-          <el-select v-model="filterForm.level" placeholder="请选择级别">
+          <el-select v-model="filterForm.level" placeholder="请选择级别" style="width: 180px">
             <el-option
               v-for="item in levelOptions"
               :key="item.value"

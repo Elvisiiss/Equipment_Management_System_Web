@@ -3,9 +3,9 @@
     <el-card class="filter-card">
       <el-form :inline="true" :model="filterForm">
         <el-form-item label="异常类型">
-          <el-select v-model="filterForm.exceptionType" placeholder="全部">
+          <el-select v-model="filterForm.exceptionType" placeholder="全部" style="width: 180px">
             <el-option label="全部" value="" />
-            <el-option 
+            <el-option
               v-for="type in exceptionTypes"
               :key="type.value"
               :label="type.label"
@@ -50,8 +50,8 @@
     </el-row>
 
     <el-card class="mt-20">
-      <el-table 
-        :data="exceptionData.detailList" 
+      <el-table
+        :data="exceptionData.detailList"
         border
         @row-click="handleRowClick"
       >
@@ -67,7 +67,7 @@
         </el-table-column>
         <el-table-column prop="exceptionLevel" label="严重程度" width="100">
           <template #default="{row}">
-            <el-rate 
+            <el-rate
               v-model="row.exceptionLevel"
               disabled
               :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
@@ -173,11 +173,11 @@ export default defineComponent({
 <style scoped lang="scss">
 .exception-container {
   padding: 20px;
-  
+
   .filter-card {
     margin-bottom: 20px;
   }
-  
+
   .mt-20 {
     margin-top: 20px;
   }
