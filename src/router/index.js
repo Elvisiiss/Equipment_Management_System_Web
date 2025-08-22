@@ -582,10 +582,22 @@ const routes = [
         meta: { title: '用户管理' },
     },
     {
-        path: '/system/manage/users_roles_permissions',
-        name: 'users_roles_permissions',
-        component: () => import('@/views/system/manage/users_roles_permissions.vue'),
+        path: '/system/manage/UserManagement',
+        name: 'UserManagement',
+        component: () => import('@/views/system/manage/UserManagement.vue'),
         meta: { title: '用户管理' },
+    },
+    {
+        path: '/system/manage/RoleList',
+        name: 'RoleList',
+        component: () => import('@/views/system/manage/RoleList.vue'),
+        meta: { title: '角色列表' },
+    },
+    {
+        path: '/system/manage/PermissionManagement',
+        name: 'PermissionManagement',
+        component: () => import('@/views/system/manage/PermissionManagement.vue'),
+        meta: { title: '权限管理' },
     },
     {
         path: '/system/manage/department_management',

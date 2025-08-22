@@ -545,9 +545,21 @@ const menuItems = [
         permissionId: 1,
         children: [
           {
-            path: '/system/manage/users_roles_permissions',
-            name: 'users_roles_permissions',
+            path: '/system/manage/UserManagement',
+            name: 'UserManagement',
             meta: {title: '用户管理'},
+            permissionId: 1
+          },
+          {
+            path: '/system/manage/RoleList',
+            name: 'RoleList',
+            meta: {title: '角色列表'},
+            permissionId: 1
+          },
+          {
+            path: '/system/manage/PermissionManagement',
+            name: 'PermissionManagement',
+            meta: {title: '权限管理'},
             permissionId: 1
           },
           {
