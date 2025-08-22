@@ -182,7 +182,7 @@ const routes = [
         path: '/equipment/screen/status',
         name: 'EquipmentStatus',
         component:()=>import('@/views/equipment/screen/EquipmentStatus.vue'),
-        meta: { title: '设备状态看板' },
+        meta: { title: '性能稼动率报表' },
     },
     {
         path: '/equipment/screen/iot',

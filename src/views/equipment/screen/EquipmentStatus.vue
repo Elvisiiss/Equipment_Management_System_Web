@@ -1,259 +1,137 @@
-<!-- EquipmentDashboard.vue -->
 <template>
-  <div class="dashboard">
-    <!-- 顶部标题 -->
-<!--    <h1 class="title">设备状态看板</h1>-->
+  <div style="padding: 20px;">
+    <el-card>
+      <template #header>
+        <span>设备稼动率分析</span>
+      </template>
 
-    <!-- 第一行：实时监控 -->
-    <el-row :gutter="16">
-      <el-col :span="24">
-        <el-card shadow="hover">
-          <template #header>
-            <span>实时监控</span>
-          </template>
-          <div class="realtime">
-            <el-tag
-                v-for="item in realtimeStatus"
-                :key="item.deviceId"
-                :type="item.status === 'RUN' ? 'success' : 'danger'"
-                effect="dark"
-                class="tag"
-            >
-              {{ item.deviceName }}: {{ item.status }}
-            </el-tag>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <!-- 维度选择 -->
+      <el-radio-group v-model="dimension" style="margin-bottom: 20px;">
+        <el-radio-button label="day">日</el-radio-button>
+        <el-radio-button label="week">周</el-radio-button>
+        <el-radio-button label="month">月</el-radio-button>
+        <el-radio-button label="year">年</el-radio-button>
+      </el-radio-group>
 
-    <!-- 第二行：产出报表 & 故障分析报表 -->
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>设备分时产出报表</template>
-          <div ref="outputChart" class="chart"></div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>设备维修故障分析报表</template>
-          <div ref="faultChart" class="chart"></div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <!-- 折柱混合图 -->
+      <div ref="chartRef" style="height: 400px; margin-bottom: 30px;"></div>
 
-    <!-- 第三行：机况看板 & 线况看板 -->
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>机况看板（设备维度）</template>
-          <el-table :data="machineTable" height="300">
-            <el-table-column prop="deviceName" label="设备" />
-            <el-table-column prop="status" label="状态" />
-            <el-table-column prop="output" label="当前产量" />
-          </el-table>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>线况看板（线别维度）</template>
-          <el-table :data="lineTable" height="300">
-            <el-table-column prop="lineName" label="线别" />
-            <el-table-column prop="status" label="状态" />
-            <el-table-column prop="output" label="当前产量" />
-          </el-table>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 第四行：参数监控 -->
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="24">
-        <el-card shadow="hover">
-          <template #header>参数监控报表</template>
-          <div ref="paramChart" class="chart-lg"></div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 第五行：宕机分析 & MTBF -->
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>宕机分析报表</template>
-          <div ref="downtimeChart" class="chart"></div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>MTBF</template>
-          <div ref="mtbfChart" class="chart"></div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 第六行：MTTR（机台） & MTTR（人员） -->
-    <el-row :gutter="16" style="margin-top: 16px">
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>MTTR（机台）</template>
-          <div ref="mttrMachineChart" class="chart"></div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>MTTR（人员）</template>
-          <div ref="mttrStaffChart" class="chart"></div>
-        </el-card>
-      </el-col>
-    </el-row>
+      <!-- 明细表格（占满一行） -->
+      <el-table :data="tableData" border style="width: 100%;">
+        <el-table-column prop="date" label="日期"/>
+        <el-table-column prop="expected" label="预计运行时间"/>
+        <el-table-column prop="actual" label="实际运行时间"/>
+        <el-table-column prop="output" label="产量"/>
+        <el-table-column prop="rate" label="稼动率(%)"/>
+      </el-table>
+    </el-card>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, nextTick } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 
-/* ---------------------------- mock 数据 ---------------------------- */
-const realtimeStatus = [
-  { deviceId: 1, deviceName: '设备A', status: 'RUN' },
-  { deviceId: 2, deviceName: '设备B', status: 'STOP' },
-  { deviceId: 3, deviceName: '设备C', status: 'RUN' },
-  { deviceId: 4, deviceName: '设备D', status: 'RUN' }
-]
+const dimension = ref('day')
+const chartRef = ref()
+let chartInstance = null
+const tableData = ref([])
 
-const machineTable = Array.from({ length: 6 }, (_, i) => ({
-  deviceName: `设备${String.fromCharCode(65 + i)}`,
-  status: Math.random() > 0.3 ? '运行中' : '停机',
-  output: Math.floor(Math.random() * 200)
-}))
-
-const lineTable = Array.from({ length: 3 }, (_, i) => ({
-  lineName: `线别${i + 1}`,
-  status: Math.random() > 0.3 ? '运行中' : '停机',
-  output: Math.floor(Math.random() * 500)
-}))
-
-/* ---------------------------- 图表挂载 ---------------------------- */
-const outputChart   = ref(null)
-const faultChart    = ref(null)
-const paramChart    = ref(null)
-const downtimeChart = ref(null)
-const mtbfChart     = ref(null)
-const mttrMachineChart = ref(null)
-const mttrStaffChart   = ref(null)
-
-function initBar(el, title, xData, seriesData) {
-  const chart = echarts.init(el)
-  chart.setOption({
-    title: { text: title, left: 'center' },
-    tooltip: {},
-    xAxis: { type: 'category', data: xData },
-    yAxis: { type: 'value' },
-    series: [{ type: 'bar', data: seriesData }]
-  })
-  return chart
+// 模拟数据（小时为单位）
+const mockData = {
+  day: [
+    { date: '08-16', expected: 24,    actual: 20.5, output: 122191, rate: 85.42 },
+    { date: '08-17', expected: 24,    actual: 21.2, output: 175333, rate: 88.33 },
+    { date: '08-18', expected: 24,    actual: 22.0, output: 211193, rate: 91.67 },
+    { date: '08-19', expected: 24,    actual: 20.8, output: 190000, rate: 86.67 },
+    { date: '08-20', expected: 24,    actual: 21.5, output: 200000, rate: 89.58 },
+    { date: '08-21', expected: 24,    actual: 22.5, output: 210000, rate: 93.75 },
+    { date: '08-22', expected: 24,    actual: 21.0, output: 195000, rate: 87.50 }
+  ],
+  week: [
+    { date: '第34周', expected: 168,   actual: 150,  output: 1200000, rate: 89.29 },
+    { date: '第33周', expected: 168,   actual: 145,  output: 1100000, rate: 86.31 },
+    { date: '第32周', expected: 168,   actual: 160,  output: 1300000, rate: 95.24 }
+  ],
+  month: [
+    { date: '2025-08', expected: 744,  actual: 680,  output: 5500000, rate: 91.40 },
+    { date: '2025-07', expected: 744,  actual: 700,  output: 5800000, rate: 94.09 },
+    { date: '2025-06', expected: 720,  actual: 650,  output: 5200000, rate: 90.28 }
+  ],
+  year: [
+    { date: '2025', expected: 8760, actual: 8000, output: 65000000, rate: 91.32 },
+    { date: '2024', expected: 8784, actual: 7900, output: 63000000, rate: 89.94 }
+  ]
 }
 
-function initLine(el, title, xData, seriesData) {
-  const chart = echarts.init(el)
-  chart.setOption({
-    title: { text: title, left: 'center' },
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: xData },
-    yAxis: { type: 'value' },
-    series: [{ type: 'line', data: seriesData, smooth: true }]
-  })
-  return chart
+// 小时 → xx天xx时xx分
+const formatTime = (hours) => {
+  const d = Math.floor(hours / 24)
+  const h = Math.floor(hours % 24)
+  const m = Math.round((hours - Math.floor(hours)) * 60)
+  return `${d}天${h.toString().padStart(2, '0')}时${m.toString().padStart(2, '0')}分`
 }
 
+// 更新图表
+const updateChart = (data) => {
+  if (!chartInstance) return
+  const option = {
+    title: {
+      text: `${dimension.value === 'day' ? '日' : dimension.value === 'week' ? '周' : dimension.value === 'month' ? '月' : '年'}维度稼动率`,
+      left: 'center'
+    },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+    legend: { data: ['预计运行时间', '实际运行时间', '稼动率'], top: 30 },
+    grid: { left: 60, right: 60, bottom: 60, top: 80 },
+    xAxis: { type: 'category', data: data.map(item => item.date) },
+    yAxis: [
+      {
+        type: 'value',
+        name: '小时',
+        position: 'left',
+        axisLine: { show: true, lineStyle: { color: '#5470c6' } },
+        splitLine: { show: false }
+      },
+      {
+        type: 'value',
+        name: '稼动率(%)',
+        position: 'right',
+        axisLine: { show: true, lineStyle: { color: '#ee6666' } },
+        splitLine: { show: false },
+        min: 0,
+        max: 100
+      }
+    ],
+    series: [
+      { name: '预计运行时间', type: 'bar', data: data.map(item => item.expected), itemStyle: { color: '#5470c6' } },
+      { name: '实际运行时间', type: 'bar', data: data.map(item => item.actual), itemStyle: { color: '#91cc75' } },
+      { name: '稼动率', type: 'line', yAxisIndex: 1, data: data.map(item => item.rate), symbol: 'circle', symbolSize: 6, lineStyle: { width: 3, color: '#ee6666' }, itemStyle: { color: '#ee6666' } }
+    ]
+  }
+  chartInstance.setOption(option)
+}
+
+// 监听维度变化
+watch(dimension, (val) => {
+  const data = mockData[val]
+  // 更新图表
+  updateChart(data)
+  // 更新表格
+  tableData.value = data.map(item => ({
+    date: item.date,
+    expected: formatTime(item.expected),
+    actual: formatTime(item.actual),
+    output: item.output,
+    rate: item.rate.toFixed(2)
+  }))
+}, { immediate: true })
+
+// 初始化图表
 onMounted(async () => {
   await nextTick()
-
-  /* 产出报表 */
-  initBar(
-      outputChart.value,
-      '每小时产出',
-      Array.from({ length: 24 }, (_, i) => `${i}:00`),
-      Array.from({ length: 24 }, () => Math.floor(Math.random() * 100))
-  )
-
-  /* 故障分析报表 */
-  initBar(
-      faultChart.value,
-      '故障次数',
-      ['电气', '机械', '传感器', '软件', '其他'],
-      Array.from({ length: 5 }, () => Math.floor(Math.random() * 20))
-  )
-
-  /* 参数监控趋势图 */
-  initLine(
-      paramChart.value,
-      '参数趋势',
-      Array.from({ length: 20 }, (_, i) => `T${i}`),
-      Array.from({ length: 20 }, () => +(Math.random() * 100).toFixed(1))
-  )
-
-  /* 宕机分析 */
-  initBar(
-      downtimeChart.value,
-      '宕机时长（分钟）',
-      ['设备A', '设备B', '设备C', '设备D'],
-      Array.from({ length: 4 }, () => Math.floor(Math.random() * 120))
-  )
-
-  /* MTBF */
-  initLine(
-      mtbfChart.value,
-      'MTBF 趋势（小时）',
-      Array.from({ length: 7 }, (_, i) => `第${i + 1}周`),
-      Array.from({ length: 7 }, () => Math.floor(Math.random() * 100 + 100))
-  )
-
-  /* MTTR 机台 */
-  initBar(
-      mttrMachineChart.value,
-      'MTTR（分钟）',
-      ['设备A', '设备B', '设备C', '设备D'],
-      Array.from({ length: 4 }, () => Math.floor(Math.random() * 60))
-  )
-
-  /* MTTR 人员 */
-  initBar(
-      mttrStaffChart.value,
-      '人员 MTTR（分钟）',
-      ['张三', '李四', '王五', '赵六'],
-      Array.from({ length: 4 }, () => Math.floor(Math.random() * 60))
-  )
+  chartInstance = echarts.init(chartRef.value)
+  window.addEventListener('resize', () => chartInstance?.resize())
 })
 </script>
 
-<style scoped>
-.dashboard {
-  padding: 24px;
-  background: #f5f7fa;
-}
-.title {
-  text-align: center;
-  margin-bottom: 24px;
-  font-weight: 600;
-  color: #303133;
-}
-.realtime {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.tag {
-  min-width: 120px;
-  text-align: center;
-}
-.chart,
-.chart-lg {
-  width: 100%;
-  height: 300px;
-}
-.chart-lg {
-  height: 400px;
-}
-</style>
+<style scoped></style>

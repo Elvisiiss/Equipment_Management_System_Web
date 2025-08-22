@@ -258,7 +258,7 @@ const menuItems = [
           {
             path: '/equipment/screen/status',
             name: 'EquipmentStatus',
-            meta: {title: '设备状态看板'},
+            meta: {title: '性能稼动率报表'},
             permissionId: 1
           },
           {
