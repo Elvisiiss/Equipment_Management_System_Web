@@ -13,6 +13,365 @@
         <el-radio-button label="year">年</el-radio-button>
       </el-radio-group>
 
+      <!-- 查询条件区域 -->
+      <div class="query-conditions">
+        <!-- 日维度查询条件 -->
+        <div v-if="dimension === 'day'" class="condition-group">
+          <div class="condition-title">查询条件</div>
+          <el-form :model="dayQuery" label-width="110px" class="condition-form">
+            <el-row :gutter="20">
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="开始时间">
+                  <el-date-picker
+                      v-model="dayQuery.startDate"
+                      type="date"
+                      placeholder="选择开始日期"
+                      value-format="YYYY-MM-DD"
+                      style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="结束时间">
+                  <el-date-picker
+                      v-model="dayQuery.endDate"
+                      type="date"
+                      placeholder="选择结束日期"
+                      value-format="YYYY-MM-DD"
+                      style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="车间">
+                  <el-select v-model="dayQuery.workshop" placeholder="请选择车间" style="width: 100%">
+                    <el-option label="车间一" value="1" />
+                    <el-option label="车间二" value="2" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="产线">
+                  <el-select v-model="dayQuery.productionLine" placeholder="请选择产线" style="width: 100%">
+                    <el-option label="产线A" value="A" />
+                    <el-option label="产线B" value="B" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="工段">
+                  <el-select v-model="dayQuery.section" placeholder="请选择工段" style="width: 100%">
+                    <el-option label="工段1" value="1" />
+                    <el-option label="工段2" value="2" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备编码">
+                  <el-input v-model="dayQuery.deviceCode" placeholder="请输入设备编码" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备名称">
+                  <el-input v-model="dayQuery.deviceName" placeholder="请输入设备名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="厂商">
+                  <el-select v-model="dayQuery.vendor" placeholder="请选择厂商" style="width: 100%">
+                    <el-option label="厂商A" value="A" />
+                    <el-option label="厂商B" value="B" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="班次">
+                  <el-select v-model="dayQuery.shift" placeholder="请选择班次" style="width: 100%">
+                    <el-option label="白班" value="day" />
+                    <el-option label="夜班" value="night" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <div class="form-buttons">
+              <el-button type="primary" @click="handleQuery">查询</el-button>
+              <el-button @click="resetQuery">重置</el-button>
+            </div>
+          </el-form>
+        </div>
+
+        <!-- 周维度查询条件 -->
+        <div v-if="dimension === 'week'" class="condition-group">
+          <div class="condition-title">查询条件</div>
+          <el-form :model="weekQuery" label-width="110px" class="condition-form">
+            <el-row :gutter="20">
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="年份">
+                  <el-date-picker
+                      v-model="weekQuery.year"
+                      type="year"
+                      placeholder="选择年份"
+                      value-format="YYYY"
+                      style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="开始周">
+                  <el-select v-model="weekQuery.startWeek" placeholder="请选择开始周" style="width: 100%">
+                    <el-option v-for="w in 52" :key="w" :label="`第${w}周`" :value="w" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="结束周">
+                  <el-select v-model="weekQuery.endWeek" placeholder="请选择结束周" style="width: 100%">
+                    <el-option v-for="w in 52" :key="w" :label="`第${w}周`" :value="w" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="车间">
+                  <el-select v-model="weekQuery.workshop" placeholder="请选择车间" style="width: 100%">
+                    <el-option label="车间一" value="1" />
+                    <el-option label="车间二" value="2" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="产线">
+                  <el-select v-model="weekQuery.productionLine" placeholder="请选择产线" style="width: 100%">
+                    <el-option label="产线A" value="A" />
+                    <el-option label="产线B" value="B" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="工段">
+                  <el-select v-model="weekQuery.section" placeholder="请选择工段" style="width: 100%">
+                    <el-option label="工段1" value="1" />
+                    <el-option label="工段2" value="2" />
+                    <el-option label="工段3" value="3" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备编码">
+                  <el-input v-model="weekQuery.deviceCode" placeholder="请输入设备编码" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备名称">
+                  <el-input v-model="weekQuery.deviceName" placeholder="请输入设备名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="厂商">
+                  <el-select v-model="weekQuery.vendor" placeholder="请选择厂商" style="width: 100%">
+                    <el-option label="厂商A" value="A" />
+                    <el-option label="厂商B" value="B" />
+                    <el-option label="厂商C" value="C" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="班次">
+                  <el-select v-model="weekQuery.shift" placeholder="请选择班次" style="width: 100%">
+                    <el-option label="白班" value="day" />
+                    <el-option label="夜班" value="night" />
+                    <el-option label="全天" value="all" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <div class="form-buttons">
+              <el-button type="primary" @click="handleQuery">查询</el-button>
+              <el-button @click="resetQuery">重置</el-button>
+            </div>
+          </el-form>
+        </div>
+
+        <!-- 月维度查询条件 -->
+        <div v-if="dimension === 'month'" class="condition-group">
+          <div class="condition-title">查询条件</div>
+          <el-form :model="monthQuery" label-width="110px" class="condition-form">
+            <el-row :gutter="20">
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="起始月">
+                  <el-date-picker
+                      v-model="monthQuery.startMonth"
+                      type="month"
+                      placeholder="选择起始月"
+                      value-format="YYYY-MM"
+                      style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="结束月">
+                  <el-date-picker
+                      v-model="monthQuery.endMonth"
+                      type="month"
+                      placeholder="选择结束月"
+                      value-format="YYYY-MM"
+                      style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="车间">
+                  <el-select v-model="monthQuery.workshop" placeholder="请选择车间" style="width: 100%">
+                    <el-option label="车间一" value="1" />
+                    <el-option label="车间二" value="2" />
+                    <el-option label="车间三" value="3" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="产线">
+                  <el-select v-model="monthQuery.productionLine" placeholder="请选择产线" style="width: 100%">
+                    <el-option label="产线A" value="A" />
+                    <el-option label="产线B" value="B" />
+                    <el-option label="产线C" value="C" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="工段">
+                  <el-select v-model="monthQuery.section" placeholder="请选择工段" style="width: 100%">
+                    <el-option label="工段1" value="1" />
+                    <el-option label="工段2" value="2" />
+                    <el-option label="工段3" value="3" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备编码">
+                  <el-input v-model="monthQuery.deviceCode" placeholder="请输入设备编码" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备名称">
+                  <el-input v-model="monthQuery.deviceName" placeholder="请输入设备名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="厂商">
+                  <el-select v-model="monthQuery.vendor" placeholder="请选择厂商" style="width: 100%">
+                    <el-option label="厂商A" value="A" />
+                    <el-option label="厂商B" value="B" />
+                    <el-option label="厂商C" value="C" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="班次">
+                  <el-select v-model="monthQuery.shift" placeholder="请选择班次" style="width: 100%">
+                    <el-option label="白班" value="day" />
+                    <el-option label="夜班" value="night" />
+                    <el-option label="全天" value="all" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <div class="form-buttons">
+              <el-button type="primary" @click="handleQuery">查询</el-button>
+              <el-button @click="resetQuery">重置</el-button>
+            </div>
+          </el-form>
+        </div>
+
+        <!-- 年维度查询条件 -->
+        <div v-if="dimension === 'year'" class="condition-group">
+          <div class="condition-title">查询条件</div>
+          <el-form :model="yearQuery" label-width="110px" class="condition-form">
+            <el-row :gutter="20">
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="起始年份">
+                  <el-date-picker
+                      v-model="yearQuery.startYear"
+                      type="year"
+                      placeholder="选择起始年份"
+                      value-format="YYYY"
+                      style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="结束年份">
+                  <el-date-picker
+                      v-model="yearQuery.endYear"
+                      type="year"
+                      placeholder="选择结束年份"
+                      value-format="YYYY"
+                      style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="车间">
+                  <el-select v-model="yearQuery.workshop" placeholder="请选择车间" style="width: 100%">
+                    <el-option label="车间一" value="1" />
+                    <el-option label="车间二" value="2" />
+                    <el-option label="车间三" value="3" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="产线">
+                  <el-select v-model="yearQuery.productionLine" placeholder="请选择产线" style="width: 100%">
+                    <el-option label="产线A" value="A" />
+                    <el-option label="产线B" value="B" />
+                    <el-option label="产线C" value="C" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="工段">
+                  <el-select v-model="yearQuery.section" placeholder="请选择工段" style="width: 100%">
+                    <el-option label="工段1" value="1" />
+                    <el-option label="工段2" :value="2" />
+                    <el-option label="工段3" :value="3" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备编码">
+                  <el-input v-model="yearQuery.deviceCode" placeholder="请输入设备编码" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="设备名称">
+                  <el-input v-model="yearQuery.deviceName" placeholder="请输入设备名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="厂商">
+                  <el-select v-model="yearQuery.vendor" placeholder="请选择厂商" style="width: 100%">
+                    <el-option label="厂商A" value="A" />
+                    <el-option label="厂商B" value="B" />
+                    <el-option label="厂商C" value="C" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :md="8" :lg="6">
+                <el-form-item label="班次">
+                  <el-select v-model="yearQuery.shift" placeholder="请选择班次" style="width: 100%">
+                    <el-option label="白班" value="day" />
+                    <el-option label="夜班" value="night" />
+                    <el-option label="全天" value="all" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <div class="form-buttons">
+              <el-button type="primary" @click="handleQuery">查询</el-button>
+              <el-button @click="resetQuery">重置</el-button>
+            </div>
+          </el-form>
+        </div>
+      </div>
+
       <!-- 折柱混合图 -->
       <div ref="chartRef" style="height: 400px; margin-bottom: 30px;"></div>
 
@@ -31,11 +390,62 @@
 <script setup>
 import { ref, watch, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { ElMessage } from 'element-plus'
 
 const dimension = ref('day')
 const chartRef = ref()
 let chartInstance = null
 const tableData = ref([])
+
+// 查询条件
+const dayQuery = ref({
+  startDate: '',
+  endDate: '',
+  workshop: '',
+  productionLine: '',
+  section: '',
+  deviceCode: '',
+  deviceName: '',
+  vendor: '',
+  shift: ''
+})
+
+const weekQuery = ref({
+  year: '',
+  startWeek: '',
+  endWeek: '',
+  workshop: '',
+  productionLine: '',
+  section: '',
+  deviceCode: '',
+  deviceName: '',
+  vendor: '',
+  shift: ''
+})
+
+const monthQuery = ref({
+  startMonth: '',
+  endMonth: '',
+  workshop: '',
+  productionLine: '',
+  section: '',
+  deviceCode: '',
+  deviceName: '',
+  vendor: '',
+  shift: ''
+})
+
+const yearQuery = ref({
+  startYear: '',
+  endYear: '',
+  workshop: '',
+  productionLine: '',
+  section: '',
+  deviceCode: '',
+  deviceName: '',
+  vendor: '',
+  shift: ''
+})
 
 // 模拟数据（小时为单位）
 const mockData = {
@@ -70,6 +480,69 @@ const formatTime = (hours) => {
   const h = Math.floor(hours % 24)
   const m = Math.round((hours - Math.floor(hours)) * 60)
   return `${d}天${h.toString().padStart(2, '0')}时${m.toString().padStart(2, '0')}分`
+}
+
+// 查询处理
+const handleQuery = () => {
+  ElMessage.success('查询条件已提交')
+  // 这里应该根据查询条件重新获取数据
+  // 由于是模拟数据，我们直接重新渲染图表
+  updateChart(mockData[dimension.value])
+}
+
+// 重置查询条件
+const resetQuery = () => {
+  if (dimension.value === 'day') {
+    dayQuery.value = {
+      startDate: '',
+      endDate: '',
+      workshop: '',
+      productionLine: '',
+      section: '',
+      deviceCode: '',
+      deviceName: '',
+      vendor: '',
+      shift: ''
+    }
+  } else if (dimension.value === 'week') {
+    weekQuery.value = {
+      year: '',
+      startWeek: '',
+      endWeek: '',
+      workshop: '',
+      productionLine: '',
+      section: '',
+      deviceCode: '',
+      deviceName: '',
+      vendor: '',
+      shift: ''
+    }
+  } else if (dimension.value === 'month') {
+    monthQuery.value = {
+      startMonth: '',
+      endMonth: '',
+      workshop: '',
+      productionLine: '',
+      section: '',
+      deviceCode: '',
+      deviceName: '',
+      vendor: '',
+      shift: ''
+    }
+  } else if (dimension.value === 'year') {
+    yearQuery.value = {
+      startYear: '',
+      endYear: '',
+      workshop: '',
+      productionLine: '',
+      section: '',
+      deviceCode: '',
+      deviceName: '',
+      vendor: '',
+      shift: ''
+    }
+  }
+  ElMessage.info('查询条件已重置')
 }
 
 // 更新图表
@@ -134,4 +607,47 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.query-conditions {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f9fafc;
+  border-radius: 4px;
+  border: 1px solid #ebeef5;
+}
+
+.condition-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #303133;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.condition-form {
+  margin-top: 10px;
+}
+
+.form-buttons {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ebeef5;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .condition-form :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+
+  .form-buttons {
+    text-align: left;
+  }
+
+  .form-buttons .el-button {
+    margin-bottom: 10px;
+  }
+}
+</style>
