@@ -164,7 +164,7 @@ const routes = [
         path: '/equipment/screen',
         name: 'screen',
         component: () => import('@/views/equipment/screen.vue'),
-        meta: { title: '大屏' },
+        meta: { title: '设备监控看板' },
     },
     {
         path: '/equipment/screen/oee',
@@ -188,7 +188,7 @@ const routes = [
         path: '/equipment/screen/iot',
         name: 'IOTManagement',
         component:()=>import('@/views/equipment/screen/IOTManagement.vue'),
-        meta: { title: 'IOT管理看板' },
+        meta: { title: '时间稼动率报表' },
     },
     // Inspection Management
     {

@@ -2,19 +2,29 @@
   <div class="page">
     <!-- ================= 第一行：查询条件 ================= -->
     <el-row :gutter="16" class="query-row">
-      <el-col :span="8">
+      <el-col :span="5">
         <el-select v-model="query.workshop" placeholder="车间" clearable style="width:100%">
           <el-option label="车间A" value="A"/>
           <el-option label="车间B" value="B"/>
         </el-select>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="5">
         <el-select v-model="query.line" placeholder="产线" clearable style="width:100%">
           <el-option label="产线1" value="1"/>
           <el-option label="产线2" value="2"/>
         </el-select>
       </el-col>
-      <el-col :span="8">
+      <el-col :span="5">
+        <el-select v-model="query.section" placeholder="工段" clearable style="width:100%">
+          <el-option label="贴片工段" value="smt"/>
+          <el-option label="组装工段" value="assembly"/>
+          <el-option label="测试工段" value="test"/>
+        </el-select>
+      </el-col>
+      <el-col :span="4">
+        <el-input v-model="query.deviceCode" placeholder="设备编码" clearable/>
+      </el-col>
+      <el-col :span="5">
         <el-input v-model="query.deviceName" placeholder="设备名称" clearable/>
       </el-col>
     </el-row>
@@ -114,8 +124,8 @@
         <!-- 左侧 总稼动率 & 净稼动率 -->
         <el-col :span="8" class="rate-left">
           <div class="rate-date">
-            <el-date-picker v-model="rateDate" type="date" placeholder="选择日期"/>
-            <el-select v-model="rateShift" style="margin-left:8px">
+            <el-date-picker v-model="rateDate" type="date" style="width: 150px" placeholder="选择日期"/>
+            <el-select v-model="rateShift" style="width: 100px; margin-left:8px">
               <el-option label="全部" value="all"/>
               <el-option label="白班" value="day"/>
               <el-option label="晚班" value="night"/>
@@ -292,7 +302,7 @@ const rateShift = ref('all')
 const stateTable = [
   { state:'运行', time:'27分41秒', percent:'31.22' },
   { state:'待机', time:'2小时19分49秒', percent:'27.78' },
-  { state:'闲置', time:'0', percent:'0' },
+  { state:'故障', time:'0', percent:'0' },
   { state:'离线', time:'0', percent:'0' }
 ]
 /* 环形进度条：单值 */

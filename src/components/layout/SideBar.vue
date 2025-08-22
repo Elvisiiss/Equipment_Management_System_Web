@@ -264,7 +264,7 @@ const menuItems = [
           {
             path: '/equipment/screen/iot',
             name: 'IOTManagement',
-            meta: {title: 'IOT管理看板'},
+            meta: {title: '时间稼动率报表'},
             permissionId: 1
           }
         ]

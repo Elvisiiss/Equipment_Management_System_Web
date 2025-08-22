@@ -1,181 +1,252 @@
 <template>
-  <div class="iot-dashboard">
-    <h1 class="title">IoT 采集监控看板</h1>
+  <div class="report-container">
+    <!-- 维度切换 -->
+    <el-tabs v-model="activeName" @tab-change="handleTabChange">
+      <el-tab-pane label="日"   name="daily"   />
+      <el-tab-pane label="周"   name="weekly"  />
+      <el-tab-pane label="月"   name="monthly" />
+      <el-tab-pane label="总览" name="overall" />
+    </el-tabs>
 
-    <el-row :gutter="16">
-      <!-- 左侧实时数据，带单位与阈值状态颜色提示 -->
-      <el-col :span="8">
-        <el-card>
-          <template #header>实时采集值</template>
-          <div class="real-list">
-            <div
-                v-for="item in realtimeList"
-                :key="item.key"
-                class="real-item"
-                :class="item.alarm ? 'alarm' : ''"
-            >
-              <span class="label">{{ item.label }}</span>
-              <span class="value">{{ item.value }}</span>
-              <span class="unit">{{ item.unit }}</span>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
+    <!-- 图表区域 -->
+    <div ref="chartRef" class="chart-area"></div>
 
-      <!-- 右侧趋势图 ，展示 24h 历史趋势-->
-      <el-col :span="16">
-        <el-card>
-          <template #header>
-            <span>参数趋势（24h）</span>
-            <el-select
-                v-model="activeTag"
-                size="small"
-                style="width: 120px; margin-left: 12px"
-            >
-              <el-option
-                  v-for="p in paramOptions"
-                  :key="p.key"
-                  :label="p.label"
-                  :value="p.key"
-              />
-            </el-select>
-          </template>
-          <div ref="trendChart" class="chart"></div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <!-- 表格：日/周/月 -->
+    <el-table
+        v-if="activeName !== 'overall'"
+        :data="tableData"
+        border
+        stripe
+        fit
+        style="width:100%; margin-top:16px"
+    >
+      <el-table-column prop="date"    label="日期"        min-width="120" />
+      <el-table-column prop="powerOn" label="开机时间(h)" min-width="110" />
+      <el-table-column prop="run"     label="运行时间(h)" min-width="110" />
+      <el-table-column prop="wait"    label="待机时间(h)" min-width="110" />
+      <el-table-column prop="down"    label="停机时间(h)" min-width="110" />
+      <el-table-column prop="offline" label="离线时间(h)" min-width="110" />
+      <el-table-column prop="stops"   label="停机次数"    min-width="100" />
+      <el-table-column prop="rate"    label="稼动率(%)"   min-width="100" />
+    </el-table>
+
+    <!-- 表格：总览 -->
+    <el-table
+        v-else
+        :data="tableData"
+        border
+        stripe
+        fit
+        style="width:100%; margin-top:16px"
+    >
+      <el-table-column prop="date"    label="日期"        min-width="120" />
+      <el-table-column prop="run"     label="运行时间(h)" min-width="110" />
+      <el-table-column prop="wait"    label="待机时间(h)" min-width="110" />
+      <el-table-column prop="down"    label="停机时间(h)" min-width="110" />
+      <el-table-column prop="offline" label="离线时间(h)" min-width="110" />
+      <el-table-column prop="stops"   label="停机次数"    min-width="100" />
+      <el-table-column prop="rate"    label="稼动率(%)"   min-width="100" />
+    </el-table>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import * as echarts from 'echarts'
+import { ElMessage } from 'element-plus'
 
-/* ----------- 实时数据 ：实时刷新最新采集值，每 3 秒自动更新实时值----------- */
-const realtimeList = ref([
-  { key: 'temp', label: '温度', value: 23.5, unit: '°C', alarm: false, max: 30 },
-  { key: 'hum', label: '湿度', value: 55.2, unit: '%', alarm: false, max: 70 },
-  { key: 'press', label: '压力', value: 0.42, unit: 'MPa', alarm: false, max: 0.5 },
-  { key: 'current', label: '电流', value: 5.3, unit: 'A', alarm: false, max: 6 },
-  { key: 'volt', label: '电压', value: 220.1, unit: 'V', alarm: false, max: 240 },
-  { key: 'vib', label: '振动', value: 2.1, unit: 'mm/s', alarm: false, max: 4.5 }
-])
+/* ---------- 响应式数据 ---------- */
+const activeName = ref('daily')
+const chartRef   = ref(null)
+let   myChart    = null
 
-/* ----------- 趋势图 ----------- */
-const trendChart = ref(null)
-const activeTag = ref('temp')
-let chartInst = null
+/* ---------- 工具：保留两位小数 ---------- */
+const to2 = n => Number(n).toFixed(2)
 
-const paramOptions = realtimeList.value.map(i => ({ key: i.key, label: i.label }))
-
-/* 生成 24h 模拟数据 */
-function generate24h(base) {
-  const arr = []
-  for (let i = 0; i < 24; i++) {
-    arr.push(+((base + (Math.random() - 0.5) * 5).toFixed(1)))
+/* ---------- 工具：生成非负离线时间 ---------- */
+function safeOffline (run, down, wait, totalCap) {
+  let sum = run + down + wait
+  if (sum > totalCap) {
+    const ratio = totalCap / sum
+    run  = +(run  * ratio)
+    down = +(down * ratio)
+    wait = +(wait * ratio)
+    sum  = totalCap
   }
-  return arr
+  return { run: +to2(run), down: +to2(down), wait: +to2(wait), offline: +to2(totalCap - sum) }
 }
 
-const historyMap = {
-  temp: generate24h(25),
-  hum: generate24h(60),
-  press: generate24h(0.45),
-  current: generate24h(5),
-  volt: generate24h(220),
-  vib: generate24h(2)
+/* ---------- 模拟数据 ---------- */
+function genDaily () {
+  const list = []
+  for (let i = 1; i <= 31; i++) {
+    let run  = 6  + Math.random() * 2
+    let down = 0.1 + Math.random() * 0.9
+    let wait = 0.1 + Math.random() * 0.5
+    const safe   = safeOffline(run, down, wait, 8)
+    const powerOn = safe.run + safe.wait + safe.down
+    const stops = Math.floor(Math.random() * 5) + 1
+    const rate  = +to2((safe.run / powerOn) * 100)
+    list.push({
+      date: `2025-08-${String(i).padStart(2,'0')}`,
+      powerOn: +to2(powerOn),
+      run: safe.run,
+      wait: safe.wait,
+      down: safe.down,
+      offline: safe.offline,
+      stops,
+      rate
+    })
+  }
+  return list
 }
-
-function drawLine() {
-  const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`)
-  const data = historyMap[activeTag.value]
-
-  chartInst.setOption({
-    tooltip: { trigger: 'axis' },
-    grid: { left: 50, right: 20, top: 30, bottom: 30 },
-    xAxis: { type: 'category', data: hours },
-    yAxis: { type: 'value' },
-    series: [
-      {
-        data,
-        type: 'line',
-        smooth: true,
-        lineStyle: { width: 3 },
-        areaStyle: { opacity: 0.2 }
-      }
-    ]
+function genWeekly () {
+  return Array.from({ length: 12 }, (_, i) => {
+    let run  = 50 + Math.random() * 10
+    let down = 1  + Math.random() * 4
+    let wait = 1  + Math.random() * 3
+    const safe   = safeOffline(run, down, wait, 60)
+    const powerOn = safe.run + safe.wait + safe.down
+    const stops = Math.floor(Math.random() * 10) + 5
+    const rate  = +to2((safe.run / powerOn) * 100)
+    return {
+      date: `2025-W${String(i+1).padStart(2,'0')}`,
+      powerOn: +to2(powerOn),
+      run: safe.run,
+      wait: safe.wait,
+      down: safe.down,
+      offline: safe.offline,
+      stops,
+      rate
+    }
   })
 }
-
-/* ----------- 定时刷新实时值 ----------- */
-let timer = null
-function startRealtime() {
-  timer = setInterval(() => {
-    realtimeList.value.forEach(item => {
-      const offset = (Math.random() - 0.5) * 0.5
-      item.value = +((item.value + offset).toFixed(1))
-      item.alarm = item.value > item.max
-    })
-  }, 3000)
+function genMonthly () {
+  return Array.from({ length: 12 }, (_, i) => {
+    let run  = 220 + Math.random() * 40
+    let down = 5  + Math.random() * 15
+    let wait = 5  + Math.random() * 10
+    const safe   = safeOffline(run, down, wait, 240)
+    const powerOn = safe.run + safe.wait + safe.down
+    const stops = Math.floor(Math.random() * 40) + 20
+    const rate  = +to2((safe.run / powerOn) * 100)
+    return {
+      date: `2025-${String(i+1).padStart(2,'0')}`,
+      powerOn: +to2(powerOn),
+      run: safe.run,
+      wait: safe.wait,
+      down: safe.down,
+      offline: safe.offline,
+      stops,
+      rate
+    }
+  })
+}
+function genOverall () {
+  return [
+    { date: '2025-Q1', run: 720, wait: 8.00,  down: 20.00, offline: 2.00,  stops: 90,  rate: 96.00 },
+    { date: '2025-Q2', run: 710, wait: 10.00, down: 25.00, offline: 5.00,  stops: 110, rate: 94.70 },
+    { date: '2025-Q3', run: 730, wait: 5.00,  down: 15.00, offline: 0.00,  stops: 80,  rate: 97.30 },
+    { date: '2025-Q4', run: 725, wait: 7.00,  down: 18.00, offline: 0.00,  stops: 85,  rate: 96.60 }
+  ].map(r => ({ ...r, run: +to2(r.run) }))
+}
+const mock = {
+  daily:   genDaily(),
+  weekly:  genWeekly(),
+  monthly: genMonthly(),
+  overall: genOverall()
 }
 
-/* ----------- 生命周期 ----------- */
-onMounted(async () => {
-  await nextTick()
-  chartInst = echarts.init(trendChart.value)
-  drawLine()
-  startRealtime()
-})
+/* ---------- 计算当前表格数据 ---------- */
+const tableData = computed(() => mock[activeName.value] || [])
 
-watch(activeTag, drawLine)
+/* ---------- 图表渲染 ---------- */
+function renderChart () {
+  if (!myChart) {
+    myChart = echarts.init(chartRef.value)
+    window.addEventListener('resize', () => myChart.resize())
+  }
+  const rows = tableData.value
+  const option = {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { data: ['运行时间', '待机时间', '停机时间', '离线时间', '稼动率'] },
+    grid: { left: 60, right: 60, bottom: 60, top: 40, containLabel: true },
+    dataZoom: [{ type: 'inside', xAxisIndex: 0 }],
+    xAxis: { type: 'category', data: rows.map(r => r.date) },
+    yAxis: [
+      { type: 'value', name: '小时(h)' },
+      { type: 'value', name: '稼动率(%)', max: 100, position: 'right' }
+    ],
+    series: [
+      {
+        name: '运行时间',
+        type: 'bar',
+        stack: 'total',
+        barWidth: '12.5%',
+        data: rows.map(r => r.run || 0),
+        itemStyle: { color: '#67C23A' }
+      },
+      {
+        name: '待机时间',
+        type: 'bar',
+        stack: 'total',
+        barWidth: '12.5%',
+        data: rows.map(r => r.wait),
+        itemStyle: { color: '#E6A23C' }
+      },
+      {
+        name: '停机时间',
+        type: 'bar',
+        stack: 'total',
+        barWidth: '12.5%',
+        data: rows.map(r => r.down),
+        itemStyle: { color: '#F56C6C' }
+      },
+      {
+        name: '离线时间',
+        type: 'bar',
+        stack: 'total',
+        barWidth: '12.5%',
+        data: rows.map(r => r.offline),
+        itemStyle: { color: '#909399' }
+      },
+      {
+        name: '稼动率',
+        type: 'line',
+        yAxisIndex: 1,
+        data: rows.map(r => r.rate),
+        lineStyle: { color: '#409EFF', width: 3 },
+        symbol: 'circle',
+        symbolSize: 6
+      }
+    ]
+  }
+  myChart.setOption(option, true)
+}
 
-onBeforeUnmount(() => {
-  clearInterval(timer)
-  chartInst?.dispose()
+/* ---------- Tab 切换 ---------- */
+function handleTabChange () {
+  nextTick(renderChart)
+}
+
+/* ---------- 生命周期 ---------- */
+onMounted(() => {
+  handleTabChange()
+  ElMessage.success('时间稼动率报表已加载')
 })
 </script>
 
 <style scoped>
-.iot-dashboard {
-  padding: 24px;
-  background: #f5f7fa;
-}
-.title {
-  text-align: center;
-  margin-bottom: 20px;
-  font-weight: 600;
-}
-.real-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.real-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-radius: 6px;
-  background: #ecf5ff;
-}
-.real-item.alarm {
-  background: #fef0f0;
-  color: #f56c6c;
-  font-weight: bold;
-}
-.label {
-  font-weight: 500;
-}
-.value {
-  font-size: 20px;
-  font-weight: bold;
-}
-.unit {
-  color: #909399;
-  margin-left: 4px;
-}
-.chart {
+/* 占满整行，无留白 */
+.report-container {
   width: 100%;
-  height: 360px;
+  padding: 0;
+  margin: 0;
+  background: #fff;
+}
+.chart-area {
+  width: 100%;
+  height: 380px;
+  margin-top: 8px;
 }
 </style>
