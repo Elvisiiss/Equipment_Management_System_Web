@@ -2,7 +2,7 @@
   <div class="approval-config-container">
     <div class="header">
       <h2>设备审批流程管理</h2>
-      <el-button type="primary" @click="openDialog()" icon="el-icon-plus">新增审批流程</el-button>
+      <el-button type="primary" @click="openDialog()" icon="plus">新增审批流程</el-button>
     </div>
 
     <!-- 筛选条件 -->
@@ -62,10 +62,10 @@
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{row}">
-          <el-button size="small" @click="openDialog(row)" icon="el-icon-edit">编辑</el-button>
+          <el-button size="small" @click="openDialog(row)" icon="edit">编辑</el-button>
           <el-popconfirm title="确定删除此流程吗？" @confirm="handleDelete(row.taskId)">
             <template #reference>
-              <el-button size="small" type="danger" icon="el-icon-delete">删除</el-button>
+              <el-button size="small" type="danger" icon="delete">删除</el-button>
             </template>
           </el-popconfirm>
         </template>

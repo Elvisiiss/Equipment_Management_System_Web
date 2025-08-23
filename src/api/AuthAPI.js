@@ -27,8 +27,8 @@ export default {
     },
 
     // 更新用户状态
-    updateUserStatus(userId, statusData) {
-        return request.put(`/system/menu-permission/users/${userId}/status?status=${statusData.status}`)
+    updateUserStatus(userId, status) {
+        return request.put(`/system/menu-permission/users/${userId}/status?status=${status}`)
     },
 
     // 重置用户密码

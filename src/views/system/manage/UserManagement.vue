@@ -47,9 +47,9 @@
     >
       <el-table-column prop="id" label="ID" width="80"></el-table-column>
       <el-table-column prop="userName" label="账户"></el-table-column>
-      <el-table-column prop="name" label="姓名"></el-table-column>
+      <el-table-column prop="realName" label="姓名"></el-table-column>
       <el-table-column prop="department" label="部门"></el-table-column>
-      <el-table-column prop="phone" label="手机号"></el-table-column>
+      <el-table-column prop="phoneNumber" label="手机号"></el-table-column>
       <el-table-column prop="gender" label="性别">
         <template #default="scope">
           {{ scope.row.gender === 1 ? '男' : scope.row.gender === 2 ? '女' : '未知' }}
@@ -411,6 +411,7 @@ const submitUserForm = async () => {
 // 方法 - 更改用户状态
 const handleUserStatusChange = async (user) => {
   try {
+    console.log(user)
     await AuthAPI.updateUserStatus(user.id, user.status);
     ElMessage.success('用户状态更新成功');
   } catch (error) {

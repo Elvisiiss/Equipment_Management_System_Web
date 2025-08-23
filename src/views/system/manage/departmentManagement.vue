@@ -22,6 +22,7 @@
             default-expand-all
             @node-click="handleDepartmentClick"
             class="department-tree"
+            v-loading="treeLoading"
         >
           <template #default="{ node, data }">
             <div class="tree-node-content">
@@ -76,12 +77,14 @@
                   <span>{{ selectedDepartment.description || '无' }}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">负责人：</span>
-                  <span>{{ getUserNameById(selectedDepartment.managerId) || '未设置' }}</span>
+                  <span class="info-label">状态：</span>
+                  <el-tag :type="selectedDepartment.status === 0 ? 'success' : 'danger'">
+                    {{ selectedDepartment.status === 0 ? '正常' : '停用' }}
+                  </el-tag>
                 </div>
                 <div class="info-item">
                   <span class="info-label">成员数量：</span>
-                  <span>{{ selectedDepartment.userIds?.length || 0 }}</span>
+                  <span>{{ departmentUsers.length }}</span>
                 </div>
               </div>
             </el-card>
@@ -108,24 +111,25 @@
             ></el-input>
 
             <el-table
-                :data="filteredUsers"
+                :data="paginatedUsers"
                 border
                 style="width: 100%; margin-top: 16px;"
+                v-loading="usersLoading"
             >
               <el-table-column prop="id" label="ID" width="80"></el-table-column>
               <el-table-column prop="userName" label="账户"></el-table-column>
-              <el-table-column prop="name" label="姓名"></el-table-column>
-              <el-table-column prop="phone" label="手机号"></el-table-column>
+              <el-table-column prop="realName" label="姓名"></el-table-column>
+              <el-table-column prop="phoneNumber" label="手机号"></el-table-column>
               <el-table-column prop="email" label="邮箱"></el-table-column>
               <el-table-column label="角色">
                 <template #default="scope">
                   <el-tag
-                      v-for="roleId in scope.row.roleIds"
-                      :key="roleId"
-                      :type="getRoleType(roleId)"
+                      v-for="role in scope.row.roles"
+                      :key="role.id"
+                      :type="getRoleType(role.id)"
                       style="margin-right: 5px;"
                   >
-                    {{ getRoleName(roleId) }}
+                    {{ role.roleName }}
                   </el-tag>
                 </template>
               </el-table-column>
@@ -197,18 +201,11 @@
               :rows="3"
           ></el-input>
         </el-form-item>
-        <el-form-item label="部门负责人" prop="managerId">
-          <el-select
-              v-model="formDepartment.managerId"
-              placeholder="请选择部门负责人"
-          >
-            <el-option
-                v-for="user in users"
-                :key="user.id"
-                :label="user.name"
-                :value="user.id"
-            ></el-option>
-          </el-select>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="formDepartment.status">
+            <el-radio :label="0">正常</el-radio>
+            <el-radio :label="1">停用</el-radio>
+          </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -216,6 +213,7 @@
         <el-button
             type="primary"
             @click="submitDepartmentForm"
+            :loading="formSubmitting"
         >
           确认
         </el-button>
@@ -241,16 +239,17 @@
           style="width: 100%; margin-top: 16px;"
           :row-key="row => row.id"
           @selection-change="handleUserSelectionChange"
+          v-loading="selectionLoading"
       >
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="userName" label="账户"></el-table-column>
-        <el-table-column prop="name" label="姓名"></el-table-column>
-        <el-table-column prop="phone" label="手机号"></el-table-column>
+        <el-table-column prop="realName" label="姓名"></el-table-column>
+        <el-table-column prop="phoneNumber" label="手机号"></el-table-column>
         <el-table-column prop="email" label="邮箱"></el-table-column>
         <el-table-column label="当前部门">
           <template #default="scope">
-            <span>{{ getDepartmentNames(scope.row.departmentIds) }}</span>
+            <span>{{ getDepartmentNames(scope.row.departments) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -271,6 +270,7 @@
         <el-button
             type="primary"
             @click="confirmUserSelection"
+            :loading="selectionSubmitting"
         >
           确认添加
         </el-button>
@@ -280,21 +280,24 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { Edit, Plus, Delete } from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox, ElEmpty } from 'element-plus';
+import {ref, computed, onMounted} from 'vue';
+import {Edit, Plus, Delete} from '@element-plus/icons-vue';
+import {ElMessage, ElMessageBox, ElEmpty} from 'element-plus';
 import AuthAPI from '@/api/AuthAPI.js';
+import DepAPI from '@/api/system/depAPI.js'; // 引入新的部门API
 
-// 部门树形结构数据（假数据）
+// 部门树形结构数据
 const departmentTree = ref([]);
 const allDepartments = ref([]);
 const selectedDepartment = ref(null);
+const treeLoading = ref(false);
 
-// 用户数据（从用户管理API获取）
+// 用户数据
 const users = ref([]);
 const userSearchQuery = ref('');
 const userCurrentPage = ref(1);
 const userPageSize = ref(10);
+const usersLoading = ref(false);
 
 // 用户选择对话框相关
 const showUserSelectionDialog = ref(false);
@@ -302,23 +305,25 @@ const selectionSearchQuery = ref('');
 const selectionCurrentPage = ref(1);
 const selectionPageSize = ref(10);
 const selectedUsers = ref([]);
+const selectionLoading = ref(false);
+const selectionSubmitting = ref(false);
 
 // 部门表单相关
 const showDepartmentDialog = ref(false);
 const isEditDepartment = ref(false);
+const formSubmitting = ref(false);
 const formDepartment = ref({
   id: undefined,
   name: '',
   parentId: null,
   description: '',
-  managerId: null,
-  userIds: []
+  status: 0
 });
 const departmentRules = ref({
-  name: [{ required: true, message: '请输入部门名称', trigger: 'blur' }],
-  description: [{ required: false }],
-  parentId: [{ required: false }],
-  managerId: [{ required: false }]
+  name: [{required: true, message: '请输入部门名称', trigger: 'blur'}],
+  description: [{required: false}],
+  parentId: [{required: false}],
+  status: [{required: true, message: '请选择状态', trigger: 'change'}]
 });
 const departmentFormRef = ref(null);
 
@@ -331,87 +336,77 @@ const defaultProps = ref({
 // 初始化数据
 onMounted(() => {
   fetchUsers();
-  initDepartmentData();
+  fetchDepartmentTree();
 });
 
-// 初始化部门假数据（设备管理系统相关部门）
-const initDepartmentData = () => {
-  const departments = [
-    {
-      id: 1,
-      name: '设备管理部',
-      parentId: null,
-      description: '负责公司所有设备的整体管理',
-      managerId: 1,
-      userIds: [1, 2],
-      children: [
-        {
-          id: 2,
-          name: '设备采购组',
-          parentId: 1,
-          description: '负责设备的采购与入库',
-          managerId: 3,
-          userIds: [3, 4]
-        },
-        {
-          id: 3,
-          name: '设备维护组',
-          parentId: 1,
-          description: '负责设备的日常维护与保养',
-          managerId: 5,
-          userIds: [5, 6, 7],
-          children: [
-            {
-              id: 4,
-              name: '机械维护组',
-              parentId: 3,
-              description: '负责设备的机械部分维护',
-              managerId: 5,
-              userIds: [5, 6]
-            },
-            {
-              id: 5,
-              name: '电气维护组',
-              parentId: 3,
-              description: '负责设备的电气部分维护',
-              managerId: 7,
-              userIds: [7, 8]
-            }
-          ]
-        },
-        {
-          id: 6,
-          name: '设备运营组',
-          parentId: 1,
-          description: '负责设备的日常运营与监控',
-          managerId: 9,
-          userIds: [9, 10]
+// 获取部门树
+const fetchDepartmentTree = async () => {
+  treeLoading.value = true;
+  try {
+    const response = await DepAPI.getDepartmentTree();
+    // 处理API返回的数据结构
+    let treeData = response.data.data.children || [];
+
+    // 为树形数据添加parentId信息
+    const addParentIds = (nodes, parentId = null) => {
+      nodes.forEach(node => {
+        node.parentId = parentId;
+        if (node.children && node.children.length) {
+          addParentIds(node.children, node.id);
         }
-      ]
-    },
-    {
-      id: 7,
-      name: '备件管理部',
-      parentId: null,
-      description: '负责设备备件的管理',
-      managerId: 11,
-      userIds: [11, 12]
+      });
+    };
+    addParentIds(treeData);
+
+    departmentTree.value = treeData;
+    allDepartments.value = flattenDepartments(departmentTree.value);
+
+    // 默认选中第一个部门
+    if (departmentTree.value.length > 0) {
+      handleDepartmentClick(departmentTree.value[0]);
     }
-  ];
+  } catch (error) {
+    ElMessage.error('获取部门树失败');
+    console.error(error);
+  } finally {
+    treeLoading.value = false;
+  }
+};
 
-  departmentTree.value = departments;
-  allDepartments.value = flattenDepartments(departments);
+// 获取用户列表
+const fetchUsers = async () => {
+  try {
+    const response = await AuthAPI.getUserList();
+    users.value = response.data.data;
+  } catch (error) {
+    ElMessage.error('获取用户列表失败');
+    console.error(error);
+  }
+};
 
-  // 默认选中第一个部门
-  if (departments.length > 0) {
-    selectedDepartment.value = departments[0];
+// 获取部门下的用户
+const fetchDepartmentUsers = async (departmentId) => {
+  if (!departmentId) return;
+
+  usersLoading.value = true;
+  try {
+    const response = await DepAPI.getDepartmentUsers(departmentId);
+    // 更新当前选中部门的用户信息
+    if (selectedDepartment.value) {
+      selectedDepartment.value.users = response.data.data;
+    }
+  } catch (error) {
+    ElMessage.error('获取部门用户失败');
+    console.error(error);
+  } finally {
+    usersLoading.value = false;
   }
 };
 
 // 将树形部门结构扁平化为列表
 const flattenDepartments = (departments, result = []) => {
   departments.forEach(dept => {
-    const { children, ...rest } = dept;
+    const {children, users, ...rest} = dept;
     result.push(rest);
     if (children && children.length > 0) {
       flattenDepartments(children, result);
@@ -420,49 +415,23 @@ const flattenDepartments = (departments, result = []) => {
   return result;
 };
 
-// 获取用户列表（使用现有API）
-const fetchUsers = async () => {
-  try {
-    const response = await AuthAPI.getUserList();
-    users.value = response.data.data.map(user => ({
-      ...user,
-      // 为每个用户添加部门ID数组（假数据）
-      departmentIds: getRandomDepartmentIds(user.id)
-    }));
-  } catch (error) {
-    ElMessage.error('获取用户列表失败');
-    console.error(error);
-  }
-};
-
-// 生成随机部门ID（仅用于假数据）
-const getRandomDepartmentIds = (userId) => {
-  const departmentIds = [1, 2, 3, 4, 5, 6, 7];
-  const hash = userId % 3 + 1;
-  const result = [];
-  for (let i = 0; i < hash; i++) {
-    const randomIndex = (userId + i) % departmentIds.length;
-    result.push(departmentIds[randomIndex]);
-  }
-  return [...new Set(result)]; // 去重
-};
-
 // 处理部门点击
-const handleDepartmentClick = (data) => {
+const handleDepartmentClick = async (data) => {
   selectedDepartment.value = data;
   userCurrentPage.value = 1;
+  // 获取该部门的用户
+  await fetchDepartmentUsers(data.id);
 };
 
 // 新增部门
 const handleAddDepartment = () => {
   isEditDepartment.value = false;
   formDepartment.value = {
-    id: generateDepartmentId(),
+    id: undefined,
     name: '',
     parentId: null,
     description: '',
-    managerId: null,
-    userIds: []
+    status: 0
   };
   showDepartmentDialog.value = true;
 };
@@ -471,12 +440,11 @@ const handleAddDepartment = () => {
 const handleAddSubDepartment = (parentDepartment) => {
   isEditDepartment.value = false;
   formDepartment.value = {
-    id: generateDepartmentId(),
+    id: undefined,
     name: '',
     parentId: parentDepartment.id,
     description: '',
-    managerId: null,
-    userIds: []
+    status: 0
   };
   showDepartmentDialog.value = true;
 };
@@ -484,12 +452,19 @@ const handleAddSubDepartment = (parentDepartment) => {
 // 编辑部门
 const handleEditDepartment = (department) => {
   isEditDepartment.value = true;
-  formDepartment.value = { ...department };
+  // 确保复制所有必要字段，包括parentId
+  formDepartment.value = {
+    id: department.id,
+    name: department.name,
+    parentId: department.parentId, // 现在应该包含这个字段
+    description: department.description || '',
+    status: department.status
+  };
   showDepartmentDialog.value = true;
 };
 
 // 删除部门
-const handleDeleteDepartment = (department) => {
+const handleDeleteDepartment = async (department) => {
   // 检查是否有子部门
   const hasChildren = checkDepartmentHasChildren(department.id);
   if (hasChildren) {
@@ -497,15 +472,20 @@ const handleDeleteDepartment = (department) => {
     return;
   }
 
-  ElMessageBox.confirm(
-      `确定要删除部门 ${department.name} 吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-  ).then(() => {
+  try {
+    await ElMessageBox.confirm(
+        `确定要删除部门 ${department.name} 吗？`,
+        '删除确认',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+    );
+
+    // 调用API删除部门
+    await DepAPI.deleteDepartment(department.id);
+
     // 从树形结构中删除部门
     deleteDepartmentFromTree(departmentTree.value, department.id);
     allDepartments.value = flattenDepartments(departmentTree.value);
@@ -516,9 +496,12 @@ const handleDeleteDepartment = (department) => {
     }
 
     ElMessage.success('部门删除成功');
-  }).catch(() => {
-    // 取消删除
-  });
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除部门失败');
+      console.error(error);
+    }
+  }
 };
 
 // 检查部门是否有子部门
@@ -559,14 +542,18 @@ const deleteDepartmentFromTree = (departments, departmentId) => {
 const submitDepartmentForm = async () => {
   try {
     await departmentFormRef.value.validate();
+    formSubmitting.value = true;
 
     if (isEditDepartment.value) {
       // 编辑部门
+      await DepAPI.updateDepartment(formDepartment.value.id, formDepartment.value);
       updateDepartmentInTree(departmentTree.value, formDepartment.value);
       ElMessage.success('部门编辑成功');
     } else {
       // 新增部门
-      addDepartmentToTree(departmentTree.value, formDepartment.value);
+      const response = await DepAPI.createDepartment(formDepartment.value);
+      const newDepartment = response.data.data;
+      addDepartmentToTree(departmentTree.value, newDepartment);
       ElMessage.success('部门创建成功');
     }
 
@@ -574,8 +561,10 @@ const submitDepartmentForm = async () => {
     showDepartmentDialog.value = false;
     departmentFormRef.value.resetFields();
   } catch (error) {
-    console.error('表单验证失败', error);
-    ElMessage.error('操作失败');
+    console.error('操作失败', error);
+    ElMessage.error(isEditDepartment.value ? '编辑部门失败' : '创建部门失败');
+  } finally {
+    formSubmitting.value = false;
   }
 };
 
@@ -615,7 +604,7 @@ const updateDepartmentInTree = (departments, updatedDepartment) => {
     if (departments[i].id === updatedDepartment.id) {
       // 如果父部门变更，需要先删除再添加
       if (departments[i].parentId !== updatedDepartment.parentId) {
-        const temp = { ...updatedDepartment };
+        const temp = {...updatedDepartment};
         departments.splice(i, 1);
         addDepartmentToTree(departmentTree.value, temp);
       } else {
@@ -636,19 +625,13 @@ const updateDepartmentInTree = (departments, updatedDepartment) => {
   return false;
 };
 
-// 生成新部门ID
-const generateDepartmentId = () => {
-  const allIds = allDepartments.value.map(dept => dept.id);
-  return allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
-};
-
 // 处理用户选择变化
 const handleUserSelectionChange = (selection) => {
   selectedUsers.value = selection;
 };
 
 // 确认添加用户到部门
-const confirmUserSelection = () => {
+const confirmUserSelection = async () => {
   if (!selectedDepartment.value) {
     ElMessage.warning('请先选择部门');
     return;
@@ -659,91 +642,90 @@ const confirmUserSelection = () => {
     return;
   }
 
-  // 获取选中用户的ID
-  const userIdsToAdd = selectedUsers.value.map(user => user.id);
+  selectionSubmitting.value = true;
+  try {
+    // 为每个选中的用户添加到当前部门
+    const promises = selectedUsers.value.map(user =>
+        DepAPI.assignUserToDepartment(user.id, selectedDepartment.value.id)
+    );
 
-  // 找到选中的部门并添加用户
-  const addUsersToDepartment = (departments) => {
-    for (let i = 0; i < departments.length; i++) {
-      if (departments[i].id === selectedDepartment.value.id) {
-        // 合并并去重
-        const currentUserIds = departments[i].userIds || [];
-        departments[i].userIds = [...new Set([...currentUserIds, ...userIdsToAdd])];
-        selectedDepartment.value = { ...departments[i] };
-        return true;
-      }
-      if (departments[i].children && departments[i].children.length > 0) {
-        if (addUsersToDepartment(departments[i].children)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
+    await Promise.all(promises);
 
-  addUsersToDepartment(departmentTree.value);
+    // 刷新部门用户列表
+    await fetchDepartmentUsers(selectedDepartment.value.id);
 
-  ElMessage.success(`已成功添加 ${selectedUsers.value.length} 名用户到部门`);
-  showUserSelectionDialog.value = false;
-  selectedUsers.value = [];
+    ElMessage.success(`已成功添加 ${selectedUsers.value.length} 名用户到部门`);
+    showUserSelectionDialog.value = false;
+    selectedUsers.value = [];
+  } catch (error) {
+    ElMessage.error('添加用户到部门失败');
+    console.error(error);
+  } finally {
+    selectionSubmitting.value = false;
+  }
 };
 
 // 从部门移除用户
-const handleRemoveUser = (userId) => {
-  const removeUserFromDepartment = (departments) => {
-    for (let i = 0; i < departments.length; i++) {
-      if (departments[i].id === selectedDepartment.value.id) {
-        departments[i].userIds = departments[i].userIds.filter(id => id !== userId);
-        selectedDepartment.value = { ...departments[i] };
-        return true;
-      }
-      if (departments[i].children && departments[i].children.length > 0) {
-        if (removeUserFromDepartment(departments[i].children)) {
-          return true;
+const handleRemoveUser = async (userId) => {
+  try {
+    await ElMessageBox.confirm(
+        '确定要将该用户从部门中移除吗？',
+        '移除确认',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
         }
-      }
-    }
-    return false;
-  };
+    );
 
-  removeUserFromDepartment(departmentTree.value);
-  ElMessage.success('用户已从部门移除');
+    await DepAPI.removeUserFromDepartment(userId, selectedDepartment.value.id);
+
+    // 刷新部门用户列表
+    await fetchDepartmentUsers(selectedDepartment.value.id);
+
+    ElMessage.success('用户已从部门移除');
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('移除用户失败');
+      console.error(error);
+    }
+  }
 };
 
 // 计算属性 - 部门成员列表
 const departmentUsers = computed(() => {
-  if (!selectedDepartment.value || !selectedDepartment.value.userIds) {
+  if (!selectedDepartment.value || !selectedDepartment.value.users) {
     return [];
   }
-  return users.value.filter(user =>
-      selectedDepartment.value.userIds.includes(user.id)
-  );
+  return selectedDepartment.value.users;
 });
 
 // 计算属性 - 筛选后的部门成员
 const filteredUsers = computed(() => {
   return departmentUsers.value.filter(user => {
     return user.userName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.name.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
+        user.realName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
         user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.phone.includes(userSearchQuery.value);
+        user.phoneNumber.includes(userSearchQuery.value);
   });
+});
+
+// 计算属性 - 分页后的用户列表
+const paginatedUsers = computed(() => {
+  const start = (userCurrentPage.value - 1) * userPageSize.value;
+  const end = start + userPageSize.value;
+  return filteredUsers.value.slice(start, end);
 });
 
 // 计算属性 - 可选择的用户（不在当前部门的用户）
 const selectableUsers = computed(() => {
-  if (!selectedDepartment.value || !selectedDepartment.value.userIds) {
-    return users.value.filter(user =>
-        user.userName.toLowerCase().includes(selectionSearchQuery.value.toLowerCase()) ||
-        user.name.toLowerCase().includes(selectionSearchQuery.value.toLowerCase())
-    );
-  }
+  const currentUserIds = departmentUsers.value.map(user => user.id);
 
   return users.value
-      .filter(user => !selectedDepartment.value.userIds.includes(user.id))
+      .filter(user => !currentUserIds.includes(user.id))
       .filter(user =>
           user.userName.toLowerCase().includes(selectionSearchQuery.value.toLowerCase()) ||
-          user.name.toLowerCase().includes(selectionSearchQuery.value.toLowerCase())
+          user.realName.toLowerCase().includes(selectionSearchQuery.value.toLowerCase())
       );
 });
 
@@ -789,38 +771,17 @@ const findDepartmentById = (departments, id) => {
   return departments.find(dept => dept.id === id);
 };
 
-// 辅助方法 - 根据ID获取用户名
-const getUserNameById = (userId) => {
-  const user = users.value.find(u => u.id === userId);
-  return user ? user.name : '';
-};
-
 // 辅助方法 - 获取用户所属部门名称
-const getDepartmentNames = (departmentIds) => {
-  if (!departmentIds || departmentIds.length === 0) {
+const getDepartmentNames = (departments) => {
+  if (!departments || departments.length === 0) {
     return '无';
   }
 
-  const names = departmentIds.map(id => {
-    const dept = findDepartmentById(allDepartments.value, id);
-    return dept ? dept.name : '未知部门';
-  });
-
+  const names = departments.map(dept => dept.name);
   return names.join('，');
 };
 
-// 辅助方法 - 从角色管理页面复用的方法
-const getRoleName = (roleId) => {
-  const roles = [
-    { id: 1, roleName: '管理员' },
-    { id: 2, roleName: '设备管理员' },
-    { id: 3, roleName: '维护人员' },
-    { id: 4, roleName: '普通用户' }
-  ];
-  const role = roles.find(r => r.id === roleId);
-  return role ? role.roleName : '未知角色';
-};
-
+// 辅助方法 - 获取角色类型
 const getRoleType = (roleId) => {
   switch (roleId) {
     case 1:
