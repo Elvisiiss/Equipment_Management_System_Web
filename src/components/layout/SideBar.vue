@@ -455,7 +455,7 @@ const menuItems = [
           {
             path: '/parts/manage/EdgeInventory',
             name: 'EdgeInventory',
-            meta: {title: '线边库存管理'},
+            meta: {title: '仓库管理(NEW)'},
             permissionId: 1
           },
           {
@@ -467,7 +467,13 @@ const menuItems = [
           {
             path: '/parts/manage/LocationManagement',
             name: 'LocationManagement',
-            meta: {title: '库位管理'},
+            meta: {title: '备件列表(NEW)'},
+            permissionId: 1
+          },
+          {
+            path: '/parts/manage/partsDetail/101',
+            name: 'partsDetail',
+            meta: {title: '备件详情页(NEW)'},
             permissionId: 1
           },
         ]

@@ -451,7 +451,7 @@ const routes = [
         path: '/parts/manage/EdgeInventory',
         name: 'EdgeInventory',
         component: () => import('@/views/parts/manage/EdgeInventory.vue'),
-        meta: { title: '线边库存管理' },
+        meta: { title: '仓库管理' },
     },
     {
         path: '/parts/manage/EquipmentBOM',
@@ -475,7 +475,13 @@ const routes = [
         path: '/parts/manage/LocationManagement',
         name: 'LocationManagement',
         component: () => import('@/views/parts/manage/LocationManagement.vue'),
-        meta: { title: '库位管理' },
+        meta: { title: '备件列表' },
+    },
+    {
+        path: '/parts/manage/partsDetail/:id',
+        name: 'partsDetail',
+        component: () => import('@/views/parts/manage/PartsDetail.vue'),
+        meta: {title: '备件详情页'}
     },
     {
         path: '/parts/configuration',

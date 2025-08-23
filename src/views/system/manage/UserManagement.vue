@@ -52,7 +52,7 @@
       <el-table-column prop="phoneNumber" label="手机号"></el-table-column>
       <el-table-column prop="gender" label="性别">
         <template #default="scope">
-          {{ scope.row.gender === 1 ? '男' : scope.row.gender === 2 ? '女' : '未知' }}
+          {{ scope.row.gender === "1" ? '男' : scope.row.gender === "2" ? '女' : '未知' }}
         </template>
       </el-table-column>
       <el-table-column prop="email" label="邮箱"></el-table-column>
@@ -138,14 +138,14 @@
         >
           <el-input v-model="formUser.password" type="password"></el-input>
         </el-form-item>
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="formUser.name"></el-input>
+        <el-form-item label="姓名" prop="realName">
+          <el-input v-model="formUser.realName"></el-input>
         </el-form-item>
         <el-form-item label="部门" prop="department">
           <el-input v-model="formUser.department"></el-input>
         </el-form-item>
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="formUser.phone"></el-input>
+        <el-form-item label="手机号" prop="phoneNumber">
+          <el-input v-model="formUser.phoneNumber"></el-input>
         </el-form-item>
         <el-form-item label="性别" prop="gender">
           <el-select v-model="formUser.gender" placeholder="请选择性别">
@@ -253,9 +253,9 @@ const formUser = ref({
   id: undefined,
   userName: '',
   password: '',
-  name: '',
+  realName: '',
   department: '',
-  phone: '',
+  phoneNumber: '',
   gender: 0,
   email: '',
   roleIds: [],
@@ -271,11 +271,11 @@ const userRules = ref({
     {required: true, message: '请输入密码', trigger: 'blur'},
     {min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur'}
   ],
-  name: [
+  realName: [
     {required: true, message: '请输入姓名', trigger: 'blur'},
     {min: 2, max: 10, message: '姓名长度在 2 到 10 个字符', trigger: 'blur'}
   ],
-  phone: [
+  phoneNumber: [
     {required: true, message: '请输入手机号', trigger: 'blur'},
     {pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur'}
   ],
@@ -319,10 +319,10 @@ const userIdToReset = ref(null);
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
     const matchesSearch = user.userName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.name.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
+        user.realName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
         user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
         user.department.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
-        user.phone.includes(userSearchQuery.value);
+        user.phoneNumber.includes(userSearchQuery.value);
     const matchesRole = !userRoleFilter.value || user.roleIds.includes(Number(userRoleFilter.value));
     const matchesStatus = !userStatusFilter.value || user.status === Number(userStatusFilter.value);
 
