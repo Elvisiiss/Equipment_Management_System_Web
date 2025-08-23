@@ -14,9 +14,6 @@
           <el-col :xs="12" :sm="6" v-for="(stat, index) in stats" :key="index">
             <el-card shadow="hover" class="stat-card">
               <div class="stat-content">
-                <div class="stat-icon" :class="stat.color">
-                  <i :class="stat.icon"></i>
-                </div>
                 <div class="stat-info">
                   <h3>{{ stat.value }}</h3>
                   <p>{{ stat.label }}</p>
@@ -605,25 +602,21 @@ const filteredWarehouses = computed(() => {
 // 统计卡片数据
 const stats = computed(() => [
   {
-    icon: 'office-building',
     color: 'blue',
     value: warehouses.value.length,
     label: '仓库总数'
   },
   {
-    icon: 'box',
     color: 'green',
     value: totalParts.value,
     label: '备件总数'
   },
   {
-    icon: 'warning-outline',
     color: 'orange',
     value: lowStockItemsCount.value,
     label: '低库存预警'
   },
   {
-    icon: 'thumb',
     color: 'purple',
     value: borrowedItemsCount.value,
     label: '借出中备件'
