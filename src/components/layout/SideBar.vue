@@ -263,14 +263,14 @@ const menuItems = [
             permissionId: 1
           },
           {
-            path: '/equipment/screen/status',
-            name: 'EquipmentStatus',
+            path: '/equipment/screen/perforce',
+            name: 'PerUtilization',
             meta: {title: '性能稼动率报表'},
             permissionId: 1
           },
           {
-            path: '/equipment/screen/iot',
-            name: 'IOTManagement',
+            path: '/equipment/screen/time',
+            name: 'TimeUtilization',
             meta: {title: '时间稼动率报表'},
             permissionId: 1
           },
@@ -403,13 +403,13 @@ const menuItems = [
           {
             path: '/mold/manage/life',
             name: 'MoldLifecycle',
-            meta: {title: '全生命周期管理'},
+            meta: {title: '模治具管理'},
             permissionId: 1
           },
           {
             path: '/mold/manage/operation',
             name: 'ToolErrorProof',
-            meta: {title: '防用错处理'},
+            meta: {title: '模治具详情'},
             permissionId: 1
           },
           {

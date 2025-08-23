@@ -132,9 +132,7 @@
 
     <!-- 第五行：当日保养信息 -->
     <el-card class="section-card" header="当日保养信息">
-      <div class="maintain-header">
         <el-button icon="Refresh" @click="refreshMaintain">刷新</el-button>
-      </div>
       <div v-if="maintainList.length === 0" class="empty">今日无保养计划</div>
       <el-table v-else :data="maintainList" stripe style="width: 100%">
         <el-table-column prop="time" label="时间" />
