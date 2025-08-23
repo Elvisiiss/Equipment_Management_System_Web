@@ -244,6 +244,13 @@ const menuItems = [
         permissionId: 1,
         children: [
           {
+            path: '/equipment/screen/SPC',
+            name: 'SPCIndexPage',
+            meta: {title: '设备SPC看板'},
+            permissionId: 1,
+            children: []
+          },
+          {
             path: '/equipment/screen/oee',
             name: 'OEEManagement',
             meta: {title: 'OEE管理看板'},
@@ -266,16 +273,16 @@ const menuItems = [
             name: 'IOTManagement',
             meta: {title: '时间稼动率报表'},
             permissionId: 1
-          }
+          },
+          {
+            path: '/equipment/screen/quality',
+            name: 'QualityUtilization',
+            meta: {title: '质量稼动率报表'},
+            permissionId: 1
+          },
         ]
       },
-      {
-        path: '/equipment/SPC',
-        name: 'SPCIndexPage',
-        meta: {title: '设备SPC看板'},
-        permissionId: 1,
-        children: []
-      },
+
       {
         path: '/equipment/configuration',
         name: 'configuration',

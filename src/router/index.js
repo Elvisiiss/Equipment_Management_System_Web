@@ -92,10 +92,10 @@ const routes = [
         meta: {title: '设备详情2'},
     },
     {
-        path: '/equipment/SPC',
+        path: '/equipment/screen/SPC',
         name: 'SPCIndexPage',
         component: () => import('@/views/equipment/SPC/SPCIndexPage.vue'),
-        meta: { title: '设备SPC监控' }
+        meta: {title: '设备SPC看板'},
     },
     {
         path: '/equipment/monitoring/exception',
@@ -189,6 +189,12 @@ const routes = [
         name: 'IOTManagement',
         component:()=>import('@/views/equipment/screen/IOTManagement.vue'),
         meta: { title: '时间稼动率报表' },
+    },
+    {
+        path: '/equipment/screen/quality',
+        name: 'QualityUtilization',
+        component:()=>import('@/views/equipment/screen/QualityUtilization.vue'),
+        meta: {title: '质量稼动率报表'},
     },
     // Inspection Management
     {
