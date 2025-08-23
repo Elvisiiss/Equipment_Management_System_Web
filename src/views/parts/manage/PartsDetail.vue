@@ -2,7 +2,9 @@
   <div class="spare-part-detail-container">
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-container">
-      <div class="loading-spinner"></div>
+      <el-icon class="is-loading" color="#4e6ef2" :size="50">
+        <Loading />
+      </el-icon>
       <p>加载中...</p>
     </div>
 
@@ -10,153 +12,177 @@
     <div v-else-if="error" class="error-container">
       <h2>加载失败</h2>
       <p>{{ error }}</p>
-      <button @click="fetchPartDetail" class="retry-btn">重试</button>
+      <el-button type="primary" @click="fetchPartDetail" class="retry-btn">重试</el-button>
     </div>
 
     <!-- 内容区域 -->
-    <div v-else-if="part" class="spare-part-detail">
+    <div v-else-if="part">
       <!-- 头部信息 -->
-      <div class="header-section">
-        <div class="title-container">
-          <h1>{{ part.name }}</h1>
-          <span class="tag" :class="{ valuable: part.isValuable }">
-            {{ part.isValuable ? '贵重' : '普通' }}
-          </span>
-        </div>
-        <p class="description">{{ part.description }}</p>
-        <div class="stats">
-          <div class="stat-item">
-            <span class="stat-label">总库存</span>
-            <span class="stat-value">{{ part.totalQuantity }}</span>
-          </div>
-        </div>
-      </div>
+      <el-card class="full-width-card">
+        <el-row :gutter="20" align="middle">
+          <el-col :span="6">
+            <div class="part-image-placeholder">
+              <el-icon :size="80" color="#909399"><Box /></el-icon>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <el-descriptions :column="2" border>
+              <el-descriptions-item label="备件名称">
+                <div class="title-container">
+                  <span>{{ part.name }}</span>
+                  <el-tag :type="part.isValuable ? 'warning' : 'info'" class="tag">
+                    {{ part.isValuable ? '贵重' : '普通' }}
+                  </el-tag>
+                </div>
+              </el-descriptions-item>
+              <el-descriptions-item label="描述">{{ part.description }}</el-descriptions-item>
+              <el-descriptions-item label="总库存">
+                <span class="stat-value">{{ part.totalQuantity }}</span>
+              </el-descriptions-item>
+            </el-descriptions>
+          </el-col>
+        </el-row>
+      </el-card>
 
       <!-- 仓库分布 -->
-      <div class="section">
-        <h2 class="section-title">
-          <span class="icon">📦</span>
-          仓库分布
-        </h2>
-        <div class="warehouse-cards">
-          <div v-for="wh in part.warehouses" :key="wh.id" class="warehouse-card">
-            <div class="warehouse-header">
-              <h3>{{ wh.name }}</h3>
-              <span class="status-badge" :class="{ warning: wh.quantity <= wh.safetyStock }">
-                {{ wh.quantity <= wh.safetyStock ? '库存不足' : '正常' }}
-              </span>
-            </div>
-            <div class="warehouse-stats">
-              <div class="warehouse-stat">
-                <span class="label">当前库存</span>
-                <span class="value">{{ wh.quantity }}</span>
-              </div>
-              <div class="warehouse-stat">
-                <span class="label">安全库存</span>
-                <span class="value">{{ wh.safetyStock }}</span>
-              </div>
-            </div>
-            <div class="inventory-bar">
-              <div
-                  class="inventory-fill"
-                  :class="{ low: wh.quantity <= wh.safetyStock }"
-                  :style="{ width: calculateInventoryPercentage(wh.quantity, wh.safetyStock) }"
-              ></div>
-            </div>
+      <el-card class="full-width-card">
+        <template #header>
+          <div class="card-header">
+            <span>📦 仓库分布</span>
+            <el-icon class="collapse-icon" @click="isWarehouseCollapsed = !isWarehouseCollapsed">
+              <ArrowUp v-if="!isWarehouseCollapsed" />
+              <ArrowDown v-else />
+            </el-icon>
           </div>
+        </template>
+        <div v-show="!isWarehouseCollapsed" class="card-content">
+          <el-row :gutter="16">
+            <el-col
+                v-for="wh in part.warehouses"
+                :key="wh.id"
+                :xs="24"
+                :sm="12"
+                :md="8"
+                class="warehouse-col"
+            >
+              <el-card class="warehouse-card" shadow="hover">
+                <template #header>
+                  <div class="warehouse-header">
+                    <span>{{ wh.name }}</span>
+                    <el-tag :type="wh.quantity <= wh.safetyStock ? 'danger' : 'success'" size="small">
+                      {{ wh.quantity <= wh.safetyStock ? '库存不足' : '正常' }}
+                    </el-tag>
+                  </div>
+                </template>
+                <div class="warehouse-content">
+                  <div class="warehouse-stats">
+                    <div class="warehouse-stat">
+                      <span class="label">当前库存</span>
+                      <span class="value">{{ wh.quantity }}</span>
+                    </div>
+                    <div class="warehouse-stat">
+                      <span class="label">安全库存</span>
+                      <span class="value">{{ wh.safetyStock }}</span>
+                    </div>
+                  </div>
+                  <div class="inventory-bar">
+                    <el-progress
+                        :percentage="calculateInventoryPercentage(wh.quantity, wh.safetyStock)"
+                        :color="wh.quantity <= wh.safetyStock ? '#f56c6c' : '#67c23a'"
+                        :show-text="false"
+                    />
+                  </div>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
         </div>
-      </div>
+      </el-card>
 
       <!-- 借出记录 -->
-      <div class="section">
-        <h2 class="section-title">
-          <span class="icon">📋</span>
-          借出记录
-        </h2>
-
-        <div v-if="part.borrowedItems.length === 0" class="empty-state">
-          <p>暂无借出记录</p>
-        </div>
-
-        <div v-else>
-          <!-- 未归还 -->
-          <div v-if="unreturnedItems.length > 0" class="borrow-section">
-            <h3 class="subsection-title">未归还</h3>
-            <div class="table-container">
-              <table class="data-table">
-                <thead>
-                <tr>
-                  <th>员工</th>
-                  <th>借出日期</th>
-                  <th>数量</th>
-                  <th>仓库负责人</th>
-                  <th>状态</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr v-for="(item, index) in unreturnedItems" :key="index">
-                  <td>{{ item.employee }}</td>
-                  <td>{{ formatDate(item.borrowDate) }}</td>
-                  <td>
-                      <span class="quantity-badge">
-                        {{ item.quantity - (item.returnQuantity || 0) }}
-                      </span>
-                  </td>
-                  <td>{{ item.manager }}</td>
-                  <td>
-                      <span class="status-tag" :class="{ installed: item.installed }">
-                        {{ item.installed ? '已安装' : '未安装' }}
-                      </span>
-                  </td>
-                </tr>
-                </tbody>
-              </table>
-            </div>
+      <el-card class="full-width-card">
+        <template #header>
+          <div class="card-header">
+            <span>📋 借出记录</span>
+            <el-icon class="collapse-icon" @click="isBorrowCollapsed = !isBorrowCollapsed">
+              <ArrowUp v-if="!isBorrowCollapsed" />
+              <ArrowDown v-else />
+            </el-icon>
+          </div>
+        </template>
+        <div v-show="!isBorrowCollapsed" class="card-content">
+          <div v-if="part.borrowedItems.length === 0" class="empty-state">
+            <p>暂无借出记录</p>
           </div>
 
-          <!-- 已归还 -->
-          <div v-if="returnedItems.length > 0" class="borrow-section">
-            <h3 class="subsection-title">已归还</h3>
-            <div class="table-container">
-              <table class="data-table">
-                <thead>
-                <tr>
-                  <th>员工</th>
-                  <th>借出日期</th>
-                  <th>归还日期</th>
-                  <th>借出数量</th>
-                  <th>归还数量</th>
-                  <th>归还负责人</th>
-                  <th>状态</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr v-for="(item, index) in returnedItems" :key="index">
-                  <td>{{ item.employee }}</td>
-                  <td>{{ formatDate(item.borrowDate) }}</td>
-                  <td>{{ formatDate(item.returnDate) }}</td>
-                  <td>{{ item.quantity }}</td>
-                  <td>{{ item.returnQuantity }}</td>
-                  <td>{{ item.returnManager }}</td>
-                  <td>
-                      <span class="status-tag" :class="{ installed: item.installed }">
-                        {{ item.installed ? '已安装' : '未安装' }}
-                      </span>
-                  </td>
-                </tr>
-                </tbody>
-              </table>
+          <div v-else>
+            <!-- 未归还 -->
+            <div v-if="unreturnedItems.length > 0" class="borrow-section">
+              <h3 class="subsection-title">未归还</h3>
+              <el-table :data="unreturnedItems" stripe style="width:100%">
+                <el-table-column type="index" label="序号" width="60" />
+                <el-table-column prop="employee" label="员工" />
+                <el-table-column prop="borrowDate" label="借出日期">
+                  <template #default="{row}">
+                    {{ formatDate(row.borrowDate) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="quantity" label="数量">
+                  <template #default="{row}">
+                    <el-tag type="info">
+                      {{ row.quantity - (row.returnQuantity || 0) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="manager" label="仓库负责人" />
+                <el-table-column prop="installed" label="状态">
+                  <template #default="{row}">
+                    <el-tag :type="row.installed ? 'success' : 'warning'">
+                      {{ row.installed ? '已安装' : '未安装' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <!-- 已归还 -->
+            <div v-if="returnedItems.length > 0" class="borrow-section">
+              <h3 class="subsection-title">已归还</h3>
+              <el-table :data="returnedItems" stripe style="width:100%">
+                <el-table-column type="index" label="序号" width="60" />
+                <el-table-column prop="employee" label="员工" />
+                <el-table-column prop="borrowDate" label="借出日期">
+                  <template #default="{row}">
+                    {{ formatDate(row.borrowDate) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="returnDate" label="归还日期">
+                  <template #default="{row}">
+                    {{ formatDate(row.returnDate) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="quantity" label="借出数量" />
+                <el-table-column prop="returnQuantity" label="归还数量" />
+                <el-table-column prop="returnManager" label="归还负责人" />
+                <el-table-column prop="installed" label="状态">
+                  <template #default="{row}">
+                    <el-tag :type="row.installed ? 'success' : 'warning'">
+                      {{ row.installed ? '已安装' : '未安装' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+              </el-table>
             </div>
           </div>
         </div>
-      </div>
+      </el-card>
 
       <!-- 操作按钮 -->
       <div class="action-buttons">
-        <button @click="$router.go(-1)" class="back-btn">
-          <span class="btn-icon">←</span>
+        <el-button @click="$router.go(-1)" class="back-btn">
+          <el-icon><ArrowLeft /></el-icon>
           返回
-        </button>
+        </el-button>
       </div>
     </div>
 
@@ -164,7 +190,7 @@
     <div v-else class="not-found">
       <h2>备件不存在</h2>
       <p>您查找的备件可能已被删除或不存在</p>
-      <button @click="$router.go(-1)" class="back-btn">返回</button>
+      <el-button @click="$router.go(-1)" class="back-btn">返回</el-button>
     </div>
   </div>
 </template>
@@ -173,14 +199,30 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { spareParts } from '@/api/parts/data/mockData'
+import {
+  Loading,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  Box
+} from '@element-plus/icons-vue'
 
 export default {
   name: 'SparePartDetail',
+  components: {
+    Loading,
+    ArrowUp,
+    ArrowDown,
+    ArrowLeft,
+    Box
+  },
   setup() {
     const route = useRoute()
     const part = ref(null)
     const loading = ref(true)
     const error = ref(null)
+    const isWarehouseCollapsed = ref(false)
+    const isBorrowCollapsed = ref(false)
 
     // 获取备件详情
     const fetchPartDetail = () => {
@@ -225,7 +267,7 @@ export default {
     // 计算库存百分比
     const calculateInventoryPercentage = (quantity, safetyStock) => {
       const max = Math.max(quantity, safetyStock) * 1.5 // 以安全库存的1.5倍作为最大值
-      return `${(quantity / max) * 100}%`
+      return Math.min(100, (quantity / max) * 100)
     }
 
     // 格式化日期
@@ -242,6 +284,8 @@ export default {
       part,
       loading,
       error,
+      isWarehouseCollapsed,
+      isBorrowCollapsed,
       unreturnedItems,
       returnedItems,
       fetchPartDetail,
@@ -254,9 +298,9 @@ export default {
 
 <style scoped>
 .spare-part-detail-container {
-  min-height: 100vh;
-  background-color: #f5f7fa;
   padding: 20px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
 }
 
 /* 加载状态 */
@@ -268,19 +312,9 @@ export default {
   padding: 60px 20px;
 }
 
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #e3e3e3;
-  border-top: 4px solid #4e6ef2;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.loading-container p {
+  margin-top: 16px;
+  color: #606266;
 }
 
 /* 错误状态 */
@@ -295,164 +329,76 @@ export default {
 }
 
 .retry-btn {
-  background-color: #4e6ef2;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
   margin-top: 16px;
 }
 
-.retry-btn:hover {
-  background-color: #3a5bd9;
-}
-
 /* 内容区域 */
-.spare-part-detail {
-  max-width: 1000px;
-  margin: 0 auto;
+.full-width-card {
+  margin-bottom: 20px;
 }
 
-.header-section {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  margin-bottom: 24px;
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.collapse-icon {
+  cursor: pointer;
+}
+
+.card-content {
+  padding-top: 15px;
 }
 
 .title-container {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-}
-
-.title-container h1 {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0;
-  margin-right: 12px;
+  gap: 10px;
 }
 
 .tag {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.tag.valuable {
-  background-color: #fff6e6;
-  color: #e6a23c;
-}
-
-.description {
-  color: #606266;
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-
-.stats {
-  display: flex;
-  gap: 24px;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 4px;
+  margin-left: 8px;
 }
 
 .stat-value {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
-/* 部分样式 */
-.section {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  margin-bottom: 24px;
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-top: 0;
-  margin-bottom: 20px;
+.part-image-placeholder {
   display: flex;
+  justify-content: center;
   align-items: center;
-}
-
-.section-title .icon {
-  margin-right: 8px;
-}
-
-.subsection-title {
-  font-size: 16px;
-  font-weight: 500;
-  margin-top: 0;
-  margin-bottom: 16px;
-  color: #606266;
+  height: 180px;
+  background-color: #f5f7fa;
+  border-radius: 6px;
 }
 
 /* 仓库卡片 */
-.warehouse-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+.warehouse-col {
+  margin-bottom: 16px;
 }
 
-.warehouse-card {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  padding: 16px;
-  transition: box-shadow 0.3s;
-}
-
-.warehouse-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.warehouse-card :deep(.el-card__header) {
+  padding: 12px 16px;
 }
 
 .warehouse-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
 }
 
-.warehouse-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status-badge.warning {
-  background-color: #fef0f0;
-  color: #f56c6c;
+.warehouse-content {
+  padding: 0 4px;
 }
 
 .warehouse-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
 .warehouse-stat {
@@ -472,77 +418,20 @@ export default {
 }
 
 .inventory-bar {
-  height: 8px;
-  background-color: #f2f6fc;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.inventory-fill {
-  height: 100%;
-  background-color: #67c23a;
-  border-radius: 4px;
-  transition: width 0.3s;
-}
-
-.inventory-fill.low {
-  background-color: #f56c6c;
+  margin-top: 8px;
 }
 
 /* 表格样式 */
-.table-container {
-  overflow-x: auto;
+.borrow-section {
+  margin-bottom: 24px;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table th {
-  background-color: #f5f7fa;
-  padding: 12px 16px;
-  text-align: left;
+.subsection-title {
+  font-size: 16px;
   font-weight: 500;
+  margin-top: 0;
+  margin-bottom: 16px;
   color: #606266;
-  border-bottom: 1px solid #e4e7ed;
-}
-
-.data-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e4e7ed;
-}
-
-.data-table tr:last-child td {
-  border-bottom: none;
-}
-
-.data-table tr:hover {
-  background-color: #f5f7fa;
-}
-
-.quantity-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  background-color: #ecf5ff;
-  color: #409eff;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status-tag {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  background-color: #f4f4f5;
-  color: #909399;
-}
-
-.status-tag.installed {
-  background-color: #f0f9eb;
-  color: #67c23a;
 }
 
 /* 空状态 */
@@ -562,22 +451,7 @@ export default {
 .back-btn {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
-  background-color: #4e6ef2;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.back-btn:hover {
-  background-color: #3a5bd9;
-}
-
-.btn-icon {
-  margin-right: 6px;
+  gap: 6px;
 }
 
 /* 未找到样式 */
@@ -600,24 +474,6 @@ export default {
 @media (max-width: 768px) {
   .spare-part-detail-container {
     padding: 12px;
-  }
-
-  .header-section,
-  .section {
-    padding: 16px;
-  }
-
-  .stats {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .warehouse-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .data-table {
-    min-width: 600px;
   }
 }
 </style>

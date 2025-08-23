@@ -1,332 +1,398 @@
 <template>
   <div class="warehouse-management">
-    <header class="header">
-      <h1><i class="fas fa-warehouse"></i> 仓库管理系统</h1>
-      <button class="btn-primary" @click="showAddWarehouseDialog = true">
-        <i class="fas fa-plus"></i> 添加新仓库
-      </button>
-    </header>
+    <el-container>
+      <el-header class="header">
+        <h1><i class="office-building"></i> 仓库管理系统</h1>
+        <el-button type="primary" @click="showAddWarehouseDialog = true">
+          <i class="plus"></i> 添加新仓库
+        </el-button>
+      </el-header>
 
-    <div class="stats-overview">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-warehouse"></i>
-        </div>
-        <div class="stat-info">
-          <h3>{{ warehouses.length }}</h3>
-          <p>仓库总数</p>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-boxes"></i>
-        </div>
-        <div class="stat-info">
-          <h3>{{ totalParts }}</h3>
-          <p>备件总数</p>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <div class="stat-info">
-          <h3>{{ lowStockItemsCount }}</h3>
-          <p>低库存预警</p>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">
-          <i class="fas fa-hand-holding"></i>
-        </div>
-        <div class="stat-info">
-          <h3>{{ borrowedItemsCount }}</h3>
-          <p>借出中备件</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="warehouse-filter">
-      <div class="filter-group">
-        <label>仓库类型:</label>
-        <select v-model="filterType">
-          <option value="all">全部</option>
-          <option value="large">大仓库</option>
-          <option value="small">小仓库</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label>库存状态:</label>
-        <select v-model="filterStock">
-          <option value="all">全部</option>
-          <option value="low">仅低库存</option>
-        </select>
-      </div>
-      <div class="search-group">
-        <input type="text" v-model="searchQuery" placeholder="搜索备件或仓库...">
-        <i class="fas fa-search"></i>
-      </div>
-    </div>
-
-    <div class="warehouse-list">
-      <div v-for="warehouse in filteredWarehouses" :key="warehouse.id" class="warehouse-card">
-        <div class="warehouse-header">
-          <div class="warehouse-title">
-            <h2>{{ warehouse.name }}</h2>
-            <span class="warehouse-type" :class="warehouse.type">
-              {{ warehouse.type === 'large' ? '大仓库' : '小仓库' }}
-            </span>
-          </div>
-          <div class="warehouse-manager">
-            <i class="fas fa-user"></i>
-            <span>负责人: {{ warehouse.manager }}</span>
-          </div>
-          <div class="warehouse-actions">
-            <button class="btn-icon" @click="editWarehouse(warehouse)" title="编辑仓库">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-icon btn-danger" @click="deleteWarehouse(warehouse.id)" title="删除仓库">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="inventory-summary">
-          <div class="summary-item">
-            <span class="label">备件种类:</span>
-            <span class="value">{{ warehouse.spareParts.length }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">总库存量:</span>
-            <span class="value">{{ getWarehouseTotalQuantity(warehouse) }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">低库存项:</span>
-            <span class="value warning">{{ getLowStockCount(warehouse) }}</span>
-          </div>
-        </div>
-
-        <div class="inventory-table-container">
-          <table class="inventory-table">
-            <thead>
-            <tr>
-              <th>备件名称</th>
-              <th>数量</th>
-              <th>安全库存</th>
-              <th>位置</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="part in filteredParts(warehouse)" :key="part.id"
-                :class="{ 'low-stock': part.quantity <= part.safetyStock }">
-              <td>
-                <div class="part-name">
-                  {{ part.name }}
-                  <i v-if="part.isValuable" class="fas fa-gem valuable-icon" title="贵重物品"></i>
+      <el-main>
+        <!-- 统计卡片 -->
+        <el-row :gutter="20" class="stats-overview">
+          <el-col :xs="12" :sm="6" v-for="(stat, index) in stats" :key="index">
+            <el-card shadow="hover" class="stat-card">
+              <div class="stat-content">
+                <div class="stat-icon" :class="stat.color">
+                  <i :class="stat.icon"></i>
                 </div>
-              </td>
-              <td>
-                <span class="quantity">{{ part.quantity }}</span>
-              </td>
-              <td>{{ part.safetyStock }}</td>
-              <td>{{ part.location }}</td>
-              <td>
-                  <span v-if="part.quantity <= part.safetyStock" class="status-badge warning">
-                    <i class="fas fa-exclamation-circle"></i> 库存不足
-                  </span>
-                <span v-else class="status-badge success">
-                    <i class="fas fa-check-circle"></i> 正常
-                  </span>
-              </td>
-              <td>
-                <div class="part-actions">
-                  <button class="btn-sm" @click="openMoveDialog(warehouse, part)" title="移动">
-                    <i class="fas fa-exchange-alt"></i>
-                  </button>
-                  <button class="btn-sm" @click="openBorrowDialog(warehouse, part)" title="借出">
-                    <i class="fas fa-hand-holding"></i>
-                  </button>
+                <div class="stat-info">
+                  <h3>{{ stat.value }}</h3>
+                  <p>{{ stat.label }}</p>
                 </div>
-              </td>
-            </tr>
-            <tr v-if="filteredParts(warehouse).length === 0">
-              <td colspan="6" class="no-data">
-                暂无备件数据
-              </td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
+              </div>
+            </el-card>
+          </el-col>
+        </el-row>
 
-        <div class="warehouse-footer">
-          <button class="btn-outline" @click="openAddPartsDialog(warehouse)">
-            <i class="fas fa-plus"></i> 添加备件
-          </button>
-          <button class="btn-outline" @click="openBorrowDialog(warehouse)">
-            <i class="fas fa-hand-holding"></i> 借出备件
-          </button>
-          <button class="btn-outline" @click="openReturnDialog(warehouse)">
-            <i class="fas fa-undo"></i> 归还备件
-          </button>
+        <!-- 筛选和搜索 -->
+        <el-card shadow="never" class="filter-card">
+          <el-form :inline="true" :model="filterForm" class="warehouse-filter">
+            <el-form-item label="仓库类型:">
+              <el-select v-model="filterForm.type" placeholder="请选择" style="width: 180px">
+                <el-option label="全部" value="all"></el-option>
+                <el-option label="大仓库" value="large"></el-option>
+                <el-option label="小仓库" value="small"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="库存状态:">
+              <el-select v-model="filterForm.stock" placeholder="请选择" style="width: 180px">
+                <el-option label="全部" value="all"></el-option>
+                <el-option label="仅低库存" value="low"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item>
+              <el-input
+                  v-model="filterForm.search"
+                  placeholder="搜索备件或仓库..."
+                  suffix-icon="search"
+                  style="width: 250px"
+              ></el-input>
+            </el-form-item>
+          </el-form>
+        </el-card>
+
+        <!-- 仓库列表 -->
+        <div class="warehouse-list">
+          <el-card
+              v-for="warehouse in filteredWarehouses"
+              :key="warehouse.id"
+              class="warehouse-card"
+              shadow="hover"
+          >
+            <template #header>
+              <div class="warehouse-header">
+                <div class="warehouse-title">
+                  <h2>{{ warehouse.name }}</h2>
+                  <el-tag
+                      :type="warehouse.type === 'large' ? 'primary' : 'success'"
+                      size="small"
+                  >
+                    {{ warehouse.type === "large" ? "大仓库" : "小仓库" }}
+                  </el-tag>
+                </div>
+                <div class="warehouse-manager">
+                  <i class="user"></i>
+                  <span>负责人: {{ warehouse.manager }}</span>
+                </div>
+                <div class="warehouse-actions">
+                  <el-button
+                      icon="edit"
+                      circle
+                      @click="editWarehouse(warehouse)"
+                      title="编辑仓库"
+                  ></el-button>
+                  <el-button
+                      icon="delete"
+                      circle
+                      type="danger"
+                      @click="deleteWarehouse(warehouse.id)"
+                      title="删除仓库"
+                  ></el-button>
+                </div>
+              </div>
+            </template>
+
+            <!-- 库存摘要 -->
+            <el-row :gutter="20" class="inventory-summary">
+              <el-col :span="8">
+                <div class="summary-item">
+                  <span class="label">备件种类:</span>
+                  <span class="value">{{ warehouse.spareParts.length }}</span>
+                </div>
+              </el-col>
+              <el-col :span="8">
+                <div class="summary-item">
+                  <span class="label">总库存量:</span>
+                  <span class="value">{{ getWarehouseTotalQuantity(warehouse) }}</span>
+                </div>
+              </el-col>
+              <el-col :span="8">
+                <div class="summary-item">
+                  <span class="label">低库存项:</span>
+                  <span class="value warning">{{ getLowStockCount(warehouse) }}</span>
+                </div>
+              </el-col>
+            </el-row>
+
+            <!-- 库存表格 -->
+            <div class="inventory-table-container">
+              <el-table
+                  :data="filteredParts(warehouse)"
+                  style="width: 100%"
+                  empty-text="暂无备件数据"
+                  stripe
+              >
+                <el-table-column prop="name" label="备件名称" min-width="120">
+                  <template #default="{ row }">
+                    <div class="part-name">
+                      {{ row.name }}
+                      <i
+                          v-if="row.isValuable"
+                          class="star-on valuable-icon"
+                          title="贵重物品"
+                      ></i>
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="quantity" label="数量" width="80"></el-table-column>
+                <el-table-column prop="safetyStock" label="安全库存" width="90"></el-table-column>
+                <el-table-column prop="location" label="位置" width="100"></el-table-column>
+                <el-table-column label="状态" width="110">
+                  <template #default="{ row }">
+                    <el-tag
+                        :type="row.quantity <= row.safetyStock ? 'danger' : 'success'"
+                        size="small"
+                    >
+                      <i
+                          :class="
+                          row.quantity <= row.safetyStock
+                            ? 'warning-outline'
+                            : 'success'
+                        "
+                      ></i>
+                      {{ row.quantity <= row.safetyStock ? "库存不足" : "正常" }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="120">
+                  <template #default="{ row }">
+                    <div class="part-actions">
+                      <el-button
+                          icon="refresh"
+                          circle
+                          size="mini"
+                          @click="openMoveDialog(warehouse, row)"
+                          title="移动"
+                      ></el-button>
+                      <el-button
+                          icon="back"
+                          circle
+                          size="mini"
+                          type="warning"
+                          @click="openBorrowDialog(warehouse, row)"
+                          title="借出"
+                      ></el-button>
+                    </div>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+
+            <div class="warehouse-footer">
+              <el-button @click="openAddPartsDialog(warehouse)" icon="plus" size="small">
+                添加备件
+              </el-button>
+              <el-button @click="openBorrowDialog(warehouse)" icon="back" size="small">
+                借出备件
+              </el-button>
+              <el-button @click="openReturnDialog(warehouse)" icon="refresh-left" size="small">
+                归还备件
+              </el-button>
+            </div>
+          </el-card>
         </div>
-      </div>
-    </div>
+      </el-main>
+    </el-container>
 
     <!-- 添加仓库对话框 -->
-    <ModalDialog :show="showAddWarehouseDialog" @close="showAddWarehouseDialog = false" title="添加新仓库">
-      <div class="form-group">
-        <label>仓库名称</label>
-        <input type="text" v-model="newWarehouse.name" placeholder="输入仓库名称">
-      </div>
-      <div class="form-group">
-        <label>仓库类型</label>
-        <select v-model="newWarehouse.type">
-          <option value="small">小仓库</option>
-          <option value="large">大仓库</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>负责人</label>
-        <input type="text" v-model="newWarehouse.manager" placeholder="输入负责人姓名">
-      </div>
+    <el-dialog
+        title="添加新仓库"
+        v-model="showAddWarehouseDialog"
+        width="500px"
+        :before-close="handleClose"
+    >
+      <el-form :model="newWarehouse" label-width="80px">
+        <el-form-item label="仓库名称">
+          <el-input v-model="newWarehouse.name" placeholder="输入仓库名称"></el-input>
+        </el-form-item>
+        <el-form-item label="仓库类型">
+          <el-select v-model="newWarehouse.type" placeholder="请选择">
+            <el-option label="小仓库" value="small"></el-option>
+            <el-option label="大仓库" value="large"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="负责人">
+          <el-input v-model="newWarehouse.manager" placeholder="输入负责人姓名"></el-input>
+        </el-form-item>
+      </el-form>
       <template #footer>
-        <button class="btn-secondary" @click="showAddWarehouseDialog = false">取消</button>
-        <button class="btn-primary" @click="addWarehouse">确认</button>
+        <span class="dialog-footer">
+          <el-button @click="showAddWarehouseDialog = false">取消</el-button>
+          <el-button type="primary" @click="addWarehouse">确认</el-button>
+        </span>
       </template>
-    </ModalDialog>
+    </el-dialog>
 
     <!-- 添加备件对话框 -->
-    <ModalDialog :show="showAddDialog" @close="showAddDialog = false" :title="'添加备件到 ' + selectedWarehouse?.name">
-      <div class="form-group">
-        <label>备件名称</label>
-        <input type="text" v-model="newPart.name" placeholder="输入备件名称">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>数量</label>
-          <input type="number" v-model="newPart.quantity" min="1">
-        </div>
-        <div class="form-group">
-          <label>安全库存</label>
-          <input type="number" v-model="newPart.safetyStock" min="0">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>位置</label>
-          <input type="text" v-model="newPart.location" placeholder="例如: A-1-1">
-        </div>
-        <div class="form-group">
-          <label class="checkbox-label">
-            <input type="checkbox" v-model="newPart.isValuable">
-            是否为贵重物品
-          </label>
-        </div>
-      </div>
+    <el-dialog
+        :title="'添加备件到 ' + (selectedWarehouse?.name || '')"
+        v-model="showAddDialog"
+        width="600px"
+    >
+      <el-form :model="newPart" label-width="80px">
+        <el-form-item label="备件名称">
+          <el-input v-model="newPart.name" placeholder="输入备件名称"></el-input>
+        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="数量">
+              <el-input-number v-model="newPart.quantity" :min="1" style="width: 100%"></el-input-number>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="安全库存">
+              <el-input-number v-model="newPart.safetyStock" :min="0" style="width: 100%"></el-input-number>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="位置">
+          <el-input v-model="newPart.location" placeholder="例如: A-1-1"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-checkbox v-model="newPart.isValuable">是否为贵重物品</el-checkbox>
+        </el-form-item>
+      </el-form>
       <template #footer>
-        <button class="btn-secondary" @click="showAddDialog = false">取消</button>
-        <button class="btn-primary" @click="addPart">确认</button>
+        <span class="dialog-footer">
+          <el-button @click="showAddDialog = false">取消</el-button>
+          <el-button type="primary" @click="addPart">确认</el-button>
+        </span>
       </template>
-    </ModalDialog>
+    </el-dialog>
 
     <!-- 移动备件对话框 -->
-    <ModalDialog :show="showMoveDialog" @close="showMoveDialog = false"
-                 :title="'移动备件: ' + (selectedPart ? selectedPart.name : '')">
+    <el-dialog
+        :title="'移动备件: ' + (selectedPart ? selectedPart.name : '')"
+        v-model="showMoveDialog"
+        width="500px"
+    >
       <div v-if="selectedPart" class="move-dialog-content">
         <div class="move-info">
           <p>从 <strong>{{ selectedWarehouse?.name }}</strong> 移动</p>
           <p>当前库存: <strong>{{ selectedPart.quantity }}</strong></p>
         </div>
-        <div class="form-group">
-          <label>移动数量</label>
-          <input type="number" v-model="movePart.quantity" :max="selectedPart.quantity" min="1">
-        </div>
-        <div class="form-group">
-          <label>目标仓库</label>
-          <select v-model="movePart.targetWarehouse">
-            <option v-for="wh in warehouses.filter(w => w.id !== selectedWarehouse?.id)"
-                    :key="wh.id" :value="wh.id">
-              {{ wh.name }} ({{ wh.type === 'large' ? '大仓库' : '小仓库' }})
-            </option>
-          </select>
-        </div>
+        <el-form :model="movePart" label-width="80px">
+          <el-form-item label="移动数量">
+            <el-input-number
+                v-model="movePart.quantity"
+                :min="1"
+                :max="selectedPart.quantity"
+                style="width: 100%"
+            ></el-input-number>
+          </el-form-item>
+          <el-form-item label="目标仓库">
+            <el-select v-model="movePart.targetWarehouse" placeholder="请选择" style="width: 100%">
+              <el-option
+                  v-for="wh in warehouses.filter(w => w.id !== selectedWarehouse?.id)"
+                  :key="wh.id"
+                  :label="`${wh.name} (${wh.type === 'large' ? '大仓库' : '小仓库'})`"
+                  :value="wh.id"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+        </el-form>
       </div>
       <template #footer>
-        <button class="btn-secondary" @click="showMoveDialog = false">取消</button>
-        <button class="btn-primary" @click="moveParts" :disabled="!canMove">确认移动</button>
+        <span class="dialog-footer">
+          <el-button @click="showMoveDialog = false">取消</el-button>
+          <el-button type="primary" @click="moveParts" :disabled="!canMove">确认移动</el-button>
+        </span>
       </template>
-    </ModalDialog>
+    </el-dialog>
 
     <!-- 借出备件对话框 -->
-    <ModalDialog :show="showBorrowDialog" @close="showBorrowDialog = false"
-                 :title="'从 ' + selectedWarehouse?.name + ' 借出备件'">
-      <div v-if="!selectedPart" class="form-group">
-        <label>选择备件</label>
-        <select v-model="borrowPart.id">
-          <option v-for="part in selectedWarehouse?.spareParts" :key="part.id" :value="part.id">
-            {{ part.name }} (库存: {{ part.quantity }})
-          </option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>借出数量</label>
-        <input type="number" v-model="borrowPart.quantity"
-               :max="selectedPart ? selectedPart.quantity : getPartById(borrowPart.id)?.quantity"
-               min="1">
-      </div>
-      <div class="form-group">
-        <label>借出员工</label>
-        <select v-model="borrowPart.employee">
-          <option v-for="emp in employees" :key="emp" :value="emp">{{ emp }}</option>
-        </select>
-      </div>
+    <el-dialog
+        :title="'从 ' + selectedWarehouse?.name + ' 借出备件'"
+        v-model="showBorrowDialog"
+        width="500px"
+    >
+      <el-form :model="borrowPart" label-width="80px">
+        <el-form-item v-if="!selectedPart" label="选择备件">
+          <el-select v-model="borrowPart.id" placeholder="请选择" style="width: 100%">
+            <el-option
+                v-for="part in selectedWarehouse?.spareParts"
+                :key="part.id"
+                :label="`${part.name} (库存: ${part.quantity})`"
+                :value="part.id"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="借出数量">
+          <el-input-number
+              v-model="borrowPart.quantity"
+              :min="1"
+              :max="selectedPart ? selectedPart.quantity : getPartById(borrowPart.id)?.quantity"
+              style="width: 100%"
+          ></el-input-number>
+        </el-form-item>
+        <el-form-item label="借出员工">
+          <el-select v-model="borrowPart.employee" placeholder="请选择" style="width: 100%">
+            <el-option
+                v-for="emp in employees"
+                :key="emp"
+                :label="emp"
+                :value="emp"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
       <template #footer>
-        <button class="btn-secondary" @click="showBorrowDialog = false">取消</button>
-        <button class="btn-primary" @click="borrowPartAction" :disabled="!canBorrow">确认借出</button>
+        <span class="dialog-footer">
+          <el-button @click="showBorrowDialog = false">取消</el-button>
+          <el-button type="primary" @click="borrowPartAction" :disabled="!canBorrow">确认借出</el-button>
+        </span>
       </template>
-    </ModalDialog>
+    </el-dialog>
 
     <!-- 归还备件对话框 -->
-    <ModalDialog :show="showReturnDialog" @close="showReturnDialog = false"
-                 :title="'归还备件到 ' + selectedWarehouse?.name">
-      <div class="form-group">
-        <label>选择借出记录</label>
-        <select v-model="returnRecord.id">
-          <option v-for="(record, index) in borrowRecords" :key="index" :value="index">
-            {{ record.partName }} - {{ record.employee }} (借出: {{ record.borrowDate }})
-          </option>
-        </select>
-      </div>
-      <div v-if="returnRecord.id !== null" class="return-info">
-        <p>借出数量: <strong>{{ borrowRecords[returnRecord.id]?.borrowedQuantity }}</strong></p>
-        <p>已归还: <strong>{{ borrowRecords[returnRecord.id]?.returnedQuantity || 0 }}</strong></p>
-        <p>待归还: <strong>{{ (borrowRecords[returnRecord.id]?.borrowedQuantity || 0) - (borrowRecords[returnRecord.id]?.returnedQuantity || 0) }}</strong></p>
-      </div>
-      <div class="form-group">
-        <label>归还数量</label>
-        <input type="number" v-model="returnRecord.quantity"
-               :max="returnRecord.id !== null ? borrowRecords[returnRecord.id].borrowedQuantity - (borrowRecords[returnRecord.id].returnedQuantity || 0) : 0"
-               min="1">
-      </div>
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" v-model="returnRecord.installed">
-          是否已安装
-        </label>
-      </div>
+    <el-dialog
+        :title="'归还备件到 ' + selectedWarehouse?.name"
+        v-model="showReturnDialog"
+        width="600px"
+    >
+      <el-form :model="returnRecord" label-width="100px">
+        <el-form-item label="选择借出记录">
+          <el-select v-model="returnRecord.id" placeholder="请选择" style="width: 100%">
+            <el-option
+                v-for="(record, index) in borrowRecords"
+                :key="index"
+                :label="`${record.partName} - ${record.employee} (借出: ${record.borrowDate})`"
+                :value="index"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <div v-if="returnRecord.id !== null" class="return-info">
+          <p>借出数量: <strong>{{ borrowRecords[returnRecord.id]?.borrowedQuantity }}</strong></p>
+          <p>已归还: <strong>{{ borrowRecords[returnRecord.id]?.returnedQuantity || 0 }}</strong></p>
+          <p>待归还: <strong>{{ (borrowRecords[returnRecord.id]?.borrowedQuantity || 0) - (borrowRecords[returnRecord.id]?.returnedQuantity || 0) }}</strong></p>
+        </div>
+        <el-form-item label="归还数量">
+          <el-input-number
+              v-model="returnRecord.quantity"
+              :min="1"
+              :max="returnRecord.id !== null ? borrowRecords[returnRecord.id].borrowedQuantity - (borrowRecords[returnRecord.id].returnedQuantity || 0) : 0"
+              style="width: 100%"
+          ></el-input-number>
+        </el-form-item>
+        <el-form-item>
+          <el-checkbox v-model="returnRecord.installed">是否已安装</el-checkbox>
+        </el-form-item>
+      </el-form>
       <template #footer>
-        <button class="btn-secondary" @click="showReturnDialog = false">取消</button>
-        <button class="btn-primary" @click="returnPartAction" :disabled="!canReturn">确认归还</button>
+        <span class="dialog-footer">
+          <el-button @click="showReturnDialog = false">取消</el-button>
+          <el-button type="primary" @click="returnPartAction" :disabled="!canReturn">确认归还</el-button>
+        </span>
       </template>
-    </ModalDialog>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import ModalDialog from './ModalDialog.vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 // 模拟数据
 const warehousesData = [
@@ -441,9 +507,11 @@ const spareParts = ref([...sparePartsData])
 const employees = ref([...employeesData])
 
 // 筛选和搜索
-const filterType = ref('all')
-const filterStock = ref('all')
-const searchQuery = ref('')
+const filterForm = reactive({
+  type: 'all',
+  stock: 'all',
+  search: ''
+})
 
 // 对话框状态
 const showAddWarehouseDialog = ref(false)
@@ -517,13 +585,13 @@ const borrowedItemsCount = computed(() => {
 const filteredWarehouses = computed(() => {
   return warehouses.value.filter(warehouse => {
     // 按类型筛选
-    if (filterType.value !== 'all' && warehouse.type !== filterType.value) {
+    if (filterForm.type !== 'all' && warehouse.type !== filterForm.type) {
       return false
     }
 
     // 按搜索词筛选
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
+    if (filterForm.search) {
+      const query = filterForm.search.toLowerCase()
       const hasMatchingPart = warehouse.spareParts.some(part =>
           part.name.toLowerCase().includes(query)
       )
@@ -534,18 +602,46 @@ const filteredWarehouses = computed(() => {
   })
 })
 
+// 统计卡片数据
+const stats = computed(() => [
+  {
+    icon: 'office-building',
+    color: 'blue',
+    value: warehouses.value.length,
+    label: '仓库总数'
+  },
+  {
+    icon: 'box',
+    color: 'green',
+    value: totalParts.value,
+    label: '备件总数'
+  },
+  {
+    icon: 'warning-outline',
+    color: 'orange',
+    value: lowStockItemsCount.value,
+    label: '低库存预警'
+  },
+  {
+    icon: 'thumb',
+    color: 'purple',
+    value: borrowedItemsCount.value,
+    label: '借出中备件'
+  }
+])
+
 // 方法
 function filteredParts(warehouse) {
   let parts = warehouse.spareParts
 
   // 按库存状态筛选
-  if (filterStock.value === 'low') {
+  if (filterForm.stock === 'low') {
     parts = parts.filter(part => part.quantity <= part.safetyStock)
   }
 
   // 按搜索词筛选
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+  if (filterForm.search) {
+    const query = filterForm.search.toLowerCase()
     parts = parts.filter(part => part.name.toLowerCase().includes(query))
   }
 
@@ -581,7 +677,10 @@ function openAddPartsDialog(warehouse) {
 }
 
 function addPart() {
-  if (!newPart.name || newPart.quantity <= 0) return
+  if (!newPart.name || newPart.quantity <= 0) {
+    ElMessage.warning('请填写完整的备件信息')
+    return
+  }
 
   const part = {
     id: Date.now(),
@@ -590,6 +689,7 @@ function addPart() {
 
   selectedWarehouse.value.spareParts.push(part)
   showAddDialog.value = false
+  ElMessage.success('备件添加成功')
 }
 
 function openMoveDialog(warehouse, part) {
@@ -643,6 +743,7 @@ function moveParts() {
   }
 
   showMoveDialog.value = false
+  ElMessage.success('备件移动成功')
 }
 
 function openBorrowDialog(warehouse, part = null) {
@@ -692,6 +793,7 @@ function borrowPartAction() {
   }
 
   showBorrowDialog.value = false
+  ElMessage.success('备件借出成功')
 }
 
 function openReturnDialog(warehouse) {
@@ -764,10 +866,14 @@ function returnPartAction() {
   }
 
   showReturnDialog.value = false
+  ElMessage.success('备件归还成功')
 }
 
 function addWarehouse() {
-  if (!newWarehouse.name || !newWarehouse.manager) return
+  if (!newWarehouse.name || !newWarehouse.manager) {
+    ElMessage.warning('请填写完整的仓库信息')
+    return
+  }
 
   const warehouse = {
     id: Date.now(),
@@ -786,26 +892,38 @@ function addWarehouse() {
     type: 'small',
     manager: ''
   })
+
+  ElMessage.success('仓库添加成功')
 }
 
 function editWarehouse(warehouse) {
   // 在实际应用中，这里应该打开编辑对话框
-  console.log('编辑仓库:', warehouse)
+  ElMessage.info('编辑功能待实现')
 }
 
 function deleteWarehouse(id) {
-  if (confirm('确定要删除这个仓库吗？此操作不可恢复。')) {
+  ElMessageBox.confirm('确定要删除这个仓库吗？此操作不可恢复。', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
     const index = warehouses.value.findIndex(w => w.id === id)
     if (index !== -1) {
       warehouses.value.splice(index, 1)
+      ElMessage.success('仓库删除成功')
     }
-  }
+  }).catch(() => {
+    // 用户取消删除
+  })
+}
+
+function handleClose(done) {
+  done()
 }
 </script>
 
 <style scoped>
 .warehouse-management {
-  padding: 20px;
   background-color: #f5f7f9;
   min-height: 100vh;
 }
@@ -814,9 +932,9 @@ function deleteWarehouse(id) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e8eaed;
+  background-color: #fff;
+  border-bottom: 1px solid #e6e8ec;
+  padding: 0 20px;
 }
 
 .header h1 {
@@ -828,32 +946,44 @@ function deleteWarehouse(id) {
 }
 
 .stats-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .stat-card {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.stat-content {
   display: flex;
   align-items: center;
-  gap: 16px;
 }
 
 .stat-icon {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: #e3f2fd;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1976d2;
+  margin-right: 15px;
   font-size: 20px;
+  color: white;
+}
+
+.stat-icon.blue {
+  background: #409EFF;
+}
+
+.stat-icon.green {
+  background: #67C23A;
+}
+
+.stat-icon.orange {
+  background: #E6A23C;
+}
+
+.stat-icon.purple {
+  background: #8E44AD;
 }
 
 .stat-info h3 {
@@ -869,49 +999,12 @@ function deleteWarehouse(id) {
   font-size: 14px;
 }
 
+.filter-card {
+  margin-bottom: 20px;
+}
+
 .warehouse-filter {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.filter-group, .search-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.filter-group label, .search-group {
-  font-weight: 500;
-  color: #2c3e50;
-  font-size: 14px;
-}
-
-.filter-group select, .search-group input {
-  padding: 8px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.search-group {
-  position: relative;
-  margin-left: auto;
-}
-
-.search-group input {
-  padding-left: 36px;
-  width: 250px;
-}
-
-.search-group i {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #7f8c8d;
+  padding: 10px 0;
 }
 
 .warehouse-list {
@@ -921,16 +1014,10 @@ function deleteWarehouse(id) {
 }
 
 .warehouse-card {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
 }
 
 .warehouse-header {
-  padding: 16px 20px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e8eaed;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -950,23 +1037,6 @@ function deleteWarehouse(id) {
   font-size: 18px;
 }
 
-.warehouse-type {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.warehouse-type.large {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.warehouse-type.small {
-  background: #f3e5f5;
-  color: #7b1fa2;
-}
-
 .warehouse-manager {
   display: flex;
   align-items: center;
@@ -981,16 +1051,14 @@ function deleteWarehouse(id) {
 }
 
 .inventory-summary {
-  display: flex;
-  padding: 12px 20px;
-  background: #fafbfc;
-  border-bottom: 1px solid #e8eaed;
-  gap: 24px;
+  margin-bottom: 20px;
+  padding: 0 10px;
 }
 
 .summary-item {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
 }
 
@@ -1010,38 +1078,7 @@ function deleteWarehouse(id) {
 }
 
 .inventory-table-container {
-  overflow-x: auto;
-}
-
-.inventory-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.inventory-table th {
-  background: #f8f9fa;
-  padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  color: #2c3e50;
-  border-bottom: 1px solid #e8eaed;
-}
-
-.inventory-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e8eaed;
-}
-
-.inventory-table tr:last-child td {
-  border-bottom: none;
-}
-
-.inventory-table tr.low-stock {
-  background-color: #fff8f8;
-}
-
-.inventory-table tr.low-stock:hover {
-  background-color: #ffefef;
+  margin-bottom: 20px;
 }
 
 .part-name {
@@ -1054,170 +1091,15 @@ function deleteWarehouse(id) {
   color: #f1c40f;
 }
 
-.quantity {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.status-badge.success {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.status-badge.warning {
-  background: #ffecb3;
-  color: #f57c00;
-}
-
 .part-actions {
   display: flex;
   gap: 8px;
 }
 
-.no-data {
-  text-align: center;
-  color: #7f8c8d;
-  font-style: italic;
-  padding: 20px;
-}
-
 .warehouse-footer {
-  padding: 16px 20px;
-  background: #f8f9fa;
-  border-top: 1px solid #e8eaed;
   display: flex;
   gap: 12px;
-}
-
-/* 按钮样式 */
-.btn-primary, .btn-secondary, .btn-outline, .btn-icon, .btn-sm {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid transparent;
-}
-
-.btn-primary {
-  background: #1976d2;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #1565c0;
-}
-
-.btn-secondary {
-  background: #f5f7f9;
-  color: #2c3e50;
-  border-color: #dcdfe6;
-}
-
-.btn-secondary:hover {
-  background: #e8eaed;
-}
-
-.btn-outline {
-  background: transparent;
-  color: #1976d2;
-  border-color: #1976d2;
-}
-
-.btn-outline:hover {
-  background: #e3f2fd;
-}
-
-.btn-icon {
-  padding: 6px;
-  background: transparent;
-  color: #7f8c8d;
-}
-
-.btn-icon:hover {
-  background: #f5f7f9;
-  color: #2c3e50;
-}
-
-.btn-icon.btn-danger {
-  color: #e74c3c;
-}
-
-.btn-icon.btn-danger:hover {
-  background: #ffebee;
-}
-
-.btn-sm {
-  padding: 4px 8px;
-  background: transparent;
-  color: #7f8c8d;
-}
-
-.btn-sm:hover {
-  background: #f5f7f9;
-  color: #2c3e50;
-}
-
-/* 表单样式 */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.form-row {
-  display: flex;
-  gap: 16px;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #2c3e50;
-  font-size: 14px;
-}
-
-.form-group input, .form-group select {
-  padding: 10px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.form-group input:focus, .form-group select:focus {
-  outline: none;
-  border-color: #1976d2;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  margin-top: 16px;
-}
-
-.checkbox-label input {
-  margin: 0;
+  justify-content: flex-end;
 }
 
 .move-dialog-content, .return-info {
@@ -1231,5 +1113,11 @@ function deleteWarehouse(id) {
 
 .move-info strong, .return-info strong {
   color: #1976d2;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>
