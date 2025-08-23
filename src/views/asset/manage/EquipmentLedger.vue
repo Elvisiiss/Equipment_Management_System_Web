@@ -590,7 +590,7 @@ const loadWorkshopOptions = async () => {
 const loadLineOptions = async (workshopId) => {
   try {
     const response = await getChildAreas(workshopId)
-    lineOptions.value = response.data
+    lineOptions.value = response.data.data
   } catch (error) {
     ElMessage.error('加载产线数据失败: ' + error.message)
   }
@@ -600,7 +600,7 @@ const loadLineOptions = async (workshopId) => {
 const loadSectionOptions = async (lineId) => {
   try {
     const response = await getChildAreas(lineId)
-    sectionOptions.value = response.data
+    sectionOptions.value = response.data.data
   } catch (error) {
     ElMessage.error('加载工段数据失败: ' + error.message)
   }
@@ -641,7 +641,7 @@ const handleDialogWorkshopChange = async () => {
   if (deviceForm.workshopId) {
     try {
       const response = await getChildAreas(deviceForm.workshopId)
-      dialogLineOptions.value = response.data
+      dialogLineOptions.value = response.data.data
     } catch (error) {
       ElMessage.error('加载产线数据失败: ' + error.message)
     }
@@ -811,7 +811,7 @@ const handleEdit = async (row) => {
     // 加载弹窗内产线选项
     if (deviceForm.workshopId) {
       const response = await getChildAreas(deviceForm.workshopId)
-      dialogLineOptions.value = response.data
+      dialogLineOptions.value = response.data.data
     }
 
     instructionManualList.value = []

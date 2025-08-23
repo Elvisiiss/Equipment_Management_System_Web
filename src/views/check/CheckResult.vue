@@ -14,13 +14,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="设备车间">
-          <el-select v-model="filterForm.workshop" placeholder="请选择车间" clearable @change="handleWorkshopChange" style="width: 200px">
-            <el-option v-for="ws in workshopOptions" :key="ws" :label="`${ws}车间`" :value="ws" />
+          <el-select v-model="filterForm.workshopId" placeholder="请选择车间" clearable @change="handleWorkshopChange" style="width: 200px">
+            <el-option v-for="ws in workshopOptions" :key="ws.id" :label="ws.name" :value="ws.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="设备产线">
-          <el-select v-model="filterForm.line" placeholder="请选择产线" clearable :disabled="!filterForm.workshop" @change="handleSearch" style="width: 200px">
-            <el-option v-for="line in lineOptions" :key="line" :label="`${line}产线`" :value="line" />
+          <el-select v-model="filterForm.lineId" placeholder="请选择产线" clearable :disabled="!filterForm.workshopId" @change="handleSearch" style="width: 200px">
+            <el-option v-for="line in lineOptions" :key="line.id" :label="line.name" :value="line.id" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -32,38 +32,53 @@
 
     <!-- 流程列表 -->
     <el-table :data="tableData" style="width: 100%" v-loading="loading">
-      <el-table-column prop="taskId" label="流程ID" width="120" />
-      <el-table-column prop="taskName" label="流程名称" width="180" />
+      <el-table-column prop="id" label="流程ID" width="120" />
+      <el-table-column prop="processName" label="流程名称" width="180" />
       <el-table-column prop="taskType" label="任务类型" width="120">
         <template #default="{row}">
-          <el-tag :type="getTaskTypeTag(row.taskType)">{{ row.taskType }}</el-tag>
+          <el-tag :type="getTaskTypeTag(row.taskType)">{{ getTaskTypeLabel(row.taskType) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="适用设备" min-width="200">
         <template #default="{row}">
-          <div v-if="row.applyType === 'all'">所有设备</div>
-          <div v-else-if="row.applyType === 'workshop'">{{ row.workshop }}车间</div>
-          <div v-else-if="row.applyType === 'line'">{{ row.workshop }}车间-{{ row.line }}产线</div>
-          <div v-else-if="row.applyType === 'segment'">{{ row.workshop }}车间-{{ row.line }}产线-{{ row.segment }}</div>
-          <div v-else-if="row.applyType === 'device'">设备: {{ row.deviceName }} ({{ row.deviceCode }})</div>
+          <div v-if="row.scope === 0">所有设备</div>
+          <div v-else-if="row.scope === 1">{{ row.workshop?.name }}车间</div>
+          <div v-else-if="row.scope === 2">{{ row.workshop?.name }}车间-{{ row.line?.name }}产线</div>
+          <div v-else-if="row.scope === 3">{{ row.workshop?.name }}车间-{{ row.line?.name }}产线-{{ row.segment?.name }}</div>
+          <div v-else-if="row.scope === 4">设备: {{ row.deviceName }} ({{ row.deviceCode }})</div>
         </template>
       </el-table-column>
       <el-table-column label="审批人" min-width="200">
         <template #default="{row}">
-          <el-tag v-for="approver in row.approvers" :key="approver.userId" style="margin-right: 5px;">
-            {{ approver.userName }}
+          <el-tag v-for="approver in row.approvers" :key="approver.id" style="margin-right: 5px;">
+            {{ approver.realName || approver.userName }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="审批规则" width="120">
+        <template #default="{row}">
+          {{ row.approvalRule === 0 ? '并行审批' : '顺序审批' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="80">
+        <template #default="{row}">
+          <el-tag :type="row.enabled ? 'success' : 'danger'">
+            {{ row.enabled ? '启用' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" width="180">
         <template #default="{row}">
-          {{ formatTime(row.createTime) }}
+          {{ formatTime(row.createtime) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{row}">
           <el-button size="small" @click="openDialog(row)" icon="edit">编辑</el-button>
-          <el-popconfirm title="确定删除此流程吗？" @confirm="handleDelete(row.taskId)">
+          <el-button size="small" :type="row.enabled ? 'warning' : 'success'" @click="toggleStatus(row)" icon="check">
+            {{ row.enabled ? '禁用' : '启用' }}
+          </el-button>
+          <el-popconfirm title="确定删除此流程吗？" @confirm="handleDelete(row.id)">
             <template #reference>
               <el-button size="small" type="danger" icon="delete">删除</el-button>
             </template>
@@ -75,8 +90,8 @@
     <!-- 分页 -->
     <div class="pagination">
       <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.size"
+          v-model:current-page="pagination.pageNum"
+          v-model:page-size="pagination.pageSize"
           :total="pagination.total"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
@@ -93,8 +108,8 @@
         @close="resetForm"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <el-form-item label="流程名称" prop="taskName">
-          <el-input v-model="form.taskName" placeholder="请输入流程名称" />
+        <el-form-item label="流程名称" prop="processName">
+          <el-input v-model="form.processName" placeholder="请输入流程名称" />
         </el-form-item>
 
         <el-form-item label="任务类型" prop="taskType">
@@ -103,54 +118,54 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="适用范围" prop="applyType">
-          <el-radio-group v-model="form.applyType" @change="handleApplyTypeChange">
-            <el-radio label="all">所有设备</el-radio>
-            <el-radio label="workshop">按车间</el-radio>
-            <el-radio label="line">按产线</el-radio>
-            <el-radio label="segment">按工段</el-radio>
-            <el-radio label="device">按具体设备</el-radio>
+        <el-form-item label="适用范围" prop="scope">
+          <el-radio-group v-model="form.scope" @change="handleApplyTypeChange">
+            <el-radio :label="0">所有设备</el-radio>
+            <el-radio :label="1">按车间</el-radio>
+            <el-radio :label="2">按产线</el-radio>
+            <el-radio :label="3">按工段</el-radio>
+            <el-radio :label="4">按具体设备</el-radio>
           </el-radio-group>
         </el-form-item>
 
         <!-- 根据适用范围显示不同的选择器 -->
-        <el-form-item v-if="form.applyType === 'workshop'" label="选择车间" prop="workshop">
-          <el-select v-model="form.workshop" placeholder="请选择车间">
-            <el-option v-for="ws in workshopOptions" :key="ws" :label="`${ws}车间`" :value="ws" />
+        <el-form-item v-if="form.scope === 1" label="选择车间" prop="workshopId">
+          <el-select v-model="form.workshopId" placeholder="请选择车间">
+            <el-option v-for="ws in workshopOptions" :key="ws.id" :label="ws.name" :value="ws.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="form.applyType === 'line'" label="选择车间" prop="workshop">
-          <el-select v-model="form.workshop" placeholder="请选择车间" @change="handleDialogWorkshopChange">
-            <el-option v-for="ws in workshopOptions" :key="ws" :label="`${ws}车间`" :value="ws" />
+        <el-form-item v-if="form.scope === 2" label="选择车间" prop="workshopId">
+          <el-select v-model="form.workshopId" placeholder="请选择车间" @change="handleDialogWorkshopChange">
+            <el-option v-for="ws in workshopOptions" :key="ws.id" :label="ws.name" :value="ws.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="form.applyType === 'line'" label="选择产线" prop="line">
-          <el-select v-model="form.line" placeholder="请选择产线">
-            <el-option v-for="line in dialogLineOptions" :key="line" :label="`${line}产线`" :value="line" />
+        <el-form-item v-if="form.scope === 2" label="选择产线" prop="lineId">
+          <el-select v-model="form.lineId" placeholder="请选择产线">
+            <el-option v-for="line in dialogLineOptions" :key="line.id" :label="line.name" :value="line.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="form.applyType === 'segment'" label="选择车间" prop="workshop">
-          <el-select v-model="form.workshop" placeholder="请选择车间" @change="handleDialogWorkshopChange">
-            <el-option v-for="ws in workshopOptions" :key="ws" :label="`${ws}车间`" :value="ws" />
+        <el-form-item v-if="form.scope === 3" label="选择车间" prop="workshopId">
+          <el-select v-model="form.workshopId" placeholder="请选择车间" @change="handleDialogWorkshopChange">
+            <el-option v-for="ws in workshopOptions" :key="ws.id" :label="ws.name" :value="ws.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="form.applyType === 'segment'" label="选择产线" prop="line">
-          <el-select v-model="form.line" placeholder="请选择产线" @change="handleDialogLineChange">
-            <el-option v-for="line in dialogLineOptions" :key="line" :label="`${line}产线`" :value="line" />
+        <el-form-item v-if="form.scope === 3" label="选择产线" prop="lineId">
+          <el-select v-model="form.lineId" placeholder="请选择产线" @change="handleDialogLineChange">
+            <el-option v-for="line in dialogLineOptions" :key="line.id" :label="line.name" :value="line.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="form.applyType === 'segment'" label="选择工段" prop="segment">
-          <el-select v-model="form.segment" placeholder="请选择工段">
-            <el-option v-for="segment in segmentOptions" :key="segment" :label="segment" :value="segment" />
+        <el-form-item v-if="form.scope === 3" label="选择工段" prop="segmentId">
+          <el-select v-model="form.segmentId" placeholder="请选择工段">
+            <el-option v-for="segment in segmentOptions" :key="segment.id" :label="segment.name" :value="segment.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item v-if="form.applyType === 'device'" label="选择设备" prop="deviceCode">
+        <el-form-item v-if="form.scope === 4" label="选择设备" prop="deviceCode">
           <el-select
               v-model="form.deviceCode"
               placeholder="请选择设备"
@@ -162,15 +177,15 @@
             <el-option
                 v-for="device in deviceOptions"
                 :key="device.deviceCode"
-                :label="`${device.name} (${device.deviceCode}) - ${device.workshop}车间${device.line ? `-${device.line}产线` : ''}${device.segment ? `-${device.segment}` : ''}`"
+                :label="`${device.deviceName} (${device.deviceCode}) - ${device.workshopName || ''}${device.lineName ? `-${device.lineName}` : ''}${device.segmentName ? `-${device.segmentName}` : ''}`"
                 :value="device.deviceCode"
             />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="审批人" prop="approvers">
+        <el-form-item label="审批人" prop="approverIds">
           <el-select
-              v-model="form.approvers"
+              v-model="form.approverIds"
               multiple
               filterable
               placeholder="请选择审批人"
@@ -178,18 +193,22 @@
           >
             <el-option
                 v-for="user in allUsers"
-                :key="user.userId"
-                :label="user.userName"
-                :value="user.userId"
+                :key="user.id"
+                :label="user.realName || user.userName"
+                :value="user.id"
             />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="审批顺序">
-          <el-radio-group v-model="form.approveOrder">
-            <el-radio label="parallel">并行审批(任意一人通过即可)</el-radio>
-            <el-radio label="sequential">顺序审批(按顺序依次审批)</el-radio>
+        <el-form-item label="审批顺序" prop="approvalRule">
+          <el-radio-group v-model="form.approvalRule">
+            <el-radio :label="0">并行审批(任意一人通过即可)</el-radio>
+            <el-radio :label="1">顺序审批(按顺序依次审批)</el-radio>
           </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="状态" prop="enabled">
+          <el-switch v-model="form.enabled" active-text="启用" inactive-text="禁用" />
         </el-form-item>
       </el-form>
 
@@ -204,26 +223,36 @@
 <script setup>
 import {ref, reactive, onMounted} from 'vue'
 import {ElMessage} from 'element-plus'
-import {getWorkshopOptions, getLineOptionsByWorkshop, getSegmentOptions, getDevicesByPage} from '@/api/eqAPI'
+
+import {
+  getAreaTree,
+  getChildAreas
+} from '@/api/equipment/EquipmentLedger'
+
+// 保留其他需要的导入
+import {
+  getDevicesByPage,
+  getApprovalProcesses,
+  createApprovalProcess,
+  updateApprovalProcess,
+  deleteApprovalProcess,
+  getAllUsers,
+  getWorkshopList,
+  getLineListByWorkshop,
+  getSegmentListByLine,
+  searchDevicesApi
+} from '@/api/eqAPI'
 
 // 用户数据
-const allUsers = ref([
-  {userId: 1, userName: '张三', role: 'manager'},
-  {userId: 2, userName: '李四', role: 'engineer'},
-  {userId: 3, userName: '王五', role: 'supervisor'},
-  {userId: 4, userName: '赵六', role: 'technician'},
-  {userId: 5, userName: '钱七', role: 'quality'},
-  {userId: 6, userName: '孙八', role: 'maintenance'}
-])
+const allUsers = ref([])
 
 // 任务类型选项
 const taskTypeOptions = ref([
-  {value: 'idle', label: '设备闲置'},
-  {value: 'scrap', label: '设备报废'},
-  {value: 'transfer', label: '设备转移'},
-  {value: 'maintenance', label: '设备维修'},
-  {value: 'purchase', label: '设备采购'},
-  {value: 'acceptance', label: '设备验收'}
+  {value: 0, label: '设备闲置'},
+  {value: 1, label: '设备报废'},
+  {value: 2, label: '设备转移'},
+  {value: 3, label: '设备维修'},
+  {value: 4, label: '设备采购'}
 ])
 
 // 车间、产线、工段选项
@@ -231,60 +260,25 @@ const workshopOptions = ref([])
 const lineOptions = ref([])
 const segmentOptions = ref([])
 const dialogLineOptions = ref([])
-const dialogSegmentOptions = ref([])
 
 // 设备搜索相关
 const deviceOptions = ref([])
 const deviceSearchLoading = ref(false)
 
 // 表格数据
-const tableData = ref([
-  {
-    taskId: 'T20230001',
-    taskName: 'C2车间设备报废流程',
-    taskType: 'scrap',
-    applyType: 'workshop',
-    workshop: 'C2',
-    approvers: [1, 3],
-    approveOrder: 'parallel',
-    createTime: '2023-06-15T09:30:00'
-  },
-  {
-    taskId: 'T20230002',
-    taskName: '31产线设备转移流程',
-    taskType: 'transfer',
-    applyType: 'line',
-    workshop: 'C2',
-    line: '31',
-    approvers: [2, 4],
-    approveOrder: 'sequential',
-    createTime: '2023-06-18T14:20:00'
-  },
-  {
-    taskId: 'T20230003',
-    taskName: 'CFOG段设备维修流程',
-    taskType: 'maintenance',
-    applyType: 'segment',
-    workshop: 'C2',
-    line: '31',
-    segment: 'CFOG段',
-    approvers: [5, 6],
-    approveOrder: 'parallel',
-    createTime: '2023-06-20T11:15:00'
-  }
-])
+const tableData = ref([])
 
 // 筛选表单
 const filterForm = reactive({
   taskType: '',
-  workshop: '',
-  line: ''
+  workshopId: '',
+  lineId: ''
 })
 
 // 分页
 const pagination = reactive({
-  page: 1,
-  size: 10,
+  pageNum: 1,
+  pageSize: 10,
   total: 0
 })
 
@@ -295,72 +289,118 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref()
 const form = reactive({
-  taskId: '',
-  taskName: '',
+  id: '',
+  processName: '',
   taskType: '',
-  applyType: 'all',
-  workshop: '',
-  line: '',
-  segment: '',
+  scope: 0,
+  workshopId: '',
+  lineId: '',
+  segmentId: '',
   deviceCode: '',
   deviceName: '',
-  approvers: [],
-  approveOrder: 'parallel'
+  approverIds: [],
+  approvalRule: 0,
+  enabled: true
 })
 
 // 表单验证规则
 const rules = reactive({
-  taskName: [{required: true, message: '请输入流程名称', trigger: 'blur'}],
+  processName: [{required: true, message: '请输入流程名称', trigger: 'blur'}],
   taskType: [{required: true, message: '请选择任务类型', trigger: 'change'}],
-  applyType: [{required: true, message: '请选择适用范围', trigger: 'change'}],
-  workshop: [{required: true, message: '请选择车间', trigger: 'change'}],
-  line: [{required: true, message: '请选择产线', trigger: 'change'}],
-  segment: [{required: true, message: '请选择工段', trigger: 'change'}],
+  scope: [{required: true, message: '请选择适用范围', trigger: 'change'}],
+  workshopId: [{required: true, message: '请选择车间', trigger: 'change'}],
+  lineId: [{required: true, message: '请选择产线', trigger: 'change'}],
+  segmentId: [{required: true, message: '请选择工段', trigger: 'change'}],
   deviceCode: [{required: true, message: '请选择设备', trigger: 'change'}],
-  approvers: [{required: true, message: '请选择至少一个审批人', trigger: 'change'}]
+  approverIds: [{required: true, message: '请选择至少一个审批人', trigger: 'change'}],
+  approvalRule: [{required: true, message: '请选择审批规则', trigger: 'change'}]
 })
 
 // 初始化加载选项数据
 onMounted(async () => {
   try {
-    workshopOptions.value = await getWorkshopOptions()
-    segmentOptions.value = await getSegmentOptions()
-    // 模拟加载表格数据
+    await loadWorkshopOptions()
+    await loadAllUsers()
     loadTableData()
   } catch (error) {
     ElMessage.error('加载选项数据失败')
   }
 })
 
-// 加载表格数据
-const loadTableData = () => {
-  loading.value = true
-  // 模拟API请求
-  setTimeout(() => {
-    // 实际项目中这里应该是API调用
-    const filteredData = tableData.value.filter(item => {
-      return (
-          (!filterForm.taskType || item.taskType === filterForm.taskType) &&
-          (!filterForm.workshop || item.workshop === filterForm.workshop) &&
-          (!filterForm.line || item.line === filterForm.line)
-      )
-    })
+// 加载车间选项
+const loadWorkshopOptions = async () => {
+  try {
+    const response = await getAreaTree()
+    workshopOptions.value = response.data.data.map(item => ({
+      id: item.id,
+      name: item.areaName
+    }))
+  } catch (error) {
+    console.error('获取车间列表失败:', error)
+    workshopOptions.value = [
+      {id: 1, name: 'errorC1'},
+      {id: 2, name: 'errorC2'},
+      {id: 3, name: 'errorC3'},
+      {id: 4, name: 'errorC4'},
+      {id: 5, name: 'errorC5'}
+    ]
+  }
+}
 
-    const start = (pagination.page - 1) * pagination.size
-    const end = start + pagination.size
-    tableData.value = filteredData.slice(start, end)
-    pagination.total = filteredData.length
+// 加载所有用户
+const loadAllUsers = async () => {
+  try {
+    const response = await getAllUsers()
+    allUsers.value = response.data
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    // 使用模拟数据作为备选
+    allUsers.value = [
+      {id: 1, userName: '张三', realName: '张三', role: 'manager'},
+      {id: 2, userName: '李四', realName: '李四', role: 'engineer'},
+      {id: 3, userName: '王五', realName: '王五', role: 'supervisor'},
+      {id: 4, userName: '赵六', realName: '赵六', role: 'technician'},
+      {id: 5, userName: '钱七', realName: '钱七', role: 'quality'},
+      {id: 6, userName: '孙八', realName: '孙八', role: 'maintenance'}
+    ]
+  }
+}
+
+// 加载表格数据
+const loadTableData = async () => {
+  loading.value = true
+  try {
+    const params = {
+      pageNum: pagination.pageNum,
+      pageSize: pagination.pageSize,
+      taskType: filterForm.taskType,
+      workshopId: filterForm.workshopId,
+      lineId: filterForm.lineId
+    }
+
+    const response = await getApprovalProcesses(params)
+    tableData.value = response.data.data.records
+    pagination.total = response.data.data.total
+  } catch (error) {
+    console.error('获取审批流程列表失败:', error)
+    ElMessage.error('获取审批流程列表失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 车间变化处理
 const handleWorkshopChange = async () => {
-  filterForm.line = ''
-  if (filterForm.workshop) {
+  filterForm.lineId = ''
+  if (filterForm.workshopId) {
     try {
-      lineOptions.value = await getLineOptionsByWorkshop(filterForm.workshop)
+      const response = await getChildAreas(filterForm.workshopId)
+      lineOptions.value = response.data.data.map(item => ({
+        id: item.id,
+        name: item.areaName
+      }))
     } catch (error) {
+      console.error('加载产线数据失败:', error)
       ElMessage.error('加载产线数据失败')
     }
   } else {
@@ -370,43 +410,62 @@ const handleWorkshopChange = async () => {
 
 // 弹窗内车间变化处理
 const handleDialogWorkshopChange = async () => {
-  if (form.workshop) {
+  if (form.workshopId) {
     try {
-      dialogLineOptions.value = await getLineOptionsByWorkshop(form.workshop)
+      const response = await getChildAreas(form.workshopId)
+      dialogLineOptions.value = response.data.data.map(item => ({
+        id: item.id,
+        name: item.areaName
+      }))
     } catch (error) {
+      console.error('加载产线数据失败:', error)
       ElMessage.error('加载产线数据失败')
     }
   } else {
     dialogLineOptions.value = []
-    form.line = ''
-    form.segment = ''
+    form.lineId = ''
+    form.segmentId = ''
   }
 }
 
 // 弹窗内产线变化处理
-const handleDialogLineChange = () => {
-  // 这里可以加载工段下的设备等
-  form.segment = ''
+const handleDialogLineChange = async () => {
+  if (form.lineId) {
+    try {
+      const response = await getChildAreas(form.lineId)
+      segmentOptions.value = response.data.data.map(item => ({
+        id: item.id,
+        name: item.areaName
+      }))
+      console.log(segmentOptions.value)
+    } catch (error) {
+      console.error('加载工段数据失败:', error)
+      ElMessage.error('加载工段数据失败')
+    }
+  } else {
+    segmentOptions.value = []
+    form.segmentId = ''
+  }
 }
 
 // 任务类型变化处理
 const handleTaskTypeChange = (type) => {
   // 可以根据不同的任务类型设置默认审批人
-  if (type === 'scrap') {
+  if (type === 1) {
     // 报废流程默认添加质量管理人员
-    form.approvers = allUsers.value.filter(u => u.role === 'quality').map(u => u.userId)
-  } else if (type === 'maintenance') {
+    form.approverIds = allUsers.value.filter(u => u.role === 'quality').map(u => u.id)
+  } else if (type === 3) {
     // 维修流程默认添加维修人员
-    form.approvers = allUsers.value.filter(u => u.role === 'maintenance').map(u => u.userId)
+    form.approverIds = allUsers.value.filter(u => u.role === 'maintenance').map(u => u.id)
   }
 }
 
 // 适用范围变化处理
 const handleApplyTypeChange = (type) => {
   // 重置相关字段
-  form.workshop = ''
-  form.line = ''
-  form.segment = ''
+  form.workshopId = ''
+  form.lineId = ''
+  form.segmentId = ''
   form.deviceCode = ''
   form.deviceName = ''
 }
@@ -420,31 +479,10 @@ const searchDevices = async (query) => {
 
   deviceSearchLoading.value = true
   try {
-    // 模拟设备搜索
-    const result = await getDevicesByPage({
-      page: 1,
-      size: 10,
-      filterForm: {
-        deviceCode: query,
-        name: query
-      }
-    })
-
-    // 提取设备列表
-    const extractDevices = (nodes) => {
-      let devices = []
-      nodes.forEach(node => {
-        if (node.type === 'device') {
-          devices.push(node)
-        } else if (node.children && node.children.length > 0) {
-          devices = devices.concat(extractDevices(node.children))
-        }
-      })
-      return devices
-    }
-
-    deviceOptions.value = extractDevices(result.list)
+    const response = await searchDevicesApi({ keyword: query })
+    deviceOptions.value = response.data
   } catch (error) {
+    console.error('搜索设备失败:', error)
     ElMessage.error('搜索设备失败')
   } finally {
     deviceSearchLoading.value = false
@@ -452,27 +490,31 @@ const searchDevices = async (query) => {
 }
 
 // 打开弹窗
-const openDialog = (row) => {
+const openDialog = async (row) => {
   if (row) {
     // 编辑模式
     isEdit.value = true
     Object.assign(form, {
-      taskId: row.taskId,
-      taskName: row.taskName,
+      id: row.id,
+      processName: row.processName,
       taskType: row.taskType,
-      applyType: row.applyType,
-      workshop: row.workshop || '',
-      line: row.line || '',
-      segment: row.segment || '',
+      scope: row.scope,
+      workshopId: row.workshop?.id || '',
+      lineId: row.line?.id || '',
+      segmentId: row.segment?.id || '',
       deviceCode: row.deviceCode || '',
       deviceName: row.deviceName || '',
-      approvers: row.approvers,
-      approveOrder: row.approveOrder
+      approverIds: row.approvers.map(a => a.id),
+      approvalRule: row.approvalRule,
+      enabled: row.enabled
     })
 
     // 加载相关选项
-    if (row.workshop) {
-      handleDialogWorkshopChange()
+    if (row.workshop?.id) {
+      await handleDialogWorkshopChange()
+    }
+    if (row.line?.id) {
+      await handleDialogLineChange()
     }
   } else {
     // 新增模式
@@ -487,50 +529,66 @@ const handleSubmit = () => {
   formRef.value.validate(async (valid) => {
     if (!valid) return
 
-    // 如果是设备级别的流程，获取设备名称
-    if (form.applyType === 'device' && form.deviceCode) {
-      const device = deviceOptions.value.find(d => d.deviceCode === form.deviceCode)
-      if (device) {
-        form.deviceName = device.name
-      }
-    }
-
-    // 模拟API请求
     try {
+      // 准备提交数据
+      const submitData = {
+        processName: form.processName,
+        taskType: form.taskType,
+        scope: form.scope,
+        workshopId: form.scope === 1 || form.scope === 2 || form.scope === 3 ? form.workshopId : null,
+        lineId: form.scope === 2 || form.scope === 3 ? form.lineId : null,
+        segmentId: form.scope === 3 ? form.segmentId : null,
+        deviceCode: form.scope === 4 ? form.deviceCode : null,
+        approverIds: form.approverIds,
+        approvalRule: form.approvalRule,
+        enabled: form.enabled
+      }
+
       if (isEdit.value) {
         // 更新
-        const index = tableData.value.findIndex(item => item.taskId === form.taskId)
-        if (index !== -1) {
-          tableData.value.splice(index, 1, {...form})
-        }
+        await updateApprovalProcess(form.id, submitData)
+        ElMessage.success('更新成功')
       } else {
         // 新增
-        const newTask = {
-          ...form,
-          taskId: `T${new Date().getTime()}`,
-          createTime: new Date().toISOString()
+        const a = await createApprovalProcess(submitData)
+        console.log(a.data)
+        if(a.data.code === 'Error'){
+          ElMessage.error(a.data.msg)
+        }else{
+          ElMessage.success(a.data.msg)
         }
-        tableData.value.unshift(newTask)
       }
 
-      ElMessage.success(isEdit.value ? '更新成功' : '新增成功')
       dialogVisible.value = false
       loadTableData()
     } catch (error) {
+      console.error('保存失败:', error)
       ElMessage.error(isEdit.value ? '更新失败' : '新增失败')
     }
   })
 }
 
 // 删除流程
-const handleDelete = (taskId) => {
-  // 模拟API请求
+const handleDelete = async (id) => {
   try {
-    tableData.value = tableData.value.filter(item => item.taskId !== taskId)
+    await deleteApprovalProcess(id)
     ElMessage.success('删除成功')
     loadTableData()
   } catch (error) {
+    console.error('删除失败:', error)
     ElMessage.error('删除失败')
+  }
+}
+
+// 启用/禁用流程
+const toggleStatus = async (row) => {
+  try {
+    await updateApprovalProcess(row.id, { enabled: !row.enabled })
+    ElMessage.success(row.enabled ? '已禁用' : '已启用')
+    loadTableData()
+  } catch (error) {
+    console.error('状态切换失败:', error)
+    ElMessage.error('状态切换失败')
   }
 }
 
@@ -538,44 +596,45 @@ const handleDelete = (taskId) => {
 const resetForm = () => {
   formRef.value?.resetFields()
   Object.assign(form, {
-    taskId: '',
-    taskName: '',
+    id: '',
+    processName: '',
     taskType: '',
-    applyType: 'all',
-    workshop: '',
-    line: '',
-    segment: '',
+    scope: 0,
+    workshopId: '',
+    lineId: '',
+    segmentId: '',
     deviceCode: '',
     deviceName: '',
-    approvers: [],
-    approveOrder: 'parallel'
+    approverIds: [],
+    approvalRule: 0,
+    enabled: true
   })
 }
 
 // 搜索
 const handleSearch = () => {
-  pagination.page = 1
+  pagination.pageNum = 1
   loadTableData()
 }
 
 // 重置筛选
 const resetFilter = () => {
   filterForm.taskType = ''
-  filterForm.workshop = ''
-  filterForm.line = ''
+  filterForm.workshopId = ''
+  filterForm.lineId = ''
   lineOptions.value = []
   handleSearch()
 }
 
 // 分页变化
 const handleSizeChange = (size) => {
-  pagination.size = size
-  pagination.page = 1
+  pagination.pageSize = size
+  pagination.pageNum = 1
   loadTableData()
 }
 
 const handleCurrentChange = (page) => {
-  pagination.page = page
+  pagination.pageNum = page
   loadTableData()
 }
 
@@ -589,21 +648,25 @@ const formatTime = (timeStr) => {
 // 获取任务类型标签样式
 const getTaskTypeTag = (type) => {
   switch (type) {
-    case 'idle':
+    case 0:
       return 'warning'
-    case 'scrap':
+    case 1:
       return 'danger'
-    case 'transfer':
+    case 2:
       return 'primary'
-    case 'maintenance':
+    case 3:
       return 'info'
-    case 'purchase':
+    case 4:
       return 'success'
-    case 'acceptance':
-      return ''
     default:
       return ''
   }
+}
+
+// 获取任务类型标签文本
+const getTaskTypeLabel = (type) => {
+  const typeObj = taskTypeOptions.value.find(t => t.value === type)
+  return typeObj ? typeObj.label : '未知'
 }
 </script>
 
