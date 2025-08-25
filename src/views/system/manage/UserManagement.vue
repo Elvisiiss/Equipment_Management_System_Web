@@ -37,6 +37,19 @@
         <el-option label="启用" value="0"></el-option>
         <el-option label="禁用" value="1"></el-option>
       </el-select>
+      <el-select
+          v-model="userShiftFilter"
+          placeholder="选择班次"
+          class="shift-filter"
+          clearable
+      >
+        <el-option
+            v-for="shift in shifts"
+            :key="shift.id"
+            :label="shift.shiftName"
+            :value="shift.id"
+        ></el-option>
+      </el-select>
     </div>
 
     <el-table
@@ -44,6 +57,7 @@
         border
         style="width: 100%; margin-top: 16px;"
         :row-class-name="tableRowClassName"
+        v-loading="loadingUsers"
     >
       <el-table-column prop="id" label="ID" width="80"></el-table-column>
       <el-table-column prop="userName" label="账户"></el-table-column>
@@ -68,6 +82,7 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column prop="shiftName" label="班次"></el-table-column>
       <el-table-column prop="remark" label="备注"></el-table-column>
       <el-table-column label="状态">
         <template #default="scope">
@@ -171,6 +186,20 @@
             ></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item label="班次" prop="shiftId">
+          <el-select
+              v-model="formUser.shiftId"
+              placeholder="请选择班次"
+              clearable
+          >
+            <el-option
+                v-for="shift in shifts"
+                :key="shift.id"
+                :label="shift.shiftName"
+                :value="shift.id"
+            ></el-option>
+          </el-select>
+        </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input
               v-model="formUser.remark"
@@ -242,10 +271,14 @@ const loadingUsers = ref(false);
 // 角色数据
 const roles = ref([]);
 
+// 班次数据
+const shifts = ref([]);
+
 // 用户管理相关状态
 const userSearchQuery = ref('');
 const userRoleFilter = ref('');
 const userStatusFilter = ref('');
+const userShiftFilter = ref('');
 const userCurrentPage = ref(1);
 const userPageSize = ref(10);
 const showAddUserDialog = ref(false);
@@ -259,6 +292,7 @@ const formUser = ref({
   gender: 0,
   email: '',
   roleIds: [],
+  shiftId: null,
   remark: '',
   status: 0
 });
@@ -317,7 +351,14 @@ const userIdToReset = ref(null);
 
 // 计算属性 - 筛选用户
 const filteredUsers = computed(() => {
-  return users.value.filter(user => {
+  return users.value.map(user => {
+    // 添加班次名称到用户对象中，便于显示
+    const shift = shifts.value.find(s => s.id === user.shiftId);
+    return {
+      ...user,
+      shiftName: shift ? shift.shiftName : '未分配'
+    };
+  }).filter(user => {
     const matchesSearch = user.userName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
         user.realName.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
         user.email.toLowerCase().includes(userSearchQuery.value.toLowerCase()) ||
@@ -325,8 +366,9 @@ const filteredUsers = computed(() => {
         user.phoneNumber.includes(userSearchQuery.value);
     const matchesRole = !userRoleFilter.value || user.roleIds.includes(Number(userRoleFilter.value));
     const matchesStatus = !userStatusFilter.value || user.status === Number(userStatusFilter.value);
+    const matchesShift = !userShiftFilter.value || user.shiftId === Number(userShiftFilter.value);
 
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesRole && matchesStatus && matchesShift;
   });
 });
 
@@ -341,6 +383,7 @@ const paginatedUsers = computed(() => {
 onMounted(() => {
   fetchUsers();
   fetchRoles();
+  fetchShifts();
 });
 
 // 方法 - 获取用户列表
@@ -364,6 +407,18 @@ const fetchRoles = async () => {
     roles.value = response.data.data;
   } catch (error) {
     ElMessage.error('获取角色列表失败');
+    console.error(error);
+  }
+};
+
+// 方法 - 获取班次列表
+const fetchShifts = async () => {
+  try {
+    // 假设API为getShiftList，请根据实际情况调整
+    const response = await AuthAPI.getShiftList();
+    shifts.value = response.data.data;
+  } catch (error) {
+    ElMessage.error('获取班次列表失败');
     console.error(error);
   }
 };
@@ -510,7 +565,7 @@ const tableRowClassName = ({row}) => {
   width: 300px;
 }
 
-.role-filter, .status-filter {
+.role-filter, .status-filter, .shift-filter {
   width: 200px;
 }
 

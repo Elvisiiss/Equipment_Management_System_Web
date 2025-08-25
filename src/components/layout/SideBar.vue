@@ -452,16 +452,16 @@ const menuItems = [
             meta: {title: '备件编码管理'},
             permissionId: 1
           },
-          {
-            path: '/parts/manage/SparePartInventory',
-            name: 'SparePartInventory',
-            meta: {title: '备品备件台账'},
-            permissionId: 1
-          },
+          // {
+          //   path: '/parts/manage/SparePartInventory',
+          //   name: 'SparePartInventory',
+          //   meta: {title: '备品备件台账'},
+          //   permissionId: 1
+          // },
           {
             path: '/parts/manage/EdgeInventory',
             name: 'EdgeInventory',
-            meta: {title: '仓库管理(NEW)'},
+            meta: {title: '备品备件管理'},
             permissionId: 1
           },
           {

@@ -207,6 +207,13 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column prop="maintainer" label="维修工" width="120">
+          <template #default="{ row }">
+            <span v-if="row.type === 'device'">
+              {{ row.maintainer || '-' }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column prop="inTime" label="入库时间" width="120" sortable></el-table-column>
         <el-table-column prop="inCharge" label="入库负责人" width="120"></el-table-column>
         <el-table-column prop="acceptTime" label="验收时间" width="120" sortable></el-table-column>
@@ -347,6 +354,9 @@
                     min="0"
                     placeholder="请输入寿命上限(年)"
                 ></el-input>
+              </el-form-item>
+              <el-form-item label="维修工">
+                <el-input v-model="deviceForm.maintainer" placeholder="请输入维修工姓名"></el-input>
               </el-form-item>
               <el-form-item label="入库时间">
                 <el-date-picker
@@ -528,7 +538,8 @@ const deviceForm = reactive({
   acceptor: '',
   workshopId: '',
   lineId: '',
-  sectionId: ''
+  sectionId: '',
+  maintainer: '' // 新增维修工字段
 })
 
 // 计算属性：合并车间、产线、工段为区域名称
@@ -655,24 +666,6 @@ const handleDialogWorkshopChange = async () => {
 // 筛选查询
 const handleSearch = async () => {
   try {
-    // 如果没有选择车间，提示用户确认
-    // if (!filterForm.workshopId) {
-    //   try {
-    //     await ElMessageBox.confirm(
-    //         '您没有选择车间，将查询所有车间数据，数据量较大，确认继续吗？',
-    //         '提示',
-    //         {
-    //           confirmButtonText: '确定',
-    //           cancelButtonText: '取消',
-    //           type: 'warning'
-    //         }
-    //     )
-    //   } catch {
-    //     // 用户取消查询
-    //     return
-    //   }
-    // }
-
     isSearched.value = true
 
     // 构建请求参数
@@ -731,6 +724,7 @@ const convertToTreeTableData = (data) => {
           status: device.status,
           lifespan: device.dayDuration,
           inTime: device.enterFactoryTime,
+          maintainer: device.maintainer, // 映射维修工字段
           // 以下字段API未提供，暂时留空
           inCharge: '',
           acceptTime: '',
@@ -858,7 +852,8 @@ const submitDevice = async () => {
     // 转换寿命上限为天数
     const submitData = {
       ...deviceForm,
-      dayDuration: deviceForm.lifespan ? deviceForm.lifespan * 365 : null
+      dayDuration: deviceForm.lifespan ? deviceForm.lifespan * 365 : null,
+      maintainer: deviceForm.maintainer // 提交维修工信息
     }
 
     if (isEditMode.value) {
@@ -879,17 +874,17 @@ const submitDevice = async () => {
 
 // 导入/导出/模板下载
 const downloadTemplate = () => {
-  // 生成模板表头
+  // 生成模板表头，添加维修工列
   const templateHeader = [
-    ['车间', '产线', '段', '设备', '设备编码', '资产编码', '厂商', '类别', '型号', '状态', '区域ID', '寿命上限(年)', '入库时间', '入库负责人', '验收时间', '验收人']
+    ['车间', '产线', '段', '设备', '设备编码', '资产编码', '厂商', '类别', '型号', '状态', '区域ID', '寿命上限(年)', '维修工', '入库时间', '入库负责人', '验收时间', '验收人']
   ]
   const ws = XLSX.utils.aoa_to_sheet(templateHeader)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, '设备清单模板')
 
   // 下载模板
-  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const buffer = XLSX.write(wb, {bookType: 'xlsx', type: 'array'})
+  const blob = new Blob([buffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
   saveAs(blob, '设备清单导入模板.xlsx')
 }
 
@@ -899,13 +894,13 @@ const handleImport = (file) => {
     return
   }
 
-  ElMessageBox.confirm('确定导入此文件?', '提示', { type: 'warning' }).then(() => {
+  ElMessageBox.confirm('确定导入此文件?', '提示', {type: 'warning'}).then(() => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const data = new Uint8Array(e.target.result)
-      const wb = XLSX.read(data, { type: 'array' })
+      const wb = XLSX.read(data, {type: 'array'})
       const ws = wb.Sheets[wb.SheetNames[0]]
-      const excelData = XLSX.utils.sheet_to_json(ws, { header: 1 })
+      const excelData = XLSX.utils.sheet_to_json(ws, {header: 1})
 
       if (excelData.length < 2) {
         ElMessage.error('文件无有效数据')
@@ -1133,254 +1128,5 @@ body {
 .status-accepted {
   background: #e1f3d8;
   color: #67c23a;
-}
-
-.status-pending {
-  background: #fdf6ec;
-  color: #e6a23c;
-}
-
-.status-sample {
-  background: #f0f9eb;
-  color: #909399;
-}
-
-.status-idle {
-  background: #fef0f0;
-  color: #f56c6c;
-}
-
-/* 图标样式 */
-.device-icon {
-  margin-right: 8px;
-  color: #409EFF;
-}
-
-.workshop-icon {
-  margin-right: 8px;
-  color: #67c23a;
-}
-
-.line-icon {
-  margin-right: 8px;
-  color: #e6a23c;
-}
-
-.segment-icon {
-  margin-right: 8px;
-  color: #9c27b0;
-}
-
-/* 分页控件 */
-.pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* 弹窗样式 */
-.add-device-dialog {
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  padding: 20px 20px 10px;
-  border-bottom: 1px solid #eee;
-}
-
-.dialog-header i {
-  margin-right: 10px;
-  font-size: 24px;
-  color: #409EFF;
-}
-
-.dialog-header h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2f3d;
-}
-
-.dialog-body {
-  padding: 20px;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.dialog-footer {
-  padding: 15px 20px;
-  border-top: 1px solid #eee;
-  text-align: right;
-}
-
-/* 表单分区 */
-.form-section {
-  margin-bottom: 25px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #409EFF;
-  margin-bottom: 15px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed #e4e7ed;
-  display: flex;
-  align-items: center;
-}
-
-.section-title i {
-  margin-right: 8px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-
-/* 文件管理区 */
-.file-manager {
-  background: #f8f9fc;
-  border-radius: 8px;
-  padding: 15px;
-  margin-top: 10px;
-}
-
-.file-section {
-  margin-bottom: 20px;
-}
-
-.upload-area {
-  border: 1px dashed #dcdfe6;
-  border-radius: 6px;
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.3s;
-  background: #fafafa;
-}
-
-.upload-area:hover {
-  border-color: #409EFF;
-}
-
-.upload-icon {
-  font-size: 40px;
-  color: #c0c4cc;
-  margin-bottom: 10px;
-}
-
-.upload-text {
-  color: #606266;
-}
-
-.upload-hint {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 5px;
-}
-
-/* 文件列表 */
-.file-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 10px;
-}
-
-.file-card {
-  width: 200px;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.file-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-}
-
-.file-preview {
-  height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f7fa;
-}
-
-.file-preview img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.file-preview i {
-  font-size: 48px;
-  color: #409EFF;
-}
-
-.pdf-icon {
-  color: #e74c3c;
-}
-
-.word-icon {
-  color: #2b579a;
-}
-
-.file-info {
-  padding: 12px;
-}
-
-.file-name {
-  font-weight: 500;
-  margin-bottom: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.file-meta {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.file-actions {
-  display: flex;
-  justify-content: space-between;
-  border-top: 1px solid #ebeef5;
-  padding-top: 8px;
-}
-
-/* 修改app-container高度 */
-.app-container {
-  min-height: 100vh; /* 改为最小高度为视口高度 */
-  height: auto; /* 高度自动扩展 */
-}
-
-/* 为表格容器设置固定高度和滚动 */
-.table-container {
-  height: calc(100vh - 300px); /* 根据你的布局调整这个值 */
-  overflow: auto; /* 启用滚动 */
-  padding: 0 20px 20px;
-}
-
-/* 确保表格头部固定 */
-:deep(.el-table) {
-  overflow: visible; /* 防止表格内部出现双滚动条 */
-}
-
-/* 固定表头 */
-:deep(.el-table__header-wrapper) {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: white;
 }
 </style>

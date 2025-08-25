@@ -441,12 +441,12 @@ const routes = [
         component: () => import('@/views/parts/manage/SparePartCode.vue'),
         meta: { title: '备件编码管理' },
     },
-    {
-        path: '/parts/manage/SparePartInventory',
-        name: 'SparePartInventory',
-        component: () => import('@/views/parts/manage/SparePartInventory.vue'),
-        meta: { title: '备品备件台账' },
-    },
+    // {
+    //     path: '/parts/manage/SparePartInventory',
+    //     name: 'SparePartInventory',
+    //     component: () => import('@/views/parts/manage/SparePartInventory.vue'),
+    //     meta: { title: '备品备件台账' },
+    // },
     {
         path: '/parts/manage/EdgeInventory',
         name: 'EdgeInventory',
