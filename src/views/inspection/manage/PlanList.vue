@@ -315,7 +315,7 @@
     <el-dialog
         v-model="inspectionPlanDialogVisible"
         :title="`${currentModel?.modelCode || ''} 点检计划配置`"
-        width="80%"
+        width="90%"
         top="5vh"
         :close-on-click-modal="false"
     >
@@ -323,6 +323,25 @@
         <el-form :model="inspectionPlanForm" label-width="120px">
           <el-form-item label="计划名称" required>
             <el-input v-model="inspectionPlanForm.name" placeholder="请输入点检计划名称" />
+          </el-form-item>
+
+          <el-form-item label="巡检人" required>
+            <el-select
+                v-model="inspectionPlanForm.inspector"
+                multiple
+                filterable
+                allow-create
+                default-first-option
+                placeholder="请选择或输入巡检人"
+                style="width: 100%"
+            >
+              <el-option
+                  v-for="person in inspectorOptions"
+                  :key="person"
+                  :label="person"
+                  :value="person"
+              />
+            </el-select>
           </el-form-item>
 
           <el-form-item label="执行频率" required>
@@ -455,7 +474,7 @@
                     <el-input v-model="row.name" placeholder="输入点检项名称" />
                   </template>
                 </el-table-column>
-                <el-table-column label="点检内容" width="300">
+                <el-table-column label="点检内容" width="250">
                   <template #default="{ row }">
                     <el-input
                         v-model="row.content"
@@ -463,6 +482,43 @@
                         type="textarea"
                         :rows="2"
                     />
+                  </template>
+                </el-table-column>
+                <el-table-column label="值类型" width="120">
+                  <template #default="{ row }">
+                    <el-select v-model="row.valueType" size="small" @change="handleValueTypeChange(row)">
+                      <el-option label="文本" value="text" />
+                      <el-option label="数值" value="number" />
+                    </el-select>
+                  </template>
+                </el-table-column>
+                <el-table-column label="下限" width="120">
+                  <template #default="{ row }">
+                    <el-input-number
+                        v-if="row.valueType === 'number'"
+                        v-model="row.minValue"
+                        :precision="2"
+                        size="small"
+                        style="width: 100%"
+                    />
+                    <span v-else>-</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="上限" width="120">
+                  <template #default="{ row }">
+                    <el-input-number
+                        v-if="row.valueType === 'number'"
+                        v-model="row.maxValue"
+                        :precision="2"
+                        size="small"
+                        style="width: 100%"
+                    />
+                    <span v-else>-</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="必须拍照" width="100" align="center">
+                  <template #default="{ row }">
+                    <el-checkbox v-model="row.requireImage" />
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="100">
@@ -620,15 +676,19 @@ const inspectionPlanDialogVisible = ref(false)
 const importInspectionDialogVisible = ref(false)
 const importInspectionJson = ref('')
 const inspectionTab = ref('auto')
+// 巡检人选项
+const inspectorOptions = ref(['张三', '李四', '王五', '赵六'])
+// 点检计划表单
 const inspectionPlanForm = reactive({
   name: '',
+  inspector: [], // 巡检人
   frequencyType: 'daily', // daily: 每天一次, multiple: 一天多次
   singleTime: '10:00',
   multipleTimes: ['08:00', '12:00', '16:00'],
   cycle: 1,
   enabled: true,
   autoItems: [],
-  manualItems: []
+  manualItems: [] // 手动点检项
 })
 
 // 监听JSON视图变化，同步到表格数据
@@ -825,6 +885,7 @@ const showInspectionPlanDialog = (model) => {
   // 初始化点检计划表单
   Object.assign(inspectionPlanForm, {
     name: `${model.modelCode} 点检计划`,
+    inspector: ['张三'], // 默认巡检人
     frequencyType: 'daily',
     singleTime: '10:00',
     multipleTimes: ['08:00', '12:00', '16:00'],
@@ -856,20 +917,33 @@ const showInspectionPlanDialog = (model) => {
       {
         id: 1,
         name: '设备外观检查',
-        content: '检查设备表面是否有损伤、锈蚀等情况'
+        content: '检查设备表面是否有损伤、锈蚀等情况',
+        valueType: 'text',
+        requireImage: true
       },
       {
         id: 2,
-        name: '连接部位检查',
-        content: '检查各连接部位是否松动、泄漏'
+        name: '温度检查',
+        content: '检查设备运行温度是否正常',
+        valueType: 'number',
+        minValue: 20,
+        maxValue: 80,
+        requireImage: false
       }
     ]
   }
 
   // 加载当前模型的参数以便在自动点检项中选择
-  showParamConfigDialog(model).then(() => {
-    // 参数加载完成后的处理
-  });
+  showParamConfigDialog(model)
+}
+
+// 处理手动点检项值类型变化
+const handleValueTypeChange = (row) => {
+  if (row.valueType === 'text') {
+    // 文本类型不需要上下限
+    row.minValue = null
+    row.maxValue = null
+  }
 }
 
 // 新增产品型号
@@ -1046,7 +1120,11 @@ const addManualInspectionItem = () => {
   inspectionPlanForm.manualItems.push({
     id: Date.now(),
     name: '',
-    content: ''
+    content: '',
+    valueType: 'text', // 默认文本类型
+    minValue: null,
+    maxValue: null,
+    requireImage: false // 默认不需要拍照
   })
 }
 
@@ -1060,9 +1138,28 @@ const saveInspectionPlan = () => {
     return
   }
 
+  if (!inspectionPlanForm.inspector || inspectionPlanForm.inspector.length === 0) {
+    ElMessage.error('请选择巡检人')
+    return
+  }
+
   if (inspectionPlanForm.autoItems.length === 0 && inspectionPlanForm.manualItems.length === 0) {
     ElMessage.error('请至少添加一个点检项')
     return
+  }
+
+  // 验证手动点检项
+  for (const item of inspectionPlanForm.manualItems) {
+    if (item.valueType === 'number') {
+      if (item.minValue === null || item.maxValue === null) {
+        ElMessage.error(`请为【${item.name}】设置有效的上下限`)
+        return
+      }
+      if (item.minValue >= item.maxValue) {
+        ElMessage.error(`【${item.name}】的下限必须小于上限`)
+        return
+      }
+    }
   }
 
   // 保存点检计划到当前模型

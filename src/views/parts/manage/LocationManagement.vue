@@ -16,6 +16,25 @@
           </el-input>
         </el-form-item>
 
+        <!-- 添加物料分类过滤 -->
+        <el-form-item label="物料分类">
+          <el-select
+              v-model="filterCategory"
+              placeholder="请选择物料分类"
+              clearable
+              @change="resetPagination"
+          >
+            <el-option value="all">所有分类</el-option>
+            <el-option
+                v-for="category in categoryOptions"
+                :key="category.value"
+                :value="category.value"
+            >
+              {{ category.label }}
+            </el-option>
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="贵重属性">
           <el-select
               v-model="filterValuable"
@@ -73,6 +92,11 @@
         <el-table-column prop="name" label="名称" width="180">
           <template #default="{ row }">
             <span class="part-link">{{ row.name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="category" label="物料分类" width="120">
+          <template #default="{ row }">
+            <span>{{ getCategoryLabel(row.category) }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200">
@@ -141,6 +165,18 @@
             <el-input v-model="currentPart.name" placeholder="请输入备件名称"></el-input>
           </el-form-item>
 
+          <!-- 添加物料分类选择 -->
+          <el-form-item label="物料分类" required>
+            <el-select v-model="currentPart.category" placeholder="请选择物料分类">
+              <el-option
+                  v-for="category in categoryOptions"
+                  :key="category.value"
+                  :value="category.value"
+                  :label="category.label"
+              ></el-option>
+            </el-select>
+          </el-form-item>
+
           <el-form-item label="描述">
             <el-input
                 v-model="currentPart.description"
@@ -168,18 +204,34 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox, ElEmpty } from 'element-plus'
 
+// 物料分类选项
+const categoryOptions = [
+  { value: 'screwdriver', label: '螺丝刀' },
+  { value: 'flat_screwdriver', label: '一字螺丝刀' },
+  { value: 'cross_screwdriver', label: '十字螺丝刀' },
+  { value: 'bearing', label: '轴承' },
+  { value: 'motor', label: '电机' },
+  { value: 'sensor', label: '传感器' },
+  { value: 'controller', label: '控制器' },
+  { value: 'gear', label: '齿轮' },
+  { value: 'other', label: '其他' }
+]
+
 // 模拟备件数据
 const spareParts = [
-  { id: 1, name: '轴承', description: '机械轴承，型号6205', totalQuantity: 15, isValuable: false },
-  { id: 2, name: '电机', description: '驱动电机，功率2.5kW', totalQuantity: 3, isValuable: true },
-  { id: 3, name: '传感器', description: '光电传感器', totalQuantity: 8, isValuable: false },
-  { id: 4, name: '控制器', description: '主控制器模块', totalQuantity: 2, isValuable: true },
-  { id: 5, name: '齿轮', description: '传动齿轮', totalQuantity: 20, isValuable: false },
+  { id: 1, name: '轴承', category: 'bearing', description: '机械轴承，型号6205', totalQuantity: 15, isValuable: false },
+  { id: 2, name: '电机', category: 'motor', description: '驱动电机，功率2.5kW', totalQuantity: 3, isValuable: true },
+  { id: 3, name: '传感器', category: 'sensor', description: '光电传感器', totalQuantity: 8, isValuable: false },
+  { id: 4, name: '控制器', category: 'controller', description: '主控制器模块', totalQuantity: 2, isValuable: true },
+  { id: 5, name: '齿轮', category: 'gear', description: '传动齿轮', totalQuantity: 20, isValuable: false },
+  { id: 6, name: '十字螺丝刀', category: 'cross_screwdriver', description: '十字型螺丝刀', totalQuantity: 12, isValuable: false },
+  { id: 7, name: '一字螺丝刀', category: 'flat_screwdriver', description: '一字型螺丝刀', totalQuantity: 8, isValuable: false },
 ]
 
 // 状态管理
 const parts = ref([])
 const searchQuery = ref('')
+const filterCategory = ref('all')
 const filterValuable = ref('all')
 const filterStock = ref('all')
 const showDialog = ref(false)
@@ -187,12 +239,19 @@ const isEditing = ref(false)
 const currentPart = ref({
   id: null,
   name: '',
+  category: '',
   description: '',
   isValuable: false
 })
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const filterForm = reactive({})
+
+// 获取分类标签
+const getCategoryLabel = (categoryValue) => {
+  const category = categoryOptions.find(item => item.value === categoryValue)
+  return category ? category.label : '未知分类'
+}
 
 // 过滤备件
 const filteredParts = computed(() => {
@@ -201,6 +260,9 @@ const filteredParts = computed(() => {
     const matchesSearch = searchQuery.value === '' ||
         part.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
         part.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+
+    // 分类过滤
+    const matchesCategory = filterCategory.value === 'all' || part.category === filterCategory.value
 
     // 贵重属性过滤
     const matchesValuable = filterValuable.value === 'all' ||
@@ -212,7 +274,7 @@ const filteredParts = computed(() => {
         (filterStock.value === 'low' && part.totalQuantity <= 3) ||
         (filterStock.value === 'sufficient' && part.totalQuantity > 3)
 
-    return matchesSearch && matchesValuable && matchesStock
+    return matchesSearch && matchesCategory && matchesValuable && matchesStock
   })
 })
 
@@ -245,6 +307,7 @@ const openAddDialog = () => {
   currentPart.value = {
     id: null,
     name: '',
+    category: '',
     description: '',
     isValuable: false
   }
@@ -265,6 +328,11 @@ const savePart = () => {
     return
   }
 
+  if (!currentPart.value.category) {
+    ElMessage.error('请选择物料分类')
+    return
+  }
+
   if (isEditing.value) {
     // 更新现有备件
     const index = parts.value.findIndex(p => p.id === currentPart.value.id)
@@ -272,6 +340,7 @@ const savePart = () => {
       parts.value.splice(index, 1, {
         ...parts.value[index],
         name: currentPart.value.name,
+        category: currentPart.value.category,
         description: currentPart.value.description,
         isValuable: currentPart.value.isValuable
       })
@@ -282,6 +351,7 @@ const savePart = () => {
     const newPart = {
       id: Date.now(),
       name: currentPart.value.name,
+      category: currentPart.value.category,
       description: currentPart.value.description,
       totalQuantity: 0,
       isValuable: currentPart.value.isValuable,
@@ -335,7 +405,7 @@ const getStockStatusClass = (quantity) => {
 }
 
 // 监听过滤条件变化
-watch([searchQuery, filterValuable, filterStock], () => {
+watch([searchQuery, filterCategory, filterValuable, filterStock], () => {
   resetPagination()
 })
 

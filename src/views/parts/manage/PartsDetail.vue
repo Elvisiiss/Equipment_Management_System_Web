@@ -41,7 +41,86 @@
               </el-descriptions-item>
             </el-descriptions>
           </el-col>
+          <el-col :span="6" v-if="part.isValuable">
+            <div class="qr-container">
+              <div ref="qrRef">
+                <vue-qr :text="qrText" :size="160" />
+                <div class="qr-code-text">{{ part.code }}</div>
+              </div>
+              <el-button @click="downloadQR" style="margin-top:15px">导出二维码</el-button>
+            </div>
+          </el-col>
         </el-row>
+      </el-card>
+
+      <!-- BOM 设备清单 -->
+      <el-card class="full-width-card">
+        <template #header>
+          <div class="card-header">
+            <span>📋 使用该备件的设备清单</span>
+            <el-icon class="collapse-icon" @click="isBOMCollapsed = !isBOMCollapsed">
+              <ArrowUp v-if="!isBOMCollapsed" />
+              <ArrowDown v-else />
+            </el-icon>
+          </div>
+        </template>
+        <div v-show="!isBOMCollapsed" class="card-content">
+          <!-- 搜索栏 -->
+          <div class="search-bar">
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-input
+                    v-model="bomSearchForm.keyword"
+                    placeholder="搜索设备名称或编码"
+                    clearable
+                />
+              </el-col>
+              <el-col :span="8">
+                <el-select v-model="bomSearchForm.category" placeholder="设备类型" clearable>
+                  <el-option label="加工中心" value="MACHINE_CENTER" />
+                  <el-option label="车床" value="LATHE" />
+                  <el-option label="铣床" value="MILLING" />
+                </el-select>
+              </el-col>
+              <el-col :span="8">
+                <el-button type="primary" @click="handleBOMSearch">搜索</el-button>
+                <el-button @click="resetBOMSearch">重置</el-button>
+              </el-col>
+            </el-row>
+          </div>
+
+          <!-- 设备卡片 -->
+          <el-row :gutter="20">
+            <el-col :span="6" v-for="item in bomTableData" :key="item.id">
+              <el-card class="equipment-card" shadow="hover">
+                <div class="card-header">
+                  <h3>{{ item.name }}</h3>
+                  <el-tag>{{ item.categoryLabel }}</el-tag>
+                </div>
+                <div class="card-content">
+                  <p><strong>编码：</strong>{{ item.code }}</p>
+                  <p><strong>型号：</strong>{{ item.model }}</p>
+                  <p><strong>部位数：</strong>{{ item.partsCount }} 个</p>
+                  <p><strong>维护标准：</strong>{{ item.hasStandard ? '已配置' : '未配置' }}</p>
+                </div>
+                <div class="card-actions">
+                  <el-button type="primary" size="small" @click="handleDeviceDetail(item)">详情</el-button>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+
+          <!-- 分页 -->
+          <div class="pagination">
+            <el-pagination
+                v-model:current-page="bomCurrentPage"
+                :page-size="bomPageSize"
+                :total="bomTotal"
+                layout="prev, pager, next"
+                @current-change="loadBOMData"
+            />
+          </div>
+        </div>
       </el-card>
 
       <!-- 仓库分布 -->
@@ -196,7 +275,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted, reactive} from 'vue'
 import { useRoute } from 'vue-router'
 import { spareParts } from '@/api/parts/data/mockData'
 import {
@@ -206,6 +285,9 @@ import {
   ArrowLeft,
   Box
 } from '@element-plus/icons-vue'
+import vueQr from 'vue-qr/src/packages/vue-qr.vue'
+import html2canvas from 'html2canvas'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'SparePartDetail',
@@ -214,7 +296,8 @@ export default {
     ArrowUp,
     ArrowDown,
     ArrowLeft,
-    Box
+    Box,
+    vueQr
   },
   setup() {
     const route = useRoute()
@@ -223,6 +306,18 @@ export default {
     const error = ref(null)
     const isWarehouseCollapsed = ref(false)
     const isBorrowCollapsed = ref(false)
+    const isBOMCollapsed = ref(false)
+    const qrRef = ref()
+
+    // BOM相关数据
+    const bomTableData = ref([])
+    const bomCurrentPage = ref(1)
+    const bomPageSize = ref(12)
+    const bomTotal = ref(0)
+    const bomSearchForm = reactive({
+      keyword: '',
+      category: ''
+    })
 
     // 获取备件详情
     const fetchPartDetail = () => {
@@ -236,6 +331,8 @@ export default {
         setTimeout(() => {
           if (foundPart) {
             part.value = foundPart
+            // 加载BOM数据
+            loadBOMData()
           } else {
             part.value = null
           }
@@ -276,6 +373,65 @@ export default {
       return new Date(dateString).toLocaleDateString('zh-CN')
     }
 
+    // 二维码文本
+    const qrText = computed(() => {
+      if (!part.value) return ''
+      return `备件ID: ${part.value.id}
+名称: ${part.value.name}
+编码: ${part.value.code}
+描述: ${part.value.description}`
+    })
+
+    // 导出二维码
+    const downloadQR = () => {
+      html2canvas(qrRef.value).then(canvas => {
+        const a = document.createElement('a')
+        a.href = canvas.toDataURL('image/png')
+        a.download = `qrcode_${part.value.code}.png`
+        a.click()
+      })
+    }
+
+    // 加载BOM数据
+    const loadBOMData = async () => {
+      // 模拟API调用
+      try {
+        // 这里应该是API调用，但为了演示使用模拟数据
+        const mockData = [
+          { id: 1, name: '加工中心A', code: 'MC-001', model: 'AX-200', categoryLabel: '加工中心', partsCount: 12, hasStandard: true },
+          { id: 2, name: '车床B', code: 'LATHE-002', model: 'LT-300', categoryLabel: '车床', partsCount: 8, hasStandard: false },
+          { id: 3, name: '铣床C', code: 'MILL-003', model: 'ML-400', categoryLabel: '铣床', partsCount: 15, hasStandard: true },
+          { id: 4, name: '加工中心D', code: 'MC-004', model: 'AX-500', categoryLabel: '加工中心', partsCount: 10, hasStandard: true }
+        ]
+
+        bomTableData.value = mockData
+        bomTotal.value = mockData.length
+      } catch (error) {
+        console.error('加载BOM数据失败', error)
+        ElMessage.error('加载设备清单失败')
+      }
+    }
+
+    // BOM搜索
+    const handleBOMSearch = () => {
+      bomCurrentPage.value = 1
+      loadBOMData()
+    }
+
+    // 重置BOM搜索
+    const resetBOMSearch = () => {
+      bomSearchForm.keyword = ''
+      bomSearchForm.category = ''
+      loadBOMData()
+    }
+
+    // 查看设备详情
+    const handleDeviceDetail = (device) => {
+      // 这里可以跳转到设备详情页
+      console.log('查看设备详情:', device)
+      ElMessage.info(`查看设备 ${device.name} 的详情`)
+    }
+
     onMounted(() => {
       fetchPartDetail()
     })
@@ -286,11 +442,23 @@ export default {
       error,
       isWarehouseCollapsed,
       isBorrowCollapsed,
+      isBOMCollapsed,
       unreturnedItems,
       returnedItems,
       fetchPartDetail,
       calculateInventoryPercentage,
-      formatDate
+      formatDate,
+      qrRef,
+      qrText,
+      downloadQR,
+      bomTableData,
+      bomCurrentPage,
+      bomPageSize,
+      bomTotal,
+      bomSearchForm,
+      handleBOMSearch,
+      resetBOMSearch,
+      handleDeviceDetail
     }
   }
 }
@@ -374,6 +542,47 @@ export default {
   height: 180px;
   background-color: #f5f7fa;
   border-radius: 6px;
+}
+
+.qr-container {
+  text-align: center;
+}
+
+.qr-code-text {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #606266;
+}
+
+/* BOM相关样式 */
+.search-bar {
+  margin-bottom: 20px;
+}
+
+.equipment-card {
+  margin-bottom: 20px;
+}
+
+.equipment-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.equipment-card .card-content {
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.equipment-card .card-actions {
+  text-align: right;
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 /* 仓库卡片 */

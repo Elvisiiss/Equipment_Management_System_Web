@@ -24,6 +24,9 @@
           <el-button type="primary" @click="showAddPartDialog = true" class="add-part-btn">
             <i class="el-icon-plus"></i> 添加备件
           </el-button>
+          <el-button type="success" @click="showAddWarehouseDialog = true" class="add-warehouse-btn">
+            <i class="el-icon-plus"></i> 新建仓库
+          </el-button>
         </div>
       </div>
     </div>
@@ -68,9 +71,6 @@
       <el-col :xs="12" :sm="6" v-for="(stat, index) in inventoryStats" :key="index">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <div class="stat-icon" :style="{ backgroundColor: stat.color }">
-              <i :class="stat.icon"></i>
-            </div>
             <div class="stat-info">
               <p class="stat-label">{{ stat.label }}</p>
               <h3 class="stat-value">{{ stat.value }}</h3>
@@ -94,7 +94,8 @@
         <el-form-item label="库存状态:">
           <el-select v-model="filterForm.stockStatus" placeholder="全部" clearable>
             <el-option label="正常" value="normal"></el-option>
-            <el-option label="低库存" value="low"></el-option>
+            <el-option label="黄色警告" value="warning"></el-option>
+            <el-option label="红色警告" value="danger"></el-option>
             <el-option label="缺货" value="out"></el-option>
           </el-select>
         </el-form-item>
@@ -150,47 +151,39 @@
         </el-table-column>
         <el-table-column prop="quantity" label="库存数量" width="110" sortable align="center"></el-table-column>
         <el-table-column prop="safetyStock" label="安全库存" width="110" sortable align="center"></el-table-column>
+        <el-table-column prop="warningStock" label="警告库存" width="110" sortable align="center"></el-table-column>
         <el-table-column prop="location" label="库位" width="100" align="center"></el-table-column>
         <el-table-column prop="lastUpdated" label="最后更新" width="140" sortable></el-table-column>
-        <el-table-column label="状态" width="100" align="center">
+        <el-table-column label="状态" width="120" align="center">
           <template #default="scope">
             <el-tag
                 size="small"
-                :type="scope.row.quantity === 0 ? 'danger' : (scope.row.quantity <= scope.row.safetyStock ? 'warning' : 'success')"
+                :type="getStockStatusType(scope.row)"
                 effect="light"
             >
-              {{ scope.row.quantity === 0 ? '缺货' : (scope.row.quantity <= scope.row.safetyStock ? '低库存' : '正常') }}
+              {{ getStockStatusText(scope.row) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" align="center" fixed="right">
+        <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="scope">
-            <el-tooltip content="编辑" placement="top">
-              <el-button
-                  size="mini"
-                  @click="handleEditPart(scope.row)"
-                  icon="el-icon-edit"
-                  circle
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip content="移动" placement="top">
-              <el-button
-                  size="mini"
-                  type="warning"
-                  @click="handleMovePart(scope.row)"
-                  icon="el-icon-refresh-right"
-                  circle
-              ></el-button>
-            </el-tooltip>
-            <el-tooltip content="删除" placement="top">
-              <el-button
-                  size="mini"
-                  type="danger"
-                  @click="handleDeletePart(scope.row.id)"
-                  icon="el-icon-delete"
-                  circle
-              ></el-button>
-            </el-tooltip>
+            <el-button
+                size="mini"
+                @click="handleEditPart(scope.row)"
+                icon="el-icon-edit"
+            >编辑</el-button>
+            <el-button
+                size="mini"
+                type="warning"
+                @click="handleMovePart(scope.row)"
+                icon="el-icon-refresh-right"
+            >移动</el-button>
+            <el-button
+                size="mini"
+                type="danger"
+                @click="handleDeletePart(scope.row.id)"
+                icon="el-icon-delete"
+            >删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -242,9 +235,18 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="库位" prop="location">
-          <el-input v-model="currentPart.location" placeholder="例如: A-1-05"></el-input>
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="警告库存" prop="warningStock">
+              <el-input-number v-model="currentPart.warningStock" :min="0" controls-position="right" style="width: 100%"></el-input-number>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="库位" prop="location">
+              <el-input v-model="currentPart.location" placeholder="例如: A-1-05"></el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-form-item>
           <el-checkbox v-model="currentPart.isValuable">标记为贵重物品</el-checkbox>
         </el-form-item>
@@ -252,6 +254,42 @@
       <template #footer>
         <el-button @click="showAddPartDialog = false">取消</el-button>
         <el-button type="primary" @click="savePart">确认</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 添加仓库对话框 -->
+    <el-dialog
+        title="新建仓库"
+        v-model="showAddWarehouseDialog"
+        width="500px"
+        :close-on-click-modal="false"
+    >
+      <el-form :model="newWarehouse" label-width="100px" ref="warehouseForm" :rules="warehouseRules">
+        <el-form-item label="仓库名称" prop="name">
+          <el-input v-model="newWarehouse.name" placeholder="请输入仓库名称"></el-input>
+        </el-form-item>
+        <el-form-item label="仓库类型" prop="type">
+          <el-select v-model="newWarehouse.type" placeholder="请选择" style="width: 100%">
+            <el-option label="大型仓库" value="large"></el-option>
+            <el-option label="小型仓库" value="small"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="负责人" prop="manager">
+          <el-input v-model="newWarehouse.manager" placeholder="请输入负责人姓名"></el-input>
+        </el-form-item>
+        <el-form-item label="位置" prop="location">
+          <el-input v-model="newWarehouse.location" placeholder="请输入仓库位置"></el-input>
+        </el-form-item>
+        <el-form-item label="联系电话" prop="phone">
+          <el-input v-model="newWarehouse.phone" placeholder="请输入联系电话"></el-input>
+        </el-form-item>
+        <el-form-item label="容量" prop="capacity">
+          <el-input-number v-model="newWarehouse.capacity" :min="0" controls-position="right" style="width: 100%"></el-input-number>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showAddWarehouseDialog = false">取消</el-button>
+        <el-button type="primary" @click="saveWarehouse">确认</el-button>
       </template>
     </el-dialog>
   </div>
@@ -280,6 +318,7 @@ const warehouses = ref([
         category: 'electronic',
         quantity: 15,
         safetyStock: 5,
+        warningStock: 3,
         location: 'A-1-01',
         isValuable: true,
         lastUpdated: '2023-06-15'
@@ -291,6 +330,7 @@ const warehouses = ref([
         category: 'mechanical',
         quantity: 8,
         safetyStock: 3,
+        warningStock: 2,
         location: 'B-2-05',
         isValuable: true,
         lastUpdated: '2023-06-10'
@@ -302,6 +342,7 @@ const warehouses = ref([
         category: 'electronic',
         quantity: 30,
         safetyStock: 10,
+        warningStock: 5,
         location: 'A-3-12',
         isValuable: false,
         lastUpdated: '2023-06-18'
@@ -313,6 +354,7 @@ const warehouses = ref([
         category: 'tool',
         quantity: 5,
         safetyStock: 2,
+        warningStock: 1,
         location: 'C-1-08',
         isValuable: false,
         lastUpdated: '2023-06-05'
@@ -324,6 +366,7 @@ const warehouses = ref([
         category: 'consumable',
         quantity: 25,
         safetyStock: 10,
+        warningStock: 5,
         location: 'D-2-03',
         isValuable: false,
         lastUpdated: '2023-06-20'
@@ -347,6 +390,7 @@ const warehouses = ref([
         category: 'electronic',
         quantity: 12,
         safetyStock: 5,
+        warningStock: 3,
         location: 'A-1-02',
         isValuable: false,
         lastUpdated: '2023-06-16'
@@ -358,6 +402,7 @@ const warehouses = ref([
         category: 'mechanical',
         quantity: 50,
         safetyStock: 20,
+        warningStock: 10,
         location: 'B-1-09',
         isValuable: false,
         lastUpdated: '2023-06-12'
@@ -369,6 +414,7 @@ const warehouses = ref([
         category: 'consumable',
         quantity: 18,
         safetyStock: 8,
+        warningStock: 4,
         location: 'C-3-04',
         isValuable: false,
         lastUpdated: '2023-06-19'
@@ -392,6 +438,7 @@ const warehouses = ref([
         category: 'electronic',
         quantity: 40,
         safetyStock: 15,
+        warningStock: 8,
         location: 'A-2-07',
         isValuable: false,
         lastUpdated: '2023-06-14'
@@ -403,6 +450,7 @@ const warehouses = ref([
         category: 'mechanical',
         quantity: 3,
         safetyStock: 2,
+        warningStock: 1,
         location: 'B-3-01',
         isValuable: true,
         lastUpdated: '2023-06-08'
@@ -414,6 +462,7 @@ const warehouses = ref([
         category: 'tool',
         quantity: 6,
         safetyStock: 2,
+        warningStock: 1,
         location: 'C-2-10',
         isValuable: false,
         lastUpdated: '2023-06-11'
@@ -425,6 +474,7 @@ const warehouses = ref([
         category: 'consumable',
         quantity: 100,
         safetyStock: 50,
+        warningStock: 25,
         location: 'D-1-06',
         isValuable: false,
         lastUpdated: '2023-06-03'
@@ -439,7 +489,18 @@ const partRules = reactive({
   name: [{ required: true, message: '请输入备件名称', trigger: 'blur' }],
   category: [{ required: true, message: '请选择备件类别', trigger: 'change' }],
   quantity: [{ required: true, type: 'number', min: 0, message: '请输入有效数量', trigger: 'blur' }],
-  safetyStock: [{ required: true, type: 'number', min: 0, message: '请输入安全库存', trigger: 'blur' }]
+  safetyStock: [{ required: true, type: 'number', min: 0, message: '请输入安全库存', trigger: 'blur' }],
+  warningStock: [{ required: true, type: 'number', min: 0, message: '请输入警告库存', trigger: 'blur' }]
+})
+
+// 仓库表单验证规则
+const warehouseRules = reactive({
+  name: [{ required: true, message: '请输入仓库名称', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择仓库类型', trigger: 'change' }],
+  manager: [{ required: true, message: '请输入负责人姓名', trigger: 'blur' }],
+  location: [{ required: true, message: '请输入仓库位置', trigger: 'blur' }],
+  phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
+  capacity: [{ required: true, type: 'number', min: 0, message: '请输入有效容量', trigger: 'blur' }]
 })
 
 // 状态管理
@@ -456,6 +517,7 @@ const loading = ref(false)
 
 // 对话框状态
 const showAddPartDialog = ref(false)
+const showAddWarehouseDialog = ref(false)
 const isEditing = ref(false)
 const currentPart = reactive({
   id: null,
@@ -464,9 +526,20 @@ const currentPart = reactive({
   category: '',
   quantity: 0,
   safetyStock: 0,
+  warningStock: 0,
   location: '',
   isValuable: false,
   lastUpdated: ''
+})
+
+// 新仓库表单
+const newWarehouse = reactive({
+  name: '',
+  type: '',
+  manager: '',
+  location: '',
+  phone: '',
+  capacity: 1000
 })
 
 // 初始化
@@ -494,16 +567,47 @@ const inventoryStats = computed(() => {
   const totalParts = currentWarehouse.value.parts.length
   const totalQuantity = currentWarehouse.value.parts.reduce((sum, part) => sum + part.quantity, 0)
   const valuableCount = currentWarehouse.value.parts.filter(part => part.isValuable).length
-  const lowStockCount = currentWarehouse.value.parts.filter(part => part.quantity <= part.safetyStock && part.quantity > 0).length
+  const warningStockCount = currentWarehouse.value.parts.filter(part =>
+      part.quantity <= part.safetyStock && part.quantity > part.warningStock
+  ).length
+  const dangerStockCount = currentWarehouse.value.parts.filter(part =>
+      part.quantity <= part.warningStock && part.quantity > 0
+  ).length
   const outOfStockCount = currentWarehouse.value.parts.filter(part => part.quantity === 0).length
 
   return [
-    { label: '备件种类', value: totalParts, color: '#409EFF', icon: 'el-icon-box' },
-    { label: '库存总量', value: totalQuantity, color: '#67C23A', icon: 'el-icon-calculator' },
-    { label: '贵重物品', value: valuableCount, color: '#E6A23C', icon: 'el-icon-diamond' },
-    { label: '低库存项', value: lowStockCount + (outOfStockCount > 0 ? `+${outOfStockCount}缺货` : ''), color: '#F56C6C', icon: 'el-icon-warning' }
+    { label: '备件种类', value: totalParts },
+    { label: '库存总量', value: totalQuantity },
+    { label: '贵重物品', value: valuableCount },
+    { label: '库存警告', value: `${warningStockCount}黄色/${dangerStockCount}红色/${outOfStockCount}缺货` }
   ]
 })
+
+// 获取库存状态类型
+function getStockStatusType(part) {
+  if (part.quantity === 0) {
+    return 'danger' // 缺货
+  } else if (part.quantity <= part.warningStock) {
+    return 'danger' // 红色警告
+  } else if (part.quantity <= part.safetyStock) {
+    return 'warning' // 黄色警告
+  } else {
+    return 'success' // 正常
+  }
+}
+
+// 获取库存状态文本
+function getStockStatusText(part) {
+  if (part.quantity === 0) {
+    return '缺货'
+  } else if (part.quantity <= part.warningStock) {
+    return '严重告急'
+  } else if (part.quantity <= part.safetyStock) {
+    return '库存偏少'
+  } else {
+    return '正常'
+  }
+}
 
 // 筛选备件
 const filteredParts = computed(() => {
@@ -517,10 +621,16 @@ const filteredParts = computed(() => {
 
     // 库存状态筛选
     if (filterForm.stockStatus) {
-      if (filterForm.stockStatus === 'normal' && (part.quantity === 0 || part.quantity <= part.safetyStock)) {
+      if (filterForm.stockStatus === 'normal' &&
+          (part.quantity === 0 || part.quantity <= part.safetyStock)) {
         return false
       }
-      if (filterForm.stockStatus === 'low' && (part.quantity === 0 || part.quantity > part.safetyStock)) {
+      if (filterForm.stockStatus === 'warning' &&
+          (part.quantity === 0 || part.quantity <= part.warningStock || part.quantity > part.safetyStock)) {
+        return false
+      }
+      if (filterForm.stockStatus === 'danger' &&
+          (part.quantity > part.warningStock || part.quantity === 0)) {
         return false
       }
       if (filterForm.stockStatus === 'out' && part.quantity !== 0) {
@@ -582,6 +692,7 @@ function handleAddPart() {
     category: '',
     quantity: 0,
     safetyStock: 0,
+    warningStock: 0,
     location: '',
     isValuable: false,
     lastUpdated: ''
@@ -600,6 +711,12 @@ function handleEditPart(part) {
 function savePart() {
   if (!currentPart.code || !currentPart.name || !currentPart.category) {
     ElMessage.warning('请填写必填字段')
+    return
+  }
+
+  // 验证警告库存不能大于安全库存
+  if (currentPart.warningStock > currentPart.safetyStock) {
+    ElMessage.warning('警告库存不能大于安全库存')
     return
   }
 
@@ -623,6 +740,41 @@ function savePart() {
   }
 
   showAddPartDialog.value = false
+}
+
+// 保存仓库
+function saveWarehouse() {
+  if (!newWarehouse.name || !newWarehouse.type || !newWarehouse.manager ||
+      !newWarehouse.location || !newWarehouse.phone || !newWarehouse.capacity) {
+    ElMessage.warning('请填写所有必填字段')
+    return
+  }
+
+  const newWarehouseObj = {
+    id: Date.now(),
+    name: newWarehouse.name,
+    type: newWarehouse.type,
+    manager: newWarehouse.manager,
+    location: newWarehouse.location,
+    phone: newWarehouse.phone,
+    capacity: newWarehouse.capacity,
+    utilizationRate: 0,
+    parts: []
+  }
+
+  warehouses.value.push(newWarehouseObj)
+  ElMessage.success('仓库添加成功')
+  showAddWarehouseDialog.value = false
+
+  // 重置表单
+  Object.assign(newWarehouse, {
+    name: '',
+    type: '',
+    manager: '',
+    location: '',
+    phone: '',
+    capacity: 1000
+  })
 }
 
 // 移动备件
@@ -701,7 +853,7 @@ function exportInventory() {
         width: 250px;
       }
 
-      .add-part-btn {
+      .add-part-btn, .add-warehouse-btn {
         margin-left: 0;
       }
     }
@@ -778,18 +930,6 @@ function exportInventory() {
   .stat-content {
     display: flex;
     align-items: center;
-  }
-
-  .stat-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    margin-right: 16px;
-    font-size: 20px;
   }
 
   .stat-info {
@@ -899,7 +1039,7 @@ function exportInventory() {
           width: 100%;
         }
 
-        .add-part-btn {
+        .add-part-btn, .add-warehouse-btn {
           width: 100%;
           margin-top: 12px;
         }

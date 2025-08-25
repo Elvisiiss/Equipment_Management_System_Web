@@ -453,12 +453,12 @@ const routes = [
         component: () => import('@/views/parts/manage/EdgeInventory.vue'),
         meta: { title: '仓库管理' },
     },
-    {
-        path: '/parts/manage/EquipmentBOM',
-        name: 'EquipmentBOM',
-        component: () => import('@/views/parts/manage/EquipmentBOM.vue'),
-        meta: { title: '设备BOM管理' },
-    },
+    // {
+    //     path: '/parts/manage/EquipmentBOM',
+    //     name: 'EquipmentBOM',
+    //     component: () => import('@/views/parts/manage/EquipmentBOM.vue'),
+    //     meta: { title: '设备BOM管理' },
+    // },
     {
         path: '/parts/manage/EquipmentDetail',
         name: 'EquipmentDetail',

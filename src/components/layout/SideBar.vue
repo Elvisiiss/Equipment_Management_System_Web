@@ -464,22 +464,22 @@ const menuItems = [
             meta: {title: '备品备件管理'},
             permissionId: 1
           },
-          {
-            path: '/parts/manage/EquipmentBOM',
-            name: 'EquipmentBOM',
-            meta: {title: '设备BOM管理'},
-            permissionId: 1
-          },
+          // {
+          //   path: '/parts/manage/EquipmentBOM',
+          //   name: 'EquipmentBOM',
+          //   meta: {title: '设备BOM管理'},
+          //   permissionId: 1
+          // },
           {
             path: '/parts/manage/LocationManagement',
             name: 'LocationManagement',
-            meta: {title: '备件列表(NEW)'},
+            meta: {title: '备件列表'},
             permissionId: 1
           },
           {
             path: '/parts/manage/partsDetail/101',
             name: 'partsDetail',
-            meta: {title: '备件详情页(NEW)'},
+            meta: {title: '备件详情页'},
             permissionId: 1
           },
         ]
