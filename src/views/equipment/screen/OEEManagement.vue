@@ -212,6 +212,10 @@
 
     <div class="table-container">
       <div class="table-title">OEE 明细数据</div>
+      <!-- 返回按钮，当不在车间级别时显示 -->
+      <div class="back-button-container" v-if="currentLevel !== 'workshop'">
+        <el-button type="primary" @click="goBack" class="back-button">返回上一级</el-button>
+      </div>
       <el-table
           :data="currentTableData"
           border
@@ -220,9 +224,27 @@
       >
         <el-table-column prop="index" label="序号" width="80" align="center" />
         <el-table-column prop="name" :label="currentLevelLabel" width="180" align="center" />
-        <el-table-column prop="availability" label="时间稼动率(%)" width="150" align="center" />
-        <el-table-column prop="performance" label="性能稼动率(%)" width="150" align="center" />
-        <el-table-column prop="quality" label="良率(%)" width="150" align="center" />
+        <el-table-column prop="availability" label="时间稼动率(%)" width="150" align="center">
+          <template #default="scope">
+            <el-button type="text" @click.stop="handleAvailabilityClick(scope.row)">
+              {{ scope.row.availability }}
+            </el-button>
+          </template>
+        </el-table-column>
+        <el-table-column prop="performance" label="性能稼动率(%)" width="150" align="center">
+          <template #default="scope">
+            <el-button type="text" @click.stop="handlePerformanceClick(scope.row)">
+              {{ scope.row.performance }}
+            </el-button>
+          </template>
+        </el-table-column>
+        <el-table-column prop="quality" label="良率(%)" width="150" align="center">
+          <template #default="scope">
+            <el-button type="text" @click.stop="handleQualityClick(scope.row)">
+              {{ scope.row.quality }}
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="oee" label="OEE(%)" width="150" align="center">
           <template #default="scope">
             <el-button type="text" @click.stop="handleOeeClick(scope.row)">
@@ -237,6 +259,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { useRouter } from 'vue-router';
 import * as echarts from 'echarts';
 import {
   ElRadioGroup,
@@ -250,6 +273,8 @@ import {
   ElForm,
   ElFormItem
 } from 'element-plus';
+
+const router = useRouter();
 
 // 时间维度
 const timeType = ref('day');
@@ -351,7 +376,21 @@ const initTableData = () => {
   dataStack.value = [];
 };
 
-const handleRowClick = (row) => {};
+const handleRowClick = (row) => {
+  // 行点击事件，可根据需要添加逻辑
+};
+
+const handleAvailabilityClick = (row) => {
+  router.push('/equipment/screen/time');
+};
+
+const handlePerformanceClick = (row) => {
+  router.push('/equipment/screen/perforce');
+};
+
+const handleQualityClick = (row) => {
+  router.push('/equipment/screen/quality');
+};
 
 const handleOeeClick = (row) => {
   dataStack.value.push({
@@ -723,6 +762,24 @@ const renderChart = () => {
     ]
   };
 
+  // 添加图表点击事件
+  chartInstance.off('click');
+  chartInstance.on('click', (params) => {
+    if (params.componentType === 'series') {
+      switch (params.seriesName) {
+        case '时间稼动率':
+          router.push('/equipment/screen/time');
+          break;
+        case '性能稼动率':
+          router.push('/equipment/screen/perforce');
+          break;
+        case '良率':
+          router.push('/equipment/screen/quality');
+          break;
+      }
+    }
+  });
+
   chartInstance.setOption(option);
 };
 
@@ -833,6 +890,7 @@ body {
   padding: 25px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   animation: fadeInUp 0.8s ease;
+  position: relative;
 }
 
 .table-title {
@@ -841,6 +899,15 @@ body {
   color: #1a6dcc;
   margin-bottom: 25px;
   font-weight: 600;
+}
+
+.back-button-container {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.back-button {
+  padding: 8px 16px;
 }
 
 .chart-title {
