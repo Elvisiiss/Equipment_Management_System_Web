@@ -1,4 +1,4 @@
-<!-- EquipmentStatus.vue -->
+<!-- QualityUtilization.vue -->
 <template>
   <el-container>
     <el-header height="60px">

@@ -179,10 +179,10 @@ const routes = [
         meta: {title: '停机分析报表'},
     },
     {
-        path: '/equipment/screen/perforce',
-        name: 'PerUtilization',
-        component:()=>import('@/views/equipment/screen/PerUtilization.vue'),
-        meta: { title: '性能稼动率报表' },
+        path: '/equipment/screen/quality',
+        name: 'QualityUtilization',
+        component:()=>import('@/views/equipment/screen/QualityUtilization.vue'),
+        meta: { title: '质量稼动率报表' },
     },
     {
         path: '/equipment/screen/time',
@@ -191,10 +191,10 @@ const routes = [
         meta: { title: '时间稼动率报表' },
     },
     {
-        path: '/equipment/screen/quality',
-        name: 'QualityUtilization',
+        path: '/equipment/screen/perforce',
+        name: 'PerUtilization',
         component:()=>import('@/views/equipment/screen/PerUtilization.vue'),
-        meta: {title: '质量稼动率报表'},
+        meta: {title: '性能稼动率报表'},
     },
     // Inspection Management
     {
