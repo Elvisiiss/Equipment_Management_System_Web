@@ -425,7 +425,13 @@ const menuItems = [
             permissionId: 1
           },
         ]
-      }
+      },
+      {
+        path: '/mold/configuration',
+        name: 'mold-configuration',
+        meta: { title: '寿命上限配置' },
+        permissionId: 1
+      },
     ]
   },
   {

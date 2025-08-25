@@ -1,4 +1,3 @@
-<!-- mold/manage/life.vue -->
 <template>
   <!-- 查询条件 -->
   <div class="query-bar">
@@ -14,10 +13,9 @@
       </el-form-item>
       <el-form-item label="状态" class="wide">
         <el-select v-model="query.status" clearable placeholder="全部">
-          <el-option label="闲置"   value="闲置" />
+          <el-option label="闲置" value="闲置" />
           <el-option label="使用中" value="使用中" />
-          <el-option label="维修"   value="维修" />
-          <el-option label="保养"   value="保养" />
+          <el-option label="Hold" value="Hold" />
         </el-select>
       </el-form-item>
     </el-form>
@@ -107,8 +105,7 @@
           <el-select v-model="form.status" required style="width:100%">
             <el-option value="闲置" label="闲置" />
             <el-option value="使用中" label="使用中" />
-            <el-option value="维修" label="维修" />
-            <el-option value="保养" label="保养" />
+            <el-option value="Hold" label="Hold" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -129,8 +126,8 @@ import { useRouter } from 'vue-router'
 const molds = ref([
   { id: 1, code: 'M001', name: '注塑模具A', type: '注塑', status: '使用中', lifeLimit: 100000, usedTimes: 1234 },
   { id: 2, code: 'M002', name: '冲压模具B', type: '冲压', status: '闲置', lifeLimit: 80000, usedTimes: 0 },
-  { id: 3, code: 'M003', name: '切割治具C', type: '切割', status: '维修', lifeLimit: 50000, usedTimes: 1200 },
-  { id: 4, code: 'M004', name: '组装治具D', type: '组装', status: '保养', lifeLimit: 60000, usedTimes: 3000 }
+  { id: 3, code: 'M003', name: '切割治具C', type: '切割', status: 'Hold', lifeLimit: 50000, usedTimes: 1200 },
+  { id: 4, code: 'M004', name: '组装治具D', type: '组装', status: 'Hold', lifeLimit: 60000, usedTimes: 3000 }
 ])
 
 /* 查询条件 */
@@ -172,8 +169,7 @@ function statusClass(status) {
   const map = {
     闲置: 'status-idle',
     使用中: 'status-using',
-    维修: 'status-repair',
-    保养: 'status-maintenance'
+    Hold: 'status-hold'
   }
   return map[status] || 'status-idle'
 }

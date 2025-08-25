@@ -1,4 +1,3 @@
-<!-- mold/manage/operation.vue -->
 <template>
   <div class="detail-container">
     <!-- 第一行：查询条件 + 按钮 + 图标 -->
@@ -23,21 +22,27 @@
         <!-- 右侧按钮和图标 -->
         <el-col :span="10" class="top-right">
           <div class="button-group-container">
-            <el-button type="success" @click="openUseDialog" class="action-btn">领用</el-button>
-            <el-button type="warning" @click="openReturnDialog" class="action-btn">归还</el-button>
-            <el-button type="info" @click="handleAction('闲置')" class="action-btn">闲置</el-button>
-            <el-button type="danger" @click="handleAction('维修')" class="action-btn">维修</el-button>
-            <el-button type="primary" :style="{ backgroundColor: '#722ed1', borderColor: '#722ed1' }"
-                       @click="handleAction('保养')" class="action-btn maintain-btn">保养</el-button>
+            <el-button type="success" @click="openUseDialog" class="action-btn"
+                       :disabled="isHeld || !canOperate">领用</el-button>
+            <el-button type="primary" @click="handleInstall" class="action-btn"
+                       :disabled="isHeld || !canOperate || !isBorrowed">安装</el-button>
+            <el-button type="warning" @click="handleUninstall" class="action-btn"
+                       :disabled="isHeld || !canOperate || !isInstalled">卸载</el-button>
+            <el-button type="info" @click="openReturnDialog" class="action-btn"
+                       :disabled="isHeld || !canOperate || !isUninstalled">归还</el-button>
+            <el-button type="danger" @click="openHoldDialog" class="action-btn"
+                       :disabled="isHeld">HOLD</el-button>
+            <el-button type="primary" @click="handleReleaseHold" class="action-btn"
+                       :disabled="!isHeld || holdType === '报废'">解除HOLD</el-button>
           </div>
 
           <!-- 图标 -->
           <div class="icons">
             <el-tooltip content="说明书">
-              <el-button type="primary" :icon="Document" circle @click="downloadManual" />
+              <el-button type="primary" :icon="Document" circle @click="downloadManual" :disabled="isHeld" />
             </el-tooltip>
             <el-tooltip content="图纸">
-              <el-button type="primary" :icon="Picture" circle @click="openDrawingsDialog" />
+              <el-button type="primary" :icon="Picture" circle @click="openDrawingsDialog" :disabled="isHeld" />
             </el-tooltip>
           </div>
         </el-col>
@@ -61,7 +66,7 @@
           <el-col :span="16">
             <el-descriptions :column="2" border>
               <el-descriptions-item label="状态">
-                <el-tag :type="statusTagType(detail.status)">{{ detail.status }}</el-tag>
+                <el-tag :type="statusTagType(detail.status)">{{ detail.status }}{{ holdType ? `(${holdType})` : '' }}</el-tag>
               </el-descriptions-item>
               <el-descriptions-item label="模治具编码">{{ detail.code }}</el-descriptions-item>
               <el-descriptions-item label="模治具名称">{{ detail.name }}</el-descriptions-item>
@@ -76,7 +81,7 @@
           <el-col :span="4" class="qr-col">
             <vue-qr :text="qrText" :size="120" class="qr-img" ref="qrRef" />
             <div class="qr-txt">{{ detail.code }}<br />{{ detail.name }}</div>
-            <el-button size="small" @click="downloadQr">导出二维码</el-button>
+            <el-button size="small" @click="downloadQr" :disabled="isHeld">导出二维码</el-button>
           </el-col>
         </el-row>
       </div>
@@ -112,6 +117,7 @@
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="handleLifeSizeChange"
             @current-change="handleLifeCurrentChange"
+            :disabled="isHeld"
         />
       </div>
     </el-card>
@@ -138,6 +144,7 @@
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="handleRepairSizeChange"
             @current-change="handleRepairCurrentChange"
+            :disabled="isHeld"
         />
       </div>
     </el-card>
@@ -150,7 +157,7 @@
       </div>
       <div v-show="expandMaintain">
         <div class="maintain-header">
-          <el-button icon="Refresh" @click="refreshMaintain">刷新</el-button>
+          <el-button icon="Refresh" @click="refreshMaintain" :disabled="isHeld">刷新</el-button>
         </div>
         <div v-if="maintainList.length === 0" class="empty">今日无保养计划</div>
         <el-table v-else :data="maintainList" stripe style="width: 100%">
@@ -170,6 +177,7 @@
             layout="total, sizes, prev, pager, next, jumper"
             @size-change="handleMaintainSizeChange"
             @current-change="handleMaintainCurrentChange"
+            :disabled="isHeld"
         />
       </div>
     </el-card>
@@ -212,6 +220,24 @@
       </template>
     </el-dialog>
 
+    <!-- HOLD弹窗 -->
+    <el-dialog v-model="holdDialogVisible" title="HOLD确认" width="460px">
+      <el-form :inline="true" label-width="100px" class="dialog-form">
+        <el-form-item label="HOLD类型：" style="width:100%">
+          <el-select v-model="selectedHoldType" placeholder="请选择">
+            <el-option label="维修" value="维修" />
+            <el-option label="保养" value="保养" />
+            <el-option label="报废" value="报废" />
+            <el-option label="其他" value="其他" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="holdDialogVisible=false">取消</el-button>
+        <el-button type="primary" @click="confirmHold">确认HOLD</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 图纸预览弹窗 -->
     <el-dialog v-model="drawingsVisible" title="模治具图纸" width="60%">
       <el-carousel v-if="drawingList.length" height="400px">
@@ -227,7 +253,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import VueQr from 'vue-qr/src/packages/vue-qr.vue'
 import { Document, Picture, ArrowUp, ArrowDown, Refresh } from '@element-plus/icons-vue'
 
@@ -252,13 +278,23 @@ const detail = reactive({
   id: 1,
   code: 'M001',
   name: '注塑模具A',
-  status: '使用中',
+  status: '闲置',
   category: '注塑类',
   vendor: 'XX 制造',
   lifeLimit: 100000,
   manager: '张三',
   image: ''
 })
+
+/* 操作状态 */
+const isBorrowed = ref(false)      // 是否已领用
+const isInstalled = ref(false)     // 是否已安装
+const isUninstalled = ref(false)   // 是否已卸载
+const isHeld = ref(false)          // 是否HOLD状态
+const holdType = ref('')           // HOLD类型
+
+/* 是否可操作（非HOLD状态） */
+const canOperate = computed(() => !isHeld.value)
 
 /* 卡片展开状态 */
 const expandInfo = ref(true)
@@ -280,15 +316,73 @@ function handleMaintainCurrentChange(val) { maintainPage.currentPage = val; refr
 
 /* 状态对应 tag 颜色 */
 function statusTagType(status) {
-  const map = { 闲置: 'info', 使用中: 'success', 维修: 'danger', 保养: 'primary' }
+  const map = { 闲置: 'info', 使用中: 'success', HOLD: 'danger', 维修: 'warning', 保养: 'primary' }
   return map[status] || ''
 }
 
-/* 闲置/维修/保养仅改变状态 */
-function handleAction(action) {
-  detail.status = action
-  ElMessage.success(`已设为${action}`)
-  fetchLifeRecords()
+/* 安装操作 */
+function handleInstall() {
+  // 这里应该实现安装到设备的逻辑，比如扫码绑定设备
+  ElMessageBox.confirm('请扫描设备二维码完成安装', '安装确认', {
+    confirmButtonText: '安装成功',
+    cancelButtonText: '安装失败',
+    type: 'warning'
+  }).then(() => {
+    isInstalled.value = true
+    ElMessage.success('安装成功')
+  }).catch(() => {
+    ElMessage.error('安装失败')
+  })
+}
+
+/* 卸载操作 */
+function handleUninstall() {
+  ElMessageBox.confirm('确认要卸载模具吗？', '卸载确认', {
+    confirmButtonText: '卸载成功',
+    cancelButtonText: '卸载失败',
+    type: 'warning'
+  }).then(() => {
+    isInstalled.value = false
+    isUninstalled.value = true
+    ElMessage.success('卸载成功')
+  }).catch(() => {
+    ElMessage.error('卸载失败')
+  })
+}
+
+/* HOLD操作 */
+const holdDialogVisible = ref(false)
+const selectedHoldType = ref('')
+
+function openHoldDialog() {
+  selectedHoldType.value = ''
+  holdDialogVisible.value = true
+}
+
+function confirmHold() {
+  if (!selectedHoldType.value) {
+    ElMessage.warning('请选择HOLD类型')
+    return
+  }
+
+  isHeld.value = true
+  holdType.value = selectedHoldType.value
+  detail.status = 'HOLD'
+  holdDialogVisible.value = false
+  ElMessage.success('已设为HOLD状态')
+}
+
+/* 解除HOLD操作 */
+function handleReleaseHold() {
+  if (holdType.value === '报废') {
+    ElMessage.warning('报废类型的HOLD不可解除')
+    return
+  }
+
+  isHeld.value = false
+  holdType.value = ''
+  detail.status = isBorrowed.value ? '使用中' : '闲置'
+  ElMessage.success('已解除HOLD状态')
 }
 
 /* 生命周期履历 */
@@ -375,6 +469,7 @@ function openUseDialog() {
 function confirmUse() {
   if (!useManager.value) return ElMessage.warning('请输入领用负责人')
   detail.status = '使用中'
+  isBorrowed.value = true
   useDialogVisible.value = false
   ElMessage.success('领用成功')
   fetchLifeRecords()
@@ -388,6 +483,9 @@ function openReturnDialog() {
 function confirmReturn() {
   if (!returnManager.value) return ElMessage.warning('请输入归还负责人')
   detail.status = '闲置'
+  isBorrowed.value = false
+  isInstalled.value = false
+  isUninstalled.value = false
   returnDialogVisible.value = false
   ElMessage.success('归还成功')
   fetchLifeRecords()
@@ -401,13 +499,21 @@ function getDetail() {
     id: 1,
     code: query.code || 'M001',
     name: query.name || '注塑模具A',
-    status: '使用中',
+    status: '闲置',
     category: '注塑类',
     vendor: 'XX 制造',
     lifeLimit: 100000,
     manager: '张三',
     image: ''
   })
+
+  // 重置操作状态
+  isBorrowed.value = false
+  isInstalled.value = false
+  isUninstalled.value = false
+  isHeld.value = false
+  holdType.value = ''
+
   fetchLifeRecords()
   fetchRepairRecords()
   refreshMaintain()
@@ -419,13 +525,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.detail-container{padding:20px;background:#f5f5f5}
+.detail-container {
+  padding:20px;
+  background:#f5f5f5
+}
 .top-card{margin-bottom:16px}
 .query-form{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
 .top-right{display:flex;align-items:center;justify-content:flex-end;gap:16px}
 .button-group-container{display:flex;gap:8px}
 .action-btn{min-width:60px;margin:0}
-.maintain-btn:hover{background:#9254de!important;border-color:#9254de!important}
 .icons{display:flex;gap:12px;align-items:center}
 .info-card,.section-card{margin-bottom:16px}
 .card-header{display:flex;justify-content:space-between;align-items:center;padding:0 0 12px 0;cursor:pointer;font-weight:bold}
