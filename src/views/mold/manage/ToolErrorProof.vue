@@ -23,8 +23,8 @@
         <!-- 右侧按钮和图标 -->
         <el-col :span="10" class="top-right">
           <div class="button-group-container">
-            <el-button type="success" @click="handleAction('领用')" class="action-btn">领用</el-button>
-            <el-button type="warning" @click="handleAction('归还')" class="action-btn">归还</el-button>
+            <el-button type="success" @click="openUseDialog" class="action-btn">领用</el-button>
+            <el-button type="warning" @click="openReturnDialog" class="action-btn">归还</el-button>
             <el-button type="info" @click="handleAction('闲置')" class="action-btn">闲置</el-button>
             <el-button type="danger" @click="handleAction('维修')" class="action-btn">维修</el-button>
             <el-button type="primary" :style="{ backgroundColor: '#722ed1', borderColor: '#722ed1' }"
@@ -34,10 +34,10 @@
           <!-- 图标 -->
           <div class="icons">
             <el-tooltip content="说明书">
-              <el-button type="primary" :icon="Document" circle @click="openDoc('manual')" />
+              <el-button type="primary" :icon="Document" circle @click="downloadManual" />
             </el-tooltip>
             <el-tooltip content="图纸">
-              <el-button type="primary" :icon="Picture" circle @click="openDoc('drawing')" />
+              <el-button type="primary" :icon="Picture" circle @click="openDrawingsDialog" />
             </el-tooltip>
           </div>
         </el-col>
@@ -48,58 +48,33 @@
     <el-card class="info-card">
       <div class="card-header" @click="expandInfo = !expandInfo">
         <span>模治具信息</span>
-        <el-icon>
-          <component :is="expandInfo ? 'ArrowUp' : 'ArrowDown'" />
-        </el-icon>
+        <el-icon><component :is="expandInfo ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
       </div>
       <div v-show="expandInfo">
         <el-row :gutter="16">
           <!-- 左侧图片 -->
           <el-col :span="4">
-            <img
-                class="mold-img"
-                :src="detail.image || '@/assets/mold-placeholder.png'"
-                alt="模治具图片"
-            />
+            <img class="mold-img" :src="detail.image || '@/assets/mold-placeholder.png'" alt="模治具图片" />
           </el-col>
 
           <!-- 中间信息 -->
           <el-col :span="16">
             <el-descriptions :column="2" border>
               <el-descriptions-item label="状态">
-                <el-tag :type="statusTagType(detail.status)">
-                  {{ detail.status }}
-                </el-tag>
+                <el-tag :type="statusTagType(detail.status)">{{ detail.status }}</el-tag>
               </el-descriptions-item>
-              <el-descriptions-item label="模治具编码">
-                {{ detail.code }}
-              </el-descriptions-item>
-              <el-descriptions-item label="模治具名称">
-                {{ detail.name }}
-              </el-descriptions-item>
-              <el-descriptions-item label="类别">
-                {{ detail.category }}
-              </el-descriptions-item>
-              <el-descriptions-item label="厂商">
-                {{ detail.vendor }}
-              </el-descriptions-item>
-              <el-descriptions-item label="寿命上限次数">
-                {{ detail.lifeLimit }}
-              </el-descriptions-item>
-              <el-descriptions-item label="管理">
-                {{ detail.manager }}
-              </el-descriptions-item>
+              <el-descriptions-item label="模治具编码">{{ detail.code }}</el-descriptions-item>
+              <el-descriptions-item label="模治具名称">{{ detail.name }}</el-descriptions-item>
+              <el-descriptions-item label="类别">{{ detail.category }}</el-descriptions-item>
+              <el-descriptions-item label="厂商">{{ detail.vendor }}</el-descriptions-item>
+              <el-descriptions-item label="寿命上限次数">{{ detail.lifeLimit }}</el-descriptions-item>
+              <el-descriptions-item label="管理">{{ detail.manager }}</el-descriptions-item>
             </el-descriptions>
           </el-col>
 
           <!-- 右侧二维码 -->
           <el-col :span="4" class="qr-col">
-            <vue-qr
-                :text="qrText"
-                :size="120"
-                class="qr-img"
-                ref="qrRef"
-            />
+            <vue-qr :text="qrText" :size="120" class="qr-img" ref="qrRef" />
             <div class="qr-txt">{{ detail.code }}<br />{{ detail.name }}</div>
             <el-button size="small" @click="downloadQr">导出二维码</el-button>
           </el-col>
@@ -111,9 +86,7 @@
     <el-card class="section-card">
       <div class="card-header" @click="expandLife = !expandLife">
         <span>全生命周期履历</span>
-        <el-icon>
-          <component :is="expandLife ? 'ArrowUp' : 'ArrowDown'" />
-        </el-icon>
+        <el-icon><component :is="expandLife ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
       </div>
       <div v-show="expandLife">
         <el-table :data="lifeRecords" stripe style="width: 100%">
@@ -147,9 +120,7 @@
     <el-card class="section-card">
       <div class="card-header" @click="expandRepair = !expandRepair">
         <span>维修信息</span>
-        <el-icon>
-          <component :is="expandRepair ? 'ArrowUp' : 'ArrowDown'" />
-        </el-icon>
+        <el-icon><component :is="expandRepair ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
       </div>
       <div v-show="expandRepair">
         <el-table :data="repairRecords" stripe style="width: 100%">
@@ -175,9 +146,7 @@
     <el-card class="section-card">
       <div class="card-header" @click="expandMaintain = !expandMaintain">
         <span>当日保养信息</span>
-        <el-icon>
-          <component :is="expandMaintain ? 'ArrowUp' : 'ArrowDown'" />
-        </el-icon>
+        <el-icon><component :is="expandMaintain ? 'ArrowUp' : 'ArrowDown'" /></el-icon>
       </div>
       <div v-show="expandMaintain">
         <div class="maintain-header">
@@ -205,22 +174,52 @@
       </div>
     </el-card>
 
-    <!-- 弹窗：说明书 / 图纸 -->
-    <el-dialog
-        v-model="docVisible"
-        :title="docTitle"
-        width="70%"
-        top="5vh"
-        destroy-on-close
-    >
-      <!-- 说明书 -->
-      <iframe
-          v-if="docType === 'manual'"
-          :src="docUrl"
-          style="width: 100%; height: 70vh"
-      />
-      <!-- 图纸 -->
-      <img v-else :src="docUrl" style="width: 100%" />
+    <!-- 领用弹窗 -->
+    <el-dialog v-model="useDialogVisible" title="领用确认" width="460px">
+      <el-form :inline="true" label-width="100px" class="dialog-form">
+        <el-form-item label="领用人：" style="width:100%">
+          <el-input v-model="loginUser" readonly />
+        </el-form-item>
+        <el-form-item label="领用时间：" style="width:100%">
+          <el-input :value="now" readonly />
+        </el-form-item>
+        <el-form-item label="领用负责人：" style="width:100%">
+          <el-input v-model="useManager" placeholder="请输入" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="useDialogVisible=false">取消</el-button>
+        <el-button type="primary" @click="confirmUse">确认领用</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 归还弹窗 -->
+    <el-dialog v-model="returnDialogVisible" title="归还确认" width="460px">
+      <el-form :inline="true" label-width="100px" class="dialog-form">
+        <el-form-item label="归还人：" style="width:100%">
+          <el-input v-model="loginUser" readonly />
+        </el-form-item>
+        <el-form-item label="归还时间：" style="width:100%">
+          <el-input :value="now" readonly />
+        </el-form-item>
+        <el-form-item label="归还负责人：" style="width:100%">
+          <el-input v-model="returnManager" placeholder="请输入" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="returnDialogVisible=false">取消</el-button>
+        <el-button type="primary" @click="confirmReturn">确认归还</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 图纸预览弹窗 -->
+    <el-dialog v-model="drawingsVisible" title="模治具图纸" width="60%">
+      <el-carousel v-if="drawingList.length" height="400px">
+        <el-carousel-item v-for="(url, idx) in drawingList" :key="idx">
+          <img :src="url" style="width:100%;height:100%;object-fit:contain;" />
+        </el-carousel-item>
+      </el-carousel>
+      <div v-else class="empty">暂无图纸</div>
     </el-dialog>
   </div>
 </template>
@@ -233,6 +232,9 @@ import VueQr from 'vue-qr/src/packages/vue-qr.vue'
 import { Document, Picture, ArrowUp, ArrowDown, Refresh } from '@element-plus/icons-vue'
 
 const route = useRoute()
+
+/* 模拟登录账号：实际请替换为真实获取逻辑 */
+const loginUser = 'admin'
 
 /* 查询参数 */
 const query = reactive({
@@ -265,186 +267,71 @@ const expandRepair = ref(true)
 const expandMaintain = ref(true)
 
 /* 分页信息 */
-const lifePage = reactive({
-  currentPage: 1,
-  pageSize: 10,
-  total: 0
-})
+const lifePage = reactive({ currentPage: 1, pageSize: 10, total: 0 })
+const repairPage = reactive({ currentPage: 1, pageSize: 10, total: 0 })
+const maintainPage = reactive({ currentPage: 1, pageSize: 10, total: 0 })
 
-const repairPage = reactive({
-  currentPage: 1,
-  pageSize: 10,
-  total: 0
-})
+function handleLifeSizeChange(val) { lifePage.pageSize = val; fetchLifeRecords() }
+function handleLifeCurrentChange(val) { lifePage.currentPage = val; fetchLifeRecords() }
+function handleRepairSizeChange(val) { repairPage.pageSize = val; fetchRepairRecords() }
+function handleRepairCurrentChange(val) { repairPage.currentPage = val; fetchRepairRecords() }
+function handleMaintainSizeChange(val) { maintainPage.pageSize = val; refreshMaintain() }
+function handleMaintainCurrentChange(val) { maintainPage.currentPage = val; refreshMaintain() }
 
-const maintainPage = reactive({
-  currentPage: 1,
-  pageSize: 10,
-  total: 0
-})
-
-function handleLifeSizeChange(val) {
-  lifePage.pageSize = val
-  fetchLifeRecords()
-}
-
-function handleLifeCurrentChange(val) {
-  lifePage.currentPage = val
-  fetchLifeRecords()
-}
-
-function handleRepairSizeChange(val) {
-  repairPage.pageSize = val
-  fetchRepairRecords()
-}
-
-function handleRepairCurrentChange(val) {
-  repairPage.currentPage = val
-  fetchRepairRecords()
-}
-
-function handleMaintainSizeChange(val) {
-  maintainPage.pageSize = val
-  refreshMaintain()
-}
-
-function handleMaintainCurrentChange(val) {
-  maintainPage.currentPage = val
-  refreshMaintain()
-}
-
-/* 根据状态返回 tag 类型 */
+/* 状态对应 tag 颜色 */
 function statusTagType(status) {
-  const map = {
-    闲置: 'info',
-    使用中: 'success',
-    维修: 'danger',
-    保养: 'primary'
-  }
+  const map = { 闲置: 'info', 使用中: 'success', 维修: 'danger', 保养: 'primary' }
   return map[status] || ''
 }
 
-/* 按钮事件：状态流转 */
+/* 闲置/维修/保养仅改变状态 */
 function handleAction(action) {
-  switch (action) {
-    case '领用':
-      if (detail.status !== '闲置') {
-        ElMessage.warning('当前状态不可领用')
-        return
-      }
-      detail.status = '使用中'
-      // 调用接口记录履历
-      break
-    case '归还':
-      if (detail.status !== '使用中') {
-        ElMessage.warning('当前状态不可归还')
-        return
-      }
-      detail.status = '闲置'
-      break
-    case '闲置':
-      detail.status = '闲置'
-      break
-    case '维修':
-      detail.status = '维修'
-      break
-    case '保养':
-      detail.status = '保养'
-      break
-  }
+  detail.status = action
   ElMessage.success(`已设为${action}`)
-  // 刷新履历表格
   fetchLifeRecords()
 }
 
 /* 生命周期履历 */
 const lifeRecords = ref([])
 function fetchLifeRecords() {
-  // 模拟接口
   const data = [
     {
-      stage: '使用中',
-      remark: '正常生产',
-      lifeLimit: 100000,
-      usedTimes: 1234,
-      borrowDate: '2023-05-01 09:00',
-      borrower: '李四',
-      borrowOutManager: '王五',
-      returnDate: '',
-      returner: '',
-      returnManager: '',
-      deviceName: '注塑机 #1',
-      productModel: 'ABC-123'
+      stage: '使用中', remark: '正常生产', lifeLimit: 100000, usedTimes: 1234,
+      borrowDate: '2023-05-01 09:00', borrower: loginUser, borrowOutManager: '王五',
+      returnDate: '', returner: '', returnManager: '', deviceName: '注塑机 #1', productModel: 'ABC-123'
     },
     {
-      stage: '闲置',
-      remark: '待生产',
-      lifeLimit: 100000,
-      usedTimes: 1200,
-      borrowDate: '',
-      borrower: '',
-      borrowOutManager: '',
-      returnDate: '2023-04-30 18:00',
-      returner: '李四',
-      returnManager: '王五',
-      deviceName: '',
-      productModel: ''
+      stage: '闲置', remark: '待生产', lifeLimit: 100000, usedTimes: 1200,
+      borrowDate: '', borrower: '', borrowOutManager: '',
+      returnDate: '2023-04-30 18:00', returner: loginUser, returnManager: '王五', deviceName: '', productModel: ''
     }
   ]
-
-  // 模拟分页
   const start = (lifePage.currentPage - 1) * lifePage.pageSize
-  const end = start + lifePage.pageSize
-  lifeRecords.value = data.slice(start, end)
+  lifeRecords.value = data.slice(start, start + lifePage.pageSize)
   lifePage.total = data.length
 }
 
 /* 维修信息 */
 const repairRecords = ref([])
 function fetchRepairRecords() {
-  // 模拟数据
-  const data = [
-    {
-      date: '2023-04-25',
-      problem: '型腔划伤',
-      method: '抛光修复',
-      repairer: '赵六'
-    }
-  ]
-
-  // 模拟分页
+  const data = [{ date: '2023-04-25', problem: '型腔划伤', method: '抛光修复', repairer: '赵六' }]
   const start = (repairPage.currentPage - 1) * repairPage.pageSize
-  const end = start + repairPage.pageSize
-  repairRecords.value = data.slice(start, end)
+  repairRecords.value = data.slice(start, start + repairPage.pageSize)
   repairPage.total = data.length
 }
 
 /* 当日保养信息 */
 const maintainList = ref([])
 function refreshMaintain() {
-  // 模拟：随机返回或空
-  let data = []
-  if (Math.random() > 0.5) {
-    data = [
-      {
-        time: '09:30',
-        code: detail.code,
-        name: detail.name,
-        content: '清洁模面',
-        person: '周七',
-        status: '保养'
-      }
-    ]
-  }
-
-  // 模拟分页
+  const data = Math.random() > 0.5
+      ? [{ time: '09:30', code: detail.code, name: detail.name, content: '清洁模面', person: '周七', status: '保养' }]
+      : []
   const start = (maintainPage.currentPage - 1) * maintainPage.pageSize
-  const end = start + maintainPage.pageSize
-  maintainList.value = data.slice(start, end)
+  maintainList.value = data.slice(start, start + maintainPage.pageSize)
   maintainPage.total = data.length
 }
 
-/* 二维码 */
+/* 二维码下载 */
 const qrText = computed(() => `${detail.code}|${detail.name}`)
 const qrRef = ref(null)
 function downloadQr() {
@@ -458,27 +345,58 @@ function downloadQr() {
   })
 }
 
-/* 说明书 / 图纸弹窗 */
-const docVisible = ref(false)
-const docTitle = ref('')
-const docType = ref('') // manual | drawing
-const docUrl = ref('')
+/* 说明书下载 / 图纸查看 */
+const manuals = [{ name: '说明书1.pdf', url: '/demo/manual.pdf' }]
+const drawingList = ref(['/demo/drawing1.png', '/demo/drawing2.png'])
 
-function openDoc(type) {
-  docType.value = type
-  docTitle.value = type === 'manual' ? '模治具说明书' : '模治具图纸'
-  // 真实项目中替换为远程地址
-  docUrl.value =
-      type === 'manual'
-          ? '/demo/manual.pdf'
-          : '/demo/drawing.png'
-  docVisible.value = true
+function downloadManual() {
+  if (!manuals.length) return ElMessage.warning('暂无说明书')
+  const a = document.createElement('a')
+  a.href = manuals[0].url
+  a.download = manuals[0].name
+  a.click()
 }
+function openDrawingsDialog() {
+  drawingsVisible.value = true
+}
+
+/* 领用/归还弹窗 */
+const useDialogVisible = ref(false)
+const returnDialogVisible = ref(false)
+const useManager = ref('')
+const returnManager = ref('')
+const now = computed(() => new Date().toLocaleString())
+
+function openUseDialog() {
+  if (detail.status !== '闲置') return ElMessage.warning('当前状态不可领用')
+  useManager.value = ''
+  useDialogVisible.value = true
+}
+function confirmUse() {
+  if (!useManager.value) return ElMessage.warning('请输入领用负责人')
+  detail.status = '使用中'
+  useDialogVisible.value = false
+  ElMessage.success('领用成功')
+  fetchLifeRecords()
+}
+
+function openReturnDialog() {
+  if (detail.status !== '使用中') return ElMessage.warning('当前状态不可归还')
+  returnManager.value = ''
+  returnDialogVisible.value = true
+}
+function confirmReturn() {
+  if (!returnManager.value) return ElMessage.warning('请输入归还负责人')
+  detail.status = '闲置'
+  returnDialogVisible.value = false
+  ElMessage.success('归还成功')
+  fetchLifeRecords()
+}
+
+const drawingsVisible = ref(false)
 
 /* 获取详情 */
 function getDetail() {
-  // 根据 query.code / query.name 调接口
-  // 以下为演示，直接写死
   Object.assign(detail, {
     id: 1,
     code: query.code || 'M001',
@@ -490,8 +408,6 @@ function getDetail() {
     manager: '张三',
     image: ''
   })
-
-  // 刷新相关数据
   fetchLifeRecords()
   fetchRepairRecords()
   refreshMaintain()
@@ -503,108 +419,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.detail-container {
-  padding: 20px;
-  background: #f5f5f5;
-}
-
-.top-card {
-  margin-bottom: 16px;
-}
-
-.query-form {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.top-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-}
-
-.button-group-container {
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn {
-  min-width: 60px;
-  margin: 0;
-}
-
-.maintain-btn:hover {
-  background-color: #9254de !important;
-  border-color: #9254de !important;
-}
-
-.icons {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.info-card,
-.section-card {
-  margin-bottom: 16px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 0 12px 0;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.mold-img {
-  width: 100%;
-  height: auto;
-  border-radius: 4px;
-}
-
-.qr-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.qr-img {
-  border: 1px solid #ebeef5;
-}
-
-.qr-txt {
-  text-align: center;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.maintain-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-}
-
-.empty {
-  text-align: center;
-  color: #999;
-  padding: 40px 0;
-}
-
-.el-pagination {
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-
-:deep(.el-tag--primary) {
-  background-color: #f9f0ff;
-  border-color: #d3adf7;
-  color: #722ed1;
-}
+.detail-container{padding:20px;background:#f5f5f5}
+.top-card{margin-bottom:16px}
+.query-form{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.top-right{display:flex;align-items:center;justify-content:flex-end;gap:16px}
+.button-group-container{display:flex;gap:8px}
+.action-btn{min-width:60px;margin:0}
+.maintain-btn:hover{background:#9254de!important;border-color:#9254de!important}
+.icons{display:flex;gap:12px;align-items:center}
+.info-card,.section-card{margin-bottom:16px}
+.card-header{display:flex;justify-content:space-between;align-items:center;padding:0 0 12px 0;cursor:pointer;font-weight:bold}
+.mold-img{width:100%;height:auto;border-radius:4px}
+.qr-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.qr-img{border:1px solid #ebeef5}
+.qr-txt{text-align:center;font-size:12px;line-height:1.4}
+.maintain-header{display:flex;justify-content:flex-end;margin-bottom:8px}
+.empty{text-align:center;color:#999;padding:40px 0}
+.el-pagination{margin-top:16px;justify-content:flex-end}
+:deep(.el-tag--primary){background:#f9f0ff;border-color:#d3adf7;color:#722ed1}
+/* 弹窗内文字与输入框一行展示 */
+.dialog-form{display:flex;flex-direction:column;gap:8px}
+.dialog-form .el-form-item{margin:0}
 </style>
