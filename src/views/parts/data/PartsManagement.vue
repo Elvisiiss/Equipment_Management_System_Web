@@ -1,666 +1,848 @@
 <template>
-  <div class="parts-management">
-    <!-- 科技感背景 -->
-    <div class="tech-background">
-      <div class="grid-lines"></div>
-      <div class="floating-particles">
-        <div v-for="i in 20" :key="'particle-'+i" class="particle"></div>
+  <!-- 综合监控大屏 -->
+  <div class="dashboard-screen">
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+      <div class="nav-item">时间 {{ currentTime }}</div>
+      <h1 class="title">设备与备件监控中心</h1>
+      <div class="nav-item">
+        <!-- 车间下拉框 -->
+        <el-select
+            v-model="filterForm.workshop"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="车间"
+            clearable
+            @change="handleWorkshopChange"
+            class="nav-select"
+            style="width: 120px; margin-right: 10px;"
+        >
+          <el-option
+              v-for="ws in workshopOptions"
+              :key="ws.value"
+              :label="ws.label"
+              :value="ws.value"
+          ></el-option>
+        </el-select>
+
+        <!-- 产线下拉框 -->
+        <el-select
+            v-model="filterForm.line"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            placeholder="产线"
+            clearable
+            :disabled="filterForm.workshop.length === 0"
+            @change="handleLineChange"
+            class="nav-select"
+            style="width: 120px; margin-right: 10px;"
+        >
+          <el-option
+              v-for="line in lineOptions"
+              :key="line.value"
+              :label="line.label"
+              :value="line.value"
+          ></el-option>
+        </el-select>
+
+        <!-- 全屏按钮 -->
+        <el-button type="text" @click="handleFullScreenChange" :icon="FullScreen" class="fullscreen-btn" />
       </div>
     </div>
 
-    <!-- 主内容区域 -->
-    <div class="container">
-      <!-- 顶部标题和操作区 -->
-      <div class="header">
-        <h1>备品备件智能管理平台</h1>
-        <div class="header-actions">
-          <el-button type="primary" @click="showAddPartDrawer = true">
-            <el-icon><Plus /></el-icon>新增备件
-          </el-button>
-          <el-button @click="refreshData">
-            <el-icon><Refresh /></el-icon>刷新数据
-          </el-button>
-          <el-date-picker
-              v-model="dateRange"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              @change="handleDateChange"
-          />
-        </div>
-      </div>
-
-      <!-- 关键指标卡片区域 -->
-      <div class="metrics-cards">
-        <el-row :gutter="20">
-          <el-col :xs="24" :sm="12" :lg="6">
-            <MetricCard
-                title="总备件数量"
-                :value="metrics.totalParts"
-                :trend="metrics.totalPartsTrend"
-                icon="Box"
-                color="#409EFF"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <MetricCard
-                title="库存总价值"
-                :value="`¥${metrics.totalValue.toLocaleString()}`"
-                :trend="metrics.totalValueTrend"
-                icon="Money"
-                color="#67C23A"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <MetricCard
-                title="低库存项"
-                :value="metrics.lowStockItems"
-                :trend="metrics.lowStockTrend"
-                icon="Warning"
-                color="#E6A23C"
-            />
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <MetricCard
-                title="本月出库量"
-                :value="metrics.monthlyOutbound"
-                :trend="metrics.monthlyOutboundTrend"
-                icon="ShoppingCart"
-                color="#F56C6C"
-            />
-          </el-col>
-        </el-row>
-      </div>
-
-      <!-- 图表区域 -->
-      <div class="charts-section">
-        <el-row :gutter="20">
-          <el-col :xs="24" :lg="8">
-            <div class="chart-card">
-              <div class="chart-header">
-                <h3>分类占比</h3>
-                <el-select v-model="categoryFilter" placeholder="选择分类" size="small">
-                  <el-option label="全部" value="all" />
-                  <el-option label="电子元件" value="electronic" />
-                  <el-option label="机械零件" value="mechanical" />
-                  <el-option label="耗材" value="consumable" />
-                </el-select>
-              </div>
-              <DoughnutChart :data="categoryChartData" />
-            </div>
-          </el-col>
-          <el-col :xs="24" :lg="16">
-            <div class="chart-card">
-              <div class="chart-header">
-                <h3>库存趋势</h3>
-                <el-select v-model="timeRange" placeholder="选择时间段" size="small">
-                  <el-option label="近7天" value="7d" />
-                  <el-option label="近30天" value="30d" />
-                  <el-option label="近90天" value="90d" />
-                </el-select>
-              </div>
-              <LineChart :data="trendChartData" />
-            </div>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" class="chart-row">
-          <el-col :xs="24">
-            <div class="chart-card">
-              <div class="chart-header">
-                <h3>库存周转率</h3>
-                <el-radio-group v-model="turnoverView" size="small">
-                  <el-radio-button label="按类别">按类别</el-radio-button>
-                  <el-radio-button label="按仓库">按仓库</el-radio-button>
-                </el-radio-group>
-              </div>
-              <BarChart :data="turnoverChartData" />
-            </div>
-          </el-col>
-        </el-row>
-      </div>
-
-      <!-- 预警管理区域 -->
-      <div class="warning-section">
-        <div class="section-header">
-          <h2>库存预警管理</h2>
-          <span class="warning-count">共 {{ lowStockParts.length }} 项需要关注</span>
-        </div>
-        <el-table :data="lowStockParts" style="width: 100%">
-          <el-table-column prop="name" label="备件名称" width="200" />
-          <el-table-column prop="category" label="分类" width="120">
-            <template #default="scope">
-              <el-tag
-                  :type="getCategoryTagType(scope.row.category)"
-                  size="small"
-              >
-                {{ getCategoryName(scope.row.category) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="currentStock" label="当前库存" width="100" />
-          <el-table-column prop="safetyStock" label="安全库存" width="100" />
-          <el-table-column prop="warehouse" label="存放仓库" width="150" />
-          <el-table-column prop="lastUpdated" label="最后更新" width="120">
-            <template #default="scope">
-              {{ formatDate(scope.row.lastUpdated) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="120">
-            <template #default="scope">
-              <el-button
-                  size="small"
-                  type="primary"
-                  @click="openReplenishDialog(scope.row)"
-              >
-                补货
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+    <!-- 状态卡片 -->
+    <div class="status-cards">
+      <div class="card" style="background-color: #4F52D7FF;">设备总数 120</div>
+      <div class="card" style="background-color: #4CAF50;">运行中 82</div>
+      <div class="card" style="background-color: #E6A23C;">待机 20</div>
+      <div class="card" style="background-color: #D32F2F;">故障 8</div>
+      <div class="card" style="background-color: #9E9E9E;">离线 10</div>
     </div>
 
-    <!-- 新增/编辑备件抽屉 -->
-    <el-drawer
-        v-model="showAddPartDrawer"
-        :title="editingPart ? '编辑备件' : '新增备件'"
-        direction="rtl"
-        size="40%"
-    >
-      <PartForm
-          v-if="showAddPartDrawer"
-          :part="editingPart"
-          @submit="handlePartSubmit"
-          @cancel="showAddPartDrawer = false"
-      />
-    </el-drawer>
+    <!-- 关键指标卡片区域 -->
+    <div class="metrics-cards">
+      <el-row :gutter="20">
+        <el-col :xs="24" :sm="12" :lg="6">
+          <div class="metric-card" style="--color: #409EFF;">
+            <div class="card-icon">
+              <el-icon><Box /></el-icon>
+            </div>
+            <div class="card-content">
+              <div class="card-title">总备件数量</div>
+              <div class="card-value">256</div>
+              <div class="card-trend positive">
+                <el-icon><CaretTop /></el-icon>
+                5.2%
+              </div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :xs="24" :sm="12" :lg="6">
+          <div class="metric-card" style="--color: #67C23A;">
+            <div class="card-icon">
+              <el-icon><Money /></el-icon>
+            </div>
+            <div class="card-content">
+              <div class="card-title">库存总价值</div>
+              <div class="card-value">¥128,560</div>
+              <div class="card-trend positive">
+                <el-icon><CaretTop /></el-icon>
+                3.8%
+              </div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :xs="24" :sm="12" :lg="6">
+          <div class="metric-card" style="--color: #E6A23C;">
+            <div class="card-icon">
+              <el-icon><Warning /></el-icon>
+            </div>
+            <div class="card-content">
+              <div class="card-title">低库存项</div>
+              <div class="card-value">18</div>
+              <div class="card-trend negative">
+                <el-icon><CaretBottom /></el-icon>
+                2.4%
+              </div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :xs="24" :sm="12" :lg="6">
+          <div class="metric-card" style="--color: #F56C6C;">
+            <div class="card-icon">
+              <el-icon><ShoppingCart /></el-icon>
+            </div>
+            <div class="card-content">
+              <div class="card-title">本月出库量</div>
+              <div class="card-value">342</div>
+              <div class="card-trend positive">
+                <el-icon><CaretTop /></el-icon>
+                7.1%
+              </div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </div>
 
-    <!-- 补货对话框 -->
-    <el-dialog
-        v-model="showReplenishDialog"
-        :title="`补货 - ${selectedPart?.name}`"
-        width="30%"
-    >
-      <ReplenishForm
-          :part="selectedPart"
-          @submit="handleReplenishSubmit"
-          @cancel="showReplenishDialog = false"
-      />
-    </el-dialog>
+    <!-- 图表区域 -->
+    <el-row :gutter="16" class="chart-row">
+      <el-col :span="12">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="el-icon-pie-chart"></i> 设备类型分布</h3>
+          </div>
+          <div class="chart-container">
+            <v-chart :option="typePieOption" autoresize style="height: 100%;" />
+          </div>
+        </div>
+      </el-col>
+      <el-col :span="12">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="el-icon-data-line"></i> 稼动率分布</h3>
+          </div>
+          <div class="chart-container">
+            <v-chart :option="utilPieOption" autoresize style="height: 100%;" />
+          </div>
+        </div>
+      </el-col>
+    </el-row>
+
+    <!-- 第三行：稼动率趋势 + 停机排名 -->
+    <el-row :gutter="16" class="chart-row">
+      <el-col :span="12">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="el-icon-trend-charts"></i> 本周稼动率趋势</h3>
+          </div>
+          <div class="trend-data-display">
+            <div v-for="(day, index) in lineOption.xAxis.data" :key="index" class="trend-item">
+              <div class="trend-day">{{ day }}：</div>
+              <div class="trend-value">{{ lineOption.series[0].data[index] }}%</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <v-chart :option="lineOption" autoresize style="height: 100%;" />
+          </div>
+        </div>
+      </el-col>
+      <el-col :span="12">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3><i class="el-icon-warning-outline"></i> 停机排名</h3>
+          </div>
+          <div class="table-container">
+            <el-table :data="stopRank" size="small" style="width: 100%; height: 100%;">
+              <el-table-column type="index" width="50" align="center" />
+              <el-table-column prop="name" label="设备名称" show-overflow-tooltip min-width="120" />
+              <el-table-column prop="duration" label="时长" width="150" align="center" />
+              <el-table-column prop="start" label="开始时间" width="140" align="center" />
+            </el-table>
+          </div>
+        </div>
+      </el-col>
+    </el-row>
+
+    <!-- 库存预警区域 -->
+    <div class="warning-section">
+      <div class="section-header">
+        <h2>库存预警管理</h2>
+        <span class="warning-count">共 {{ lowStockParts.length }} 项需要关注</span>
+      </div>
+      <el-table :data="lowStockParts" style="width: 100%">
+        <el-table-column prop="name" label="备件名称" width="200" />
+        <el-table-column prop="category" label="分类" width="120">
+          <template #default="scope">
+            <el-tag
+                :type="getCategoryTagType(scope.row.category)"
+                size="small"
+            >
+              {{ getCategoryName(scope.row.category) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="currentStock" label="当前库存" width="100" />
+        <el-table-column prop="safetyStock" label="安全库存" width="100" />
+        <el-table-column prop="warehouse" label="存放仓库" width="150" />
+        <el-table-column prop="lastUpdated" label="最后更新" width="120">
+          <template #default="scope">
+            {{ formatDate(scope.row.lastUpdated) }}
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
   </div>
 </template>
 
-<script>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, Refresh, Box, Money, Warning, ShoppingCart } from '@element-plus/icons-vue'
-import MetricCard from './components/MetricCard.vue'
-import DoughnutChart from './components/DoughnutChart.vue'
-import LineChart from './components/LineChart.vue'
-import BarChart from './components/BarChart.vue'
-import PartForm from './components/PartForm.vue'
-import ReplenishForm from './components/ReplenishForm.vue'
-import { generateMockData, savePartsData, loadPartsData } from './data/mockData'
+<script setup>
+import { ref, onMounted, reactive, onBeforeUnmount } from 'vue'
+import * as echarts from 'echarts/core'
+import { PieChart, LineChart } from 'echarts/charts'
+import {
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import VChart from 'vue-echarts'
+import {
+  FullScreen,
+  Box,
+  Money,
+  Warning,
+  ShoppingCart,
+  CaretTop,
+  CaretBottom
+} from '@element-plus/icons-vue'
 
-export default {
-  name: 'PartsManagement',
-  components: {
-    Plus,
-    Refresh,
-    Box,
-    Money,
-    Warning,
-    ShoppingCart,
-    MetricCard,
-    DoughnutChart,
-    LineChart,
-    BarChart,
-    PartForm,
-    ReplenishForm
-  },
-  setup() {
-    // 状态管理
-    const parts = ref([])
-    const dateRange = ref([])
-    const categoryFilter = ref('all')
-    const timeRange = ref('30d')
-    const turnoverView = ref('按类别')
-    const showAddPartDrawer = ref(false)
-    const showReplenishDialog = ref(false)
-    const editingPart = ref(null)
-    const selectedPart = ref(null)
+// 注册图表
+echarts.use([
+  PieChart,
+  LineChart,
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent,
+  CanvasRenderer
+])
 
-    // 存储动画帧ID用于清理
-    const animationIds = ref([])
+// 实时时钟
+const currentTime = ref('')
+let timer = null
 
-    // 加载数据
-    const loadData = () => {
-      const savedData = loadPartsData()
-      if (savedData && savedData.length > 0) {
-        parts.value = savedData
-      } else {
-        parts.value = generateMockData()
-        savePartsData(parts.value)
-      }
-    }
+const updateTime = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = (now.getMonth() + 1).toString().padStart(2, '0')
+  const day = now.getDate().toString().padStart(2, '0')
+  const hours = now.getHours().toString().padStart(2, '0')
+  const minutes = now.getMinutes().toString().padStart(2, '0')
+  const seconds = now.getSeconds().toString().padStart(2, '0')
+  currentTime.value = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
 
-    // 初始化加载数据
-    onMounted(() => {
-      loadData()
-      // 启动粒子动画
-      initParticleAnimations()
+onMounted(() => {
+  updateTime()
+  timer = setInterval(updateTime, 1000)
+})
+
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer)
+})
+
+// 全屏相关逻辑
+const fullScreen = ref(false)
+
+const handleFullScreenChange = () => {
+  fullScreen.value = !fullScreen.value
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      console.error(`全屏请求错误: ${err.message}`)
     })
-
-    // 组件卸载时清理资源
-    onUnmounted(() => {
-      // 取消所有动画帧
-      animationIds.value.forEach(id => cancelAnimationFrame(id))
-      animationIds.value = []
-    })
-
-    // 初始化粒子动画
-    const initParticleAnimations = () => {
-      const particles = document.querySelectorAll('.particle')
-      particles.forEach((particle, index) => {
-        const animation = () => {
-          const currentTop = parseFloat(getComputedStyle(particle).top)
-          const newTop = currentTop - 0.5
-
-          if (newTop < -10) {
-            particle.style.top = '100%'
-            particle.style.left = `${Math.random() * 100}%`
-          } else {
-            particle.style.top = `${newTop}%`
-          }
-
-          const id = requestAnimationFrame(animation)
-          animationIds.value.push(id)
-        }
-        animation()
-      })
-    }
-
-    // 计算指标数据
-    const metrics = computed(() => {
-      const totalParts = parts.value.length
-      const totalValue = parts.value.reduce((sum, part) => sum + (part.currentStock * part.price), 0)
-      const lowStockItems = parts.value.filter(part => part.currentStock <= part.safetyStock).length
-      const monthlyOutbound = parts.value.reduce((sum, part) => sum + (part.monthlyOutbound || 0), 0)
-
-      // 简化处理趋势数据（实际应用中应从历史数据计算）
-      return {
-        totalParts,
-        totalPartsTrend: 5.2,
-        totalValue,
-        totalValueTrend: 3.8,
-        lowStockItems,
-        lowStockTrend: -2.4,
-        monthlyOutbound,
-        monthlyOutboundTrend: 7.1
-      }
-    })
-
-    // 低库存备件
-    const lowStockParts = computed(() => {
-      return parts.value
-          .filter(part => part.currentStock <= part.safetyStock)
-          .sort((a, b) => a.currentStock / a.safetyStock - b.currentStock / b.safetyStock)
-    })
-
-    // 分类图表数据
-    const categoryChartData = computed(() => {
-      const categories = {
-        electronic: { name: '电子元件', count: 0, color: '#409EFF' },
-        mechanical: { name: '机械零件', count: 0, color: '#67C23A' },
-        consumable: { name: '耗材', count: 0, color: '#E6A23C' }
-      }
-
-      parts.value.forEach(part => {
-        if (categories[part.category]) {
-          categories[part.category].count++
-        }
-      })
-
-      return {
-        labels: Object.values(categories).map(c => c.name),
-        datasets: [{
-          data: Object.values(categories).map(c => c.count),
-          backgroundColor: Object.values(categories).map(c => c.color)
-        }]
-      }
-    })
-
-    // 趋势图表数据
-    const trendChartData = computed(() => {
-      // 简化处理，实际应用中应从历史数据生成
-      return {
-        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-        datasets: [
-          {
-            label: '电子元件',
-            data: [120, 150, 180, 90, 130, 160],
-            borderColor: '#409EFF',
-            tension: 0.1
-          },
-          {
-            label: '机械零件',
-            data: [80, 100, 120, 110, 95, 130],
-            borderColor: '#67C23A',
-            tension: 0.1
-          }
-        ]
-      }
-    })
-
-    // 周转率图表数据
-    const turnoverChartData = computed(() => {
-      // 简化处理，实际应用中应计算真实周转率
-      if (turnoverView.value === '按类别') {
-        return {
-          labels: ['电子元件', '机械零件', '耗材'],
-          datasets: [{
-            label: '周转率',
-            data: [2.8, 1.5, 4.2],
-            backgroundColor: '#409EFF'
-          }]
-        }
-      } else {
-        return {
-          labels: ['主仓库', '东区仓库', '西区仓库', '备用仓库'],
-          datasets: [{
-            label: '周转率',
-            data: [2.5, 3.1, 1.8, 2.2],
-            backgroundColor: '#67C23A'
-          }]
-        }
-      }
-    })
-
-    // 工具函数
-    const getCategoryTagType = (category) => {
-      const types = {
-        electronic: 'primary',
-        mechanical: 'success',
-        consumable: 'warning'
-      }
-      return types[category] || 'info'
-    }
-
-    const getCategoryName = (category) => {
-      const names = {
-        electronic: '电子元件',
-        mechanical: '机械零件',
-        consumable: '耗材'
-      }
-      return names[category] || '其他'
-    }
-
-    const formatDate = (dateString) => {
-      return new Date(dateString).toLocaleDateString()
-    }
-
-    // 事件处理
-    const refreshData = () => {
-      loadData()
-      ElMessage.success('数据已刷新')
-    }
-
-    const handleDateChange = () => {
-      // 在实际应用中，这里应该根据日期范围过滤数据
-      ElMessage.info('日期范围已更改')
-    }
-
-    const openReplenishDialog = (part) => {
-      selectedPart.value = part
-      showReplenishDialog.value = true
-    }
-
-    const handleReplenishSubmit = (replenishData) => {
-      const partIndex = parts.value.findIndex(p => p.id === replenishData.partId)
-      if (partIndex !== -1) {
-        parts.value[partIndex].currentStock += replenishData.quantity
-        parts.value[partIndex].lastUpdated = new Date().toISOString()
-
-        savePartsData(parts.value)
-        ElMessage.success('补货成功')
-        showReplenishDialog.value = false
-      }
-    }
-
-    const handlePartSubmit = (partData) => {
-      if (partData.id) {
-        // 编辑现有备件
-        const index = parts.value.findIndex(p => p.id === partData.id)
-        if (index !== -1) {
-          parts.value[index] = { ...partData }
-        }
-      } else {
-        // 新增备件
-        const newPart = {
-          ...partData,
-          id: Date.now().toString(),
-          lastUpdated: new Date().toISOString()
-        }
-        parts.value.push(newPart)
-      }
-
-      savePartsData(parts.value)
-      showAddPartDrawer.value = false
-      editingPart.value = null
-      ElMessage.success(partData.id ? '备件已更新' : '备件已添加')
-    }
-
-    return {
-      // 状态
-      parts,
-      dateRange,
-      categoryFilter,
-      timeRange,
-      turnoverView,
-      showAddPartDrawer,
-      showReplenishDialog,
-      editingPart,
-      selectedPart,
-
-      // 计算属性
-      metrics,
-      lowStockParts,
-      categoryChartData,
-      trendChartData,
-      turnoverChartData,
-
-      // 方法
-      refreshData,
-      handleDateChange,
-      openReplenishDialog,
-      handleReplenishSubmit,
-      handlePartSubmit,
-      getCategoryTagType,
-      getCategoryName,
-      formatDate
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
     }
   }
 }
+
+// 筛选表单
+const filterForm = reactive({
+  workshop: [],
+  line: [],
+})
+
+const workshopOptions = ref([
+  { value: 'all', label: '全部车间' },
+  { value: 'C2', label: 'C2车间' },
+  { value: 'C3', label: 'C3车间' },
+  { value: 'C4', label: 'C4车间' },
+  { value: 'C5', label: 'C5车间' },
+  { value: 'C6', label: 'C6车间' }
+])
+
+const lineOptions = ref([])
+
+const workshopLineMap = {
+  C2: ['31', '32', '33', '34', '35', '36'],
+  C3: ['41', '42', '43', '44', '45', '46'],
+  C4: ['51', '52', '53', '54', '55', '56'],
+  C5: ['61', '62', '63', '64', '65', '66'],
+  C6: ['71', '72', '73', '74', '75', '76']
+}
+
+const handleWorkshopChange = () => {
+  if (filterForm.workshop.includes('all')) {
+    filterForm.workshop = ['all']
+  } else if (filterForm.workshop.length === 0) {
+    filterForm.line = []
+    lineOptions.value = []
+    return
+  }
+
+  filterForm.line = []
+  const lines = []
+
+  if (filterForm.workshop.includes('all')) {
+    lineOptions.value = [{ value: 'all', label: '全部产线' }]
+    for (const workshop in workshopLineMap) {
+      lineOptions.value.push({
+        value: `${workshop}-all`,
+        label: `${workshop}车间全部产线`
+      })
+      lines.push(...workshopLineMap[workshop])
+    }
+  } else {
+    lineOptions.value = [{ value: 'all', label: '全部产线' }]
+    filterForm.workshop.forEach(ws => {
+      lineOptions.value.push({
+        value: `${ws}-all`,
+        label: `${ws}车间全部产线`
+      })
+      if (workshopLineMap[ws]) {
+        lines.push(...workshopLineMap[ws])
+      }
+    })
+  }
+
+  const uniqueLines = [...new Set(lines)]
+  uniqueLines.forEach(line => {
+    lineOptions.value.push({
+      value: line,
+      label: `${line}产线`
+    })
+  })
+
+  handleFilter()
+}
+
+const handleLineChange = () => {
+  if (filterForm.line.includes('all')) {
+    filterForm.line = ['all']
+  } else if (filterForm.line.some(item => item.includes('-all'))) {
+    const workshopAlls = filterForm.line.filter(item => item.includes('-all'))
+    filterForm.line = workshopAlls
+  }
+
+  handleFilter()
+}
+
+const handleFilter = () => {
+  console.log('筛选条件:', filterForm)
+}
+
+// 图表配置
+const typePieOption = ref({
+  tooltip: {trigger: 'item'},
+  legend: {
+    orient: 'vertical',
+    right: 10,
+    top: 'center',
+    textStyle: {color: '#fff'}
+  },
+  series: [
+    {
+      name: '设备类型',
+      type: 'pie',
+      radius: ['40%', '70%'],
+      label: {show: false, position: 'center'},
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: '#fff'
+        }
+      },
+      labelLine: {show: false},
+      data: [
+        {value: 82, name: '运行中', itemStyle: {color: '#67C23A'}},
+        {value: 20, name: '待机', itemStyle: {color: '#E6A23C'}},
+        {value: 8, name: '故障', itemStyle: {color: '#F56C6C'}},
+        {value: 10, name: '离线', itemStyle: {color: '#909399'}}
+      ]
+    }
+  ]
+})
+
+const utilPieOption = ref({
+  tooltip: {trigger: 'item'},
+  legend: {
+    orient: 'vertical',
+    right: 10,
+    top: 'center',
+    textStyle: {color: '#fff'}
+  },
+  series: [
+    {
+      name: '稼动率',
+      type: 'pie',
+      radius: ['40%', '70%'],
+      label: {show: false, position: 'center'},
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: '#fff'
+        }
+      },
+      labelLine: {show: false},
+      data: [
+        {value: 60, name: '90% 以上', itemStyle: {color: '#67C23A'}},
+        {value: 25, name: '80-90%', itemStyle: {color: '#8FD460'}},
+        {value: 20, name: '70-80%', itemStyle: {color: '#E6A23C'}},
+        {value: 15, name: '70% 以下', itemStyle: {color: '#F56C6C'}}
+      ]
+    }
+  ]
+})
+
+const lineOption = ref({
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {type: 'shadow'}
+  },
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
+  xAxis: {
+    type: 'category',
+    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    axisLine: {
+      lineStyle: {color: '#5B8FF9'}
+    },
+    axisLabel: {color: '#fff'}
+  },
+  yAxis: {
+    type: 'value',
+    axisLabel: {
+      formatter: '{value} %',
+      color: '#fff'
+    },
+    splitLine: {
+      lineStyle: {color: 'rgba(255, 255, 255, 0.1)'}
+    }
+  },
+  series: [
+    {
+      data: [92, 89, 94, 96, 90, 88, 93],
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      itemStyle: {
+        color: '#5B8FF9',
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      lineStyle: {
+        width: 3,
+        color: '#5B8FF9'
+      },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          {offset: 0, color: 'rgba(91, 143, 249, 0.6)'},
+          {offset: 1, color: 'rgba(91, 143, 249, 0.1)'}
+        ])
+      }
+    }
+  ]
+})
+
+const stopRank = ref([
+  {name: 'C4-51-16', duration: '15小时29分38秒', start: '2025-07-21 23:24:52'},
+  {name: 'C4-51-23', duration: '15小时29分38秒', start: '2025-07-21 23:24:52'},
+  {name: 'C4-51-24', duration: '15小时29分38秒', start: '2025-07-21 23:24:52'},
+  {name: 'C4-51-21', duration: '59分33秒', start: '2025-07-22 13:54:52'},
+  {name: 'C4-51-19', duration: '4分38秒', start: '2025-07-22 14:49:52'},
+  {name: 'C4-51-26', duration: '48秒', start: '2025-07-22 14:53:42'},
+  {name: 'C4-51-22', duration: '36秒', start: '2025-07-22 14:53:52'},
+  {name: 'C4-51-31', duration: '36秒', start: '2025-07-22 14:53:54'}
+])
+
+// 库存预警相关数据和方法
+const lowStockParts = ref([
+  { id: '1', name: '电阻器 10KΩ', category: 'electronic', currentStock: 5, safetyStock: 20, warehouse: '主仓库', lastUpdated: '2023-07-20' },
+  { id: '2', name: '电容器 100μF', category: 'electronic', currentStock: 8, safetyStock: 25, warehouse: '东区仓库', lastUpdated: '2023-07-19' },
+  { id: '3', name: '轴承 6204', category: 'mechanical', currentStock: 3, safetyStock: 15, warehouse: '西区仓库', lastUpdated: '2023-07-18' },
+  { id: '4', name: '润滑油', category: 'consumable', currentStock: 2, safetyStock: 10, warehouse: '主仓库', lastUpdated: '2023-07-17' },
+  { id: '5', name: '保险丝 5A', category: 'electronic', currentStock: 4, safetyStock: 30, warehouse: '备用仓库', lastUpdated: '2023-07-16' }
+])
+
+const getCategoryTagType = (category) => {
+  const types = {
+    electronic: 'primary',
+    mechanical: 'success',
+    consumable: 'warning'
+  }
+  return types[category] || 'info'
+}
+
+const getCategoryName = (category) => {
+  const names = {
+    electronic: '电子元件',
+    mechanical: '机械零件',
+    consumable: '耗材'
+  }
+  return names[category] || '其他'
+}
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString()
+}
+
+onMounted(() => {
+  echarts.registerTheme('dark', {
+    backgroundColor: 'transparent',
+    textStyle: {color: '#fff'}
+  })
+})
 </script>
 
-<style scoped>
-.parts-management {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #0f1623 0%, #1c2539 100%);
-  color: #fff;
-  position: relative;
-  overflow-x: hidden;
-}
-
-.tech-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1; /* 修改为负值，确保不会覆盖其他元素 */
-  overflow: hidden;
-  pointer-events: none; /* 防止拦截点击事件 */
-}
-
-.grid-lines {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image:
-      linear-gradient(rgba(66, 134, 244, 0.1) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(66, 134, 244, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-  opacity: 0.3;
-}
-
-.floating-particles {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* 防止粒子拦截点击事件 */
-}
-
-.particle {
-  position: absolute;
-  background: rgba(66, 134, 244, 0.5);
-  border-radius: 50%;
-  pointer-events: none; /* 防止粒子拦截点击事件 */
-}
-
-.particle:nth-child(1) { top: 10%; left: 20%; width: 4px; height: 4px; }
-.particle:nth-child(2) { top: 20%; left: 80%; width: 6px; height: 6px; }
-.particle:nth-child(3) { top: 30%; left: 40%; width: 3px; height: 3px; }
-.particle:nth-child(4) { top: 40%; left: 60%; width: 5px; height: 5px; }
-.particle:nth-child(5) { top: 50%; left: 10%; width: 4px; height: 4px; }
-.particle:nth-child(6) { top: 60%; left: 90%; width: 6px; height: 6px; }
-.particle:nth-child(7) { top: 70%; left: 30%; width: 3px; height: 3px; }
-.particle:nth-child(8) { top: 80%; left: 70%; width: 5px; height: 5px; }
-.particle:nth-child(9) { top: 90%; left: 50%; width: 4px; height: 4px; }
-.particle:nth-child(10) { top: 15%; left: 25%; width: 5px; height: 5px; }
-.particle:nth-child(11) { top: 25%; left: 75%; width: 3px; height: 3px; }
-.particle:nth-child(12) { top: 35%; left: 45%; width: 6px; height: 6px; }
-.particle:nth-child(13) { top: 45%; left: 65%; width: 4px; height: 4px; }
-.particle:nth-child(14) { top: 55%; left: 15%; width: 5px; height: 5px; }
-.particle:nth-child(15) { top: 65%; left: 85%; width: 3px; height: 3px; }
-.particle:nth-child(16) { top: 75%; left: 35%; width: 6px; height: 6px; }
-.particle:nth-child(17) { top: 85%; left: 55%; width: 4px; height: 4px; }
-.particle:nth-child(18) { top: 95%; left: 5%; width: 5px; height: 5px; }
-.particle:nth-child(19) { top: 5%; left: 95%; width: 3px; height: 3px; }
-.particle:nth-child(20) { top: 22%; left: 12%; width: 6px; height: 6px; }
-
-.container {
-  position: relative;
-  z-index: 1;
-  padding: 20px;
-  max-width: 1600px;
-  margin: 0 auto;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 700;
-  background: linear-gradient(90deg, #4286f4, #7cb6ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.metrics-cards {
-  margin-bottom: 24px;
-}
-
-.charts-section {
-  margin-bottom: 32px;
-}
-
-.chart-card {
-  background: rgba(30, 40, 60, 0.7);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
+<style scoped lang="scss">
+.dashboard-screen {
+  height: 100vh;
   padding: 16px;
-  margin-bottom: 20px;
-  border: 1px solid rgba(66, 134, 244, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.chart-header {
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
+  flex-direction: column;
+  color: #fff;
+  overflow: auto;
 
-.chart-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0 50px;
+    background-color: #1a2b40;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
-.warning-section {
-  background: rgba(30, 40, 60, 0.7);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid rgba(66, 134, 244, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
+    .nav-item {
+      font-size: 14px;
+      color: #fff;
+      margin-right: 20px;
+      display: flex;
+      align-items: center;
+    }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.section-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.warning-count {
-  color: #e6a23c;
-  font-weight: 500;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0 20px;
+    }
   }
 
-  .header-actions {
+  .status-cards {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
     width: 100%;
-    flex-wrap: wrap;
+
+    .card {
+      flex: 1;
+      margin: 0 5px;
+      padding: 15px 10px;
+      border-radius: 8px;
+      color: #fff;
+      text-align: center;
+      transition: all 0.3s;
+      font-size: 16px;
+      font-weight: bold;
+      min-width: 0;
+
+      &:first-child {
+        margin-left: 0;
+      }
+
+      &:last-child {
+        margin-right: 0;
+      }
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+    }
   }
 
-  .chart-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .metrics-cards {
+    margin-bottom: 20px;
+
+    .metric-card {
+      --color: #409EFF;
+      background: rgba(30, 40, 60, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border: 1px solid rgba(66, 134, 244, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      height: 100%;
+
+      .card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        background-color: rgba(var(--color), 0.2);
+        color: var(--color);
+      }
+
+      .card-content {
+        flex: 1;
+      }
+
+      .card-title {
+        font-size: 14px;
+        color: #a0aec0;
+        margin-bottom: 8px;
+      }
+
+      .card-value {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .card-trend {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        gap: 4px;
+
+        &.positive {
+          color: #67c23a;
+        }
+
+        &.negative {
+          color: #f56c6c;
+        }
+      }
+    }
+  }
+
+  .chart-row {
+    flex: 1;
+    min-height: 0;
+    margin-bottom: 10px;
+
+    .chart-card {
+      height: 100%;
+      background: rgba(16, 42, 87, 0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(64, 158, 255, 0.3);
+      box-shadow: 0 0 10px rgba(64, 158, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+
+      .chart-header {
+        padding: 10px 16px;
+        border-bottom: 1px solid rgba(64, 158, 255, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h3 {
+          font-size: 16px;
+          font-weight: 500;
+          margin: 0;
+          display: flex;
+          align-items: center;
+
+          i {
+            margin-right: 8px;
+            color: #409EFF;
+          }
+        }
+      }
+
+      .chart-container {
+        flex: 1;
+        padding: 10px;
+        min-height: 200px;
+      }
+
+      .trend-data-display {
+        display: flex;
+        justify-content: space-around;
+        padding: 10px 5px;
+        background: rgba(16, 42, 87, 0.3);
+        border-bottom: 1px solid rgba(64, 158, 255, 0.2);
+
+        .trend-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          font-size: 13px;
+
+          .trend-day {
+            opacity: 0.8;
+          }
+
+          .trend-value {
+            font-weight: bold;
+            margin-top: 3px;
+            color: #5B8FF9;
+          }
+        }
+      }
+
+      .table-container {
+        flex: 1;
+        padding: 10px;
+      }
+    }
+  }
+
+  .warning-section {
+    background: rgba(16, 42, 87, 0.5);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid rgba(64, 158, 255, 0.3);
+    box-shadow: 0 0 10px rgba(64, 158, 255, 0.1);
+    margin-top: 10px;
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+
+      h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+      }
+    }
+
+    .warning-count {
+      color: #e6a23c;
+      font-weight: 500;
+    }
+  }
+}
+
+// 导航栏下拉框样式
+:deep(.nav-select) {
+  .el-input__wrapper {
+    background: rgba(16, 42, 87, 0.7);
+    border: 1px solid rgba(64, 158, 255, 0.3);
+    box-shadow: 0 0 8px rgba(64, 158, 255, 0.3);
+    border-radius: 4px;
+    transition: all 0.3s;
+
+    &:hover {
+      box-shadow: 0 0 12px rgba(64, 158, 255, 0.5);
+    }
+  }
+
+  .el-input__inner {
+    color: #fff;
+    font-size: 14px;
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+  }
+
+  .el-select__tags {
+    .el-tag {
+      background: rgba(64, 158, 255, 0.3);
+      border-color: rgba(64, 158, 255, 0.5);
+      color: #fff;
+      box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
+    }
+  }
+
+  .el-tag__close {
+    color: #fff;
+    background: transparent;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  .el-icon {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+:deep(.el-table) {
+  --el-table-border-color: rgba(64, 158, 255, 0.1);
+  --el-table-header-text-color: #fff;
+  --el-table-text-color: #fff;
+  --el-table-row-hover-bg-color: rgba(64, 158, 255, 0.2);
+  --el-table-header-bg-color: rgba(16, 42, 87, 0.7);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+}
+
+:deep(.el-table__empty-block) {
+  background: rgba(16, 42, 87, 0.3);
+}
+
+// 添加全屏按钮样式
+.fullscreen-btn {
+  font-size: 25px;
+  color: #fff;
+  margin-left: 10px;
+
+  &:hover {
+    color: #409EFF;
   }
 }
 </style>
