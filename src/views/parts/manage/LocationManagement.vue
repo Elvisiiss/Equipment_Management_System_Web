@@ -3,7 +3,7 @@
     <!-- 过滤条件区 -->
     <div class="filter-container">
       <el-form :model="filterForm" class="filter-form">
-        <el-form-item label="备件名称/描述">
+        <el-form-item label="备件名称/描述" class="search-item">
           <el-input
               v-model="searchQuery"
               placeholder="请输入备件名称或描述"
@@ -17,47 +17,47 @@
         </el-form-item>
 
         <!-- 添加物料分类过滤 -->
-        <el-form-item label="物料分类">
+        <el-form-item label="物料分类" class="filter-item">
           <el-select
               v-model="filterCategory"
               placeholder="请选择物料分类"
               clearable
               @change="resetPagination"
           >
-            <el-option value="all">所有分类</el-option>
+            <el-option label="所有分类" value="all"></el-option>
             <el-option
                 v-for="category in categoryOptions"
                 :key="category.value"
+                :label="category.label"
                 :value="category.value"
             >
-              {{ category.label }}
             </el-option>
           </el-select>
         </el-form-item>
 
-        <el-form-item label="贵重属性">
+        <el-form-item label="贵重属性" class="filter-item">
           <el-select
               v-model="filterValuable"
               placeholder="请选择贵重属性"
               clearable
               @change="resetPagination"
           >
-            <el-option value="all">所有贵重属性</el-option>
-            <el-option value="yes">贵重</el-option>
-            <el-option value="no">非贵重</el-option>
+            <el-option label="所有贵重属性" value="all"></el-option>
+            <el-option label="贵重" value="yes"></el-option>
+            <el-option label="非贵重" value="no"></el-option>
           </el-select>
         </el-form-item>
 
-        <el-form-item label="库存状态">
+        <el-form-item label="库存状态" class="filter-item">
           <el-select
               v-model="filterStock"
               placeholder="请选择库存状态"
               clearable
               @change="resetPagination"
           >
-            <el-option value="all">所有库存状态</el-option>
-            <el-option value="low">库存不足</el-option>
-            <el-option value="sufficient">库存充足</el-option>
+            <el-option label="所有库存状态" value="all"></el-option>
+            <el-option label="库存不足" value="low"></el-option>
+            <el-option label="库存充足" value="sufficient"></el-option>
           </el-select>
         </el-form-item>
       </el-form>
@@ -65,6 +65,7 @@
       <!-- 操作按钮区 -->
       <div class="operation-buttons">
         <el-button type="primary" icon="plus" @click="openAddDialog">添加备件</el-button>
+        <el-button icon="refresh" @click="resetFilters">重置</el-button>
       </div>
     </div>
 
@@ -91,7 +92,7 @@
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="name" label="名称" width="180">
           <template #default="{ row }">
-            <span class="part-link">{{ row.name }}</span>
+            <router-link :to="`/parts/manage/partsDetail/${row.id}`" class="part-link">{{ row.name }}</router-link>
           </template>
         </el-table-column>
         <el-table-column prop="category" label="物料分类" width="120">
@@ -201,7 +202,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElEmpty } from 'element-plus'
 
 // 物料分类选项
@@ -231,9 +233,9 @@ const spareParts = [
 // 状态管理
 const parts = ref([])
 const searchQuery = ref('')
-const filterCategory = ref('all')
-const filterValuable = ref('all')
-const filterStock = ref('all')
+const filterCategory = ref(null)
+const filterValuable = ref(null)
+const filterStock = ref(null)
 const showDialog = ref(false)
 const isEditing = ref(false)
 const currentPart = ref({
@@ -246,6 +248,29 @@ const currentPart = ref({
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const filterForm = reactive({})
+const router = useRouter()
+
+// 跳转到备件详情页
+const goToDetail = (part) => {
+  router.push(`/parts/manage/partsDetail/${part.id}`)
+}
+
+// 重置所有过滤条件
+const resetFilters = () => {
+  searchQuery.value = ''
+  filterCategory.value = null
+  filterValuable.value = null
+  filterStock.value = null
+  resetPagination()
+
+  // 确保UI更新
+  nextTick(() => {
+    // 强制更新选择框的显示
+    filterCategory.value = null
+    filterValuable.value = null
+    filterStock.value = null
+  })
+}
 
 // 获取分类标签
 const getCategoryLabel = (categoryValue) => {
@@ -261,18 +286,21 @@ const filteredParts = computed(() => {
         part.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
         part.description.toLowerCase().includes(searchQuery.value.toLowerCase())
 
-    // 分类过滤
-    const matchesCategory = filterCategory.value === 'all' || part.category === filterCategory.value
+    // 分类过滤 - 处理null和'all'值
+    const categoryFilter = filterCategory.value
+    const matchesCategory = !categoryFilter || categoryFilter === 'all' || part.category === categoryFilter
 
-    // 贵重属性过滤
-    const matchesValuable = filterValuable.value === 'all' ||
-        (filterValuable.value === 'yes' && part.isValuable) ||
-        (filterValuable.value === 'no' && !part.isValuable)
+    // 贵重属性过滤 - 处理null和'all'值
+    const valuableFilter = filterValuable.value
+    const matchesValuable = !valuableFilter || valuableFilter === 'all' ||
+        (valuableFilter === 'yes' && part.isValuable) ||
+        (valuableFilter === 'no' && !part.isValuable)
 
-    // 库存状态过滤
-    const matchesStock = filterStock.value === 'all' ||
-        (filterStock.value === 'low' && part.totalQuantity <= 3) ||
-        (filterStock.value === 'sufficient' && part.totalQuantity > 3)
+    // 库存状态过滤 - 处理null和'all'值
+    const stockFilter = filterStock.value
+    const matchesStock = !stockFilter || stockFilter === 'all' ||
+        (stockFilter === 'low' && part.totalQuantity <= 3) ||
+        (stockFilter === 'sufficient' && part.totalQuantity > 3)
 
     return matchesSearch && matchesCategory && matchesValuable && matchesStock
   })
@@ -416,21 +444,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 全局样式重置 */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-
-body {
-  background-color: #f5f7fa;
-  color: #333;
-  padding: 20px;
-}
-
-/* 容器样式 */
 .app-container {
   max-width: 1600px;
   margin: 0 auto;
@@ -450,18 +463,50 @@ body {
 }
 
 .filter-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 15px;
+  align-items: flex-end;
+}
+
+.filter-form .el-form-item {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-item {
+  min-width: 280px;
+  flex: 2;
+}
+
+.filter-item {
+  min-width: 180px;
+}
+
+/* 确保下拉选择框内容完整显示 */
+:deep(.el-select) {
+  width: 100%;
+}
+
+:deep(.el-input) {
+  width: 100%;
+}
+
+:deep(.el-select .el-input__inner) {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 /* 操作按钮区 */
 .operation-buttons {
   display: flex;
   gap: 10px;
-  margin-top: 15px;
   flex-wrap: wrap;
   align-items: center;
+  margin-top: 10px;
 }
 
 .operation-buttons .el-button {
@@ -545,6 +590,7 @@ body {
   text-decoration: none;
   font-weight: 500;
   transition: color 0.2s;
+  cursor: pointer;
 }
 
 .part-link:hover {
@@ -584,22 +630,39 @@ body {
   text-align: right;
 }
 
-/* 表格样式穿透 */
-:deep(.el-table) {
-  overflow: visible;
-}
-
-:deep(.el-table__header-wrapper) {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: white;
-}
-
 /* 适配响应式 */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   .filter-form {
-    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .search-item {
+    min-width: 240px;
+    flex: 1;
+  }
+
+  .filter-item {
+    min-width: 160px;
+  }
+}
+
+@media (max-width: 992px) {
+  .filter-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-item,
+  .filter-item {
+    min-width: 100%;
+    flex: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-container {
+    margin: 10px;
+    padding: 15px;
   }
 
   .operation-buttons {
@@ -607,7 +670,7 @@ body {
   }
 
   .table-container {
-    height: auto;
+    padding: 0 10px 10px;
   }
 }
 </style>
