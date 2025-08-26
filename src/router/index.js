@@ -425,7 +425,7 @@ const routes = [
     },
     {
         path: '/parts/manage',
-        name: 'parts-manage',
+        name: 'PartsManagement',
         component: () => import('@/views/parts/data/PartsManagement.vue'),
         meta: { title: '管理' },
     },

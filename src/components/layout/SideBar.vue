@@ -442,7 +442,7 @@ const menuItems = [
     children: [
       {
         path: '/parts/manage',
-        name: 'manage',
+        name: 'PartsManagement',
         meta: {title: '管理'},
         permissionId: 1,
         children: [

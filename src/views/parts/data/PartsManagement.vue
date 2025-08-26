@@ -193,7 +193,7 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Refresh, Box, Money, Warning, ShoppingCart } from '@element-plus/icons-vue'
 import MetricCard from './components/MetricCard.vue'
@@ -232,6 +232,9 @@ export default {
     const editingPart = ref(null)
     const selectedPart = ref(null)
 
+    // 存储动画帧ID用于清理
+    const animationIds = ref([])
+
     // 加载数据
     const loadData = () => {
       const savedData = loadPartsData()
@@ -246,7 +249,38 @@ export default {
     // 初始化加载数据
     onMounted(() => {
       loadData()
+      // 启动粒子动画
+      initParticleAnimations()
     })
+
+    // 组件卸载时清理资源
+    onUnmounted(() => {
+      // 取消所有动画帧
+      animationIds.value.forEach(id => cancelAnimationFrame(id))
+      animationIds.value = []
+    })
+
+    // 初始化粒子动画
+    const initParticleAnimations = () => {
+      const particles = document.querySelectorAll('.particle')
+      particles.forEach((particle, index) => {
+        const animation = () => {
+          const currentTop = parseFloat(getComputedStyle(particle).top)
+          const newTop = currentTop - 0.5
+
+          if (newTop < -10) {
+            particle.style.top = '100%'
+            particle.style.left = `${Math.random() * 100}%`
+          } else {
+            particle.style.top = `${newTop}%`
+          }
+
+          const id = requestAnimationFrame(animation)
+          animationIds.value.push(id)
+        }
+        animation()
+      })
+    }
 
     // 计算指标数据
     const metrics = computed(() => {
@@ -466,8 +500,9 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  z-index: -1; /* 修改为负值，确保不会覆盖其他元素 */
   overflow: hidden;
+  pointer-events: none; /* 防止拦截点击事件 */
 }
 
 .grid-lines {
@@ -489,23 +524,36 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none; /* 防止粒子拦截点击事件 */
 }
 
 .particle {
   position: absolute;
   background: rgba(66, 134, 244, 0.5);
   border-radius: 50%;
-  animation: float 15s infinite linear;
+  pointer-events: none; /* 防止粒子拦截点击事件 */
 }
 
-.particle:nth-child(1) { top: 10%; left: 20%; width: 4px; height: 4px; animation-delay: 0s; }
-.particle:nth-child(2) { top: 20%; left: 80%; width: 6px; height: 6px; animation-delay: 1s; }
-/* 更多粒子样式... */
-
-@keyframes float {
-  0% { transform: translateY(0) translateX(0); opacity: 1; }
-  100% { transform: translateY(-100px) translateX(50px); opacity: 0; }
-}
+.particle:nth-child(1) { top: 10%; left: 20%; width: 4px; height: 4px; }
+.particle:nth-child(2) { top: 20%; left: 80%; width: 6px; height: 6px; }
+.particle:nth-child(3) { top: 30%; left: 40%; width: 3px; height: 3px; }
+.particle:nth-child(4) { top: 40%; left: 60%; width: 5px; height: 5px; }
+.particle:nth-child(5) { top: 50%; left: 10%; width: 4px; height: 4px; }
+.particle:nth-child(6) { top: 60%; left: 90%; width: 6px; height: 6px; }
+.particle:nth-child(7) { top: 70%; left: 30%; width: 3px; height: 3px; }
+.particle:nth-child(8) { top: 80%; left: 70%; width: 5px; height: 5px; }
+.particle:nth-child(9) { top: 90%; left: 50%; width: 4px; height: 4px; }
+.particle:nth-child(10) { top: 15%; left: 25%; width: 5px; height: 5px; }
+.particle:nth-child(11) { top: 25%; left: 75%; width: 3px; height: 3px; }
+.particle:nth-child(12) { top: 35%; left: 45%; width: 6px; height: 6px; }
+.particle:nth-child(13) { top: 45%; left: 65%; width: 4px; height: 4px; }
+.particle:nth-child(14) { top: 55%; left: 15%; width: 5px; height: 5px; }
+.particle:nth-child(15) { top: 65%; left: 85%; width: 3px; height: 3px; }
+.particle:nth-child(16) { top: 75%; left: 35%; width: 6px; height: 6px; }
+.particle:nth-child(17) { top: 85%; left: 55%; width: 4px; height: 4px; }
+.particle:nth-child(18) { top: 95%; left: 5%; width: 5px; height: 5px; }
+.particle:nth-child(19) { top: 5%; left: 95%; width: 3px; height: 3px; }
+.particle:nth-child(20) { top: 22%; left: 12%; width: 6px; height: 6px; }
 
 .container {
   position: relative;
