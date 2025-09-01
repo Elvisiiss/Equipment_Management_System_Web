@@ -34,3 +34,60 @@ export function deleteDevice(id) {
 export function getDeviceDetail(id) {
     return request.get(`/devices/${id}`)
 }
+
+// 新增设备（带文件上传）
+export function addDeviceWithFiles(formData) {
+    return request.post('/devices/with-files', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+}
+
+// 更新设备（带文件上传）
+export function updateDeviceWithFiles(id, formData) {
+    return request.put(`/devices/with-files/${id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+}
+
+// 获取设备图片
+export function getDeviceImage(imageId) {
+    return request.get(`/files/${imageId}`)
+}
+
+// 获取设备说明书
+export function getDeviceManual(manualId) {
+    return request.get(`/files/${manualId}`)
+}
+
+// 获取设备图纸
+export function getDeviceDrawing(drawingId) {
+    return request.get(`/files/${drawingId}`)
+}
+
+// 下载设备导入模板
+export function downloadDeviceTemplate() {
+    return request.get('/devices/template', {
+        responseType: 'blob'
+    })
+}
+
+// 导入设备数据
+export function importDevices(formData) {
+    return request.post('/devices/import', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+}
+
+// 导出设备数据
+export function exportDevices(params) {
+    return request.get('/devices/export', {
+        params,
+        responseType: 'blob'
+    })
+}
