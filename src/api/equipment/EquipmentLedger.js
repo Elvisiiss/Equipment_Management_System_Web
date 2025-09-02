@@ -15,11 +15,6 @@ export function getDeviceTree(params) {
     return request.get('/devices/tree', { params })
 }
 
-// 新增设备
-export function addDevice(data) {
-    return request.post('/devices', data)
-}
-
 // 更新设备
 export function updateDevice(id, data) {
     return request.put(`/devices/${id}`, data)
@@ -37,7 +32,7 @@ export function getDeviceDetail(id) {
 
 // 新增设备（带文件上传）
 export function addDeviceWithFiles(formData) {
-    return request.post('/devices/with-files', formData, {
+    return request.post('/devices', formData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }

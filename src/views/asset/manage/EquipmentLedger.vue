@@ -564,7 +564,6 @@ import {
   getAreaTree,
   getChildAreas,
   getDeviceTree,
-  addDevice,
   updateDevice,
   deleteDevice,
   getDeviceDetail,
@@ -934,13 +933,20 @@ const submitDevice = async () => {
     // 创建FormData对象
     const formData = new FormData()
 
-    // 添加设备数据
+    // 添加设备数据 - 指定为JSON类型
     const deviceData = {
       ...deviceForm,
       dayDuration: deviceForm.lifespan ? deviceForm.lifespan * 365 : null
     }
 
-    formData.append('device', JSON.stringify(deviceData))
+    // 创建一个Blob对象，指定内容类型为application/json
+    const deviceBlob = new Blob(
+        [JSON.stringify(deviceData)],
+        { type: 'application/json' }
+    )
+
+    // 添加device字段，使用Blob对象并指定文件名（某些后端需要）
+    formData.append('device', deviceBlob, 'device.json')
 
     // 添加设备图片
     if (deviceImageList.value.length > 0) {

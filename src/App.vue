@@ -2,13 +2,13 @@
   <router-view v-if="$route.path === '/login'" />
   <div v-else class="app-container">
     <!-- 根据全屏状态和当前路由控制顶部栏显示 -->
-    <TopBar v-if="!isFullScreen || $route.path !== '/equipment/screen'" />
+    <TopBar v-if="!isFullScreen || !['/equipment/screen', '/parts/manage', '/equipment/monitoring'].includes($route.path)" />
     <div class="main-container">
       <!-- 根据全屏状态和当前路由控制侧边栏显示 -->
-      <SideBar v-if="!isFullScreen || $route.path !== '/equipment/screen'" />
-      <div class="content-container" :class="{ 'full-screen': isFullScreen && $route.path === '/equipment/screen' }">
+      <SideBar v-if="!isFullScreen || !['/equipment/screen', '/parts/manage', '/equipment/monitoring'].includes($route.path)" />
+      <div class="content-container" :class="{ 'full-screen': isFullScreen && ['/equipment/screen', '/parts/manage', '/equipment/monitoring'].includes($route.path) }">
         <!-- 根据全屏状态和当前路由控制标签栏显示 -->
-        <TabsBar v-if="!isFullScreen || $route.path !== '/equipment/screen'" />
+        <TabsBar v-if="!isFullScreen || !['/equipment/screen', '/parts/manage', '/equipment/monitoring'].includes($route.path)" />
         <div class="view-container">
           <router-view v-slot="{ Component }">
             <keep-alive>
@@ -37,17 +37,18 @@ export default {
   setup() {
     // 获取路由实例
     const $route = useRoute()
-    // 全屏状态变量
+    // 全局统一的全屏状态
     const isFullScreen = ref(false)
 
-    // 提供全屏切换方法给子组件
+    // 提供全屏切换方法和状态给子组件
     provide('toggleFullScreen', () => {
       isFullScreen.value = !isFullScreen.value
     })
+    provide('isFullScreen', isFullScreen)
 
     return {
       isFullScreen,
-      $route // 将路由实例返回给模板使用
+      $route
     }
   }
 }
@@ -83,7 +84,7 @@ export default {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) inset;
 }
 
-/* 新增全屏样式 */
+/* 全屏样式 - 同时适用于两个监控页面 */
 .full-screen {
   position: fixed;
   top: 0;

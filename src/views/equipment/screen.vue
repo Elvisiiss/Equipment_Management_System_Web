@@ -183,7 +183,6 @@ onBeforeUnmount(() => {
 
 // 全屏相关逻辑
 const route = useRouter()
-const toggleFullScreen = inject('toggleFullScreen')
 const fullScreen = ref(false)
 
 watch(() => route.currentRoute.value.path, (newPath) => {
@@ -192,9 +191,13 @@ watch(() => route.currentRoute.value.path, (newPath) => {
   }
 })
 
+// 注入全局全屏状态和方法
+const isFullScreen = inject('isFullScreen')
+const toggleFullScreen = inject('toggleFullScreen')
+
+// 移除原有的fullScreen变量和本地切换逻辑
 const handleFullScreenChange = () => {
-  toggleFullScreen()
-  fullScreen.value = !fullScreen.value
+  toggleFullScreen() // 使用全局切换方法
 }
 
 // 筛选表单

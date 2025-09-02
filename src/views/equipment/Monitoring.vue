@@ -1,18 +1,35 @@
 <!-- RealtimeMonitor.vue -->
 <template>
-  <div class="monitor-container">
-    <!-- 页面标题 -->
-    <div class="header">
-      <h1>实时状态监控平台</h1>
+  <!-- 实时状态监控平台 - 科技风 -->
+  <div class="monitor-screen">
+    <!-- 顶部导航栏 -->
+    <div class="navbar">
+      <div class="nav-item">时间 {{ currentTime }}</div>
+      <h1 class="title">实时状态监控平台</h1>
+      <div class="nav-item">
+        <!-- 全屏按钮 -->
+        <el-button type="text" @click="handleFullScreenChange" :icon="FullScreen" class="fullscreen-btn" />
+      </div>
+    </div>
+
+    <!-- 状态卡片 -->
+    <div class="status-cards">
+      <div class="card" style="background-color: #4F52D7FF;">设备总数 {{ deviceCount }}</div>
+      <div class="card" style="background-color: #4CAF50;">运行中 {{ runningCount }}</div>
+      <div class="card" style="background-color: #E6A23C;">警告 {{ warningCount }}</div>
+      <div class="card" style="background-color: #D32F2F;">离线 {{ offlineCount }}</div>
     </div>
 
     <!-- 设备运行看板 -->
-    <el-card class="section">
+    <el-card class="section chart-card">
       <template #header>
-        <span class="section-title">
-          <el-icon><Monitor /></el-icon>
-          设备运行看板
-        </span>
+        <div class="chart-header">
+          <span class="section-title">
+            <el-icon><Monitor /></el-icon>
+            设备运行看板
+          </span>
+          <el-button type="text" @click="goManage">详情</el-button>
+        </div>
       </template>
       <el-row :gutter="20">
         <el-col :span="12">
@@ -64,12 +81,15 @@
     </el-card>
 
     <!-- 状态趋势分析 -->
-    <el-card class="section">
+    <el-card class="section chart-card">
       <template #header>
-        <span class="section-title">
-          <el-icon><TrendCharts /></el-icon>
-          状态趋势分析
-        </span>
+        <div class="chart-header">
+          <span class="section-title">
+            <el-icon><TrendCharts /></el-icon>
+            状态趋势分析
+          </span>
+          <el-button type="text" @click="goManage">详情</el-button>
+        </div>
       </template>
       <el-row :gutter="20">
         <el-col
@@ -101,16 +121,19 @@
     </el-card>
 
     <!-- 实时数据查看 -->
-    <el-card class="section">
+    <el-card class="section chart-card">
       <template #header>
-        <div class="table-header">
-          <span class="section-title">
-            <el-icon><DataAnalysis /></el-icon>
-            实时数据查看
-          </span>
-          <el-button type="primary" @click="drawer = true">
-            自定义字段
-          </el-button>
+        <div class="chart-header">
+          <div class="table-header">
+            <span class="section-title">
+              <el-icon><DataAnalysis /></el-icon>
+              实时数据查看
+            </span>
+            <el-button type="primary" @click="drawer = true" size="small">
+              自定义字段
+            </el-button>
+          </div>
+          <el-button type="text" @click="goManage">详情</el-button>
         </div>
       </template>
 
@@ -119,6 +142,7 @@
           style="width: 100%"
           max-height="400"
           stripe
+          class="data-table"
       >
         <el-table-column
             v-for="col in selectedColumns"
@@ -155,6 +179,7 @@
         title="自定义字段"
         direction="rtl"
         size="300"
+        class="custom-drawer"
     >
       <el-checkbox-group v-model="checkedColumns">
         <el-checkbox
@@ -169,7 +194,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import {ref, computed, onMounted, onBeforeUnmount, inject} from 'vue'
+import { useRouter } from 'vue-router'
 import {
   Monitor,
   Location,
@@ -178,8 +204,47 @@ import {
   Sunny,
   Cpu,
   PieChart,
-  WindPower
+  WindPower,
+  FullScreen
 } from '@element-plus/icons-vue'
+
+const router = useRouter()
+const goManage = () => {
+  router.push('/equipment/monitoring/manage')
+}
+
+// 实时时钟
+const currentTime = ref('')
+let timer = null
+
+const updateTime = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = (now.getMonth() + 1).toString().padStart(2, '0')
+  const day = now.getDate().toString().padStart(2, '0')
+  const hours = now.getHours().toString().padStart(2, '0')
+  const minutes = now.getMinutes().toString().padStart(2, '0')
+  const seconds = now.getSeconds().toString().padStart(2, '0')
+  currentTime.value = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+onMounted(() => {
+  updateTime()
+  timer = setInterval(updateTime, 1000)
+})
+
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer)
+})
+
+// 注入全局全屏状态和方法
+const isFullScreen = inject('isFullScreen')
+const toggleFullScreen = inject('toggleFullScreen')
+
+// 移除原有的fullScreen变量和本地切换逻辑
+const handleFullScreenChange = () => {
+  toggleFullScreen() // 使用全局切换方法
+}
 
 /* ---------- 设备看板 ---------- */
 const devices = ref([
@@ -235,6 +300,12 @@ const devices = ref([
   }
 ])
 
+// 设备状态统计
+const deviceCount = computed(() => devices.value.length)
+const runningCount = computed(() => devices.value.filter(d => d.status === '运行中').length)
+const warningCount = computed(() => devices.value.filter(d => d.status === '警告').length)
+const offlineCount = computed(() => devices.value.filter(d => d.status === '离线').length)
+
 /* ---------- 趋势卡片 ---------- */
 const trendCards = ref({
   vibration: {
@@ -289,7 +360,7 @@ const realtimeData = ref([])
 const lastUpdateTime = ref('')
 const drawer = ref(false)
 
-let timer = null
+let dataTimer = null
 const updateData = () => {
   // 模拟数据
   const now = new Date()
@@ -321,124 +392,306 @@ const updateData = () => {
 
 onMounted(() => {
   updateData()
-  timer = setInterval(updateData, 3000)
+  dataTimer = setInterval(updateData, 3000)
 })
 
 onBeforeUnmount(() => {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
+  if (dataTimer) {
+    clearInterval(dataTimer)
+    dataTimer = null
   }
+  if (timer) clearInterval(timer)
 })
 </script>
 
-<style scoped>
-.monitor-container {
-  padding: 20px;
-  background: #f5f6fa;
-  min-height: 100vh;
-}
-.header h1 {
-  margin: 0 0 16px;
-  font-size: 24px;
-}
-.section {
-  margin-bottom: 20px;
-}
-.section-title {
+<style scoped lang="scss">
+.monitor-screen {
+  height: 100vh;
+  padding: 16px;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 18px;
-  font-weight: 600;
+  flex-direction: column;
+  color: #fff;
+  overflow: auto;
+
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 0 50px;
+    background-color: #1a2b40;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    .nav-item {
+      font-size: 14px;
+      color: #fff;
+      margin-right: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0 20px;
+    }
+  }
+
+  // 状态卡片
+  .status-cards {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    width: 100%;
+
+    .card {
+      flex: 1;
+      margin: 0 5px;
+      padding: 15px 10px;
+      border-radius: 8px;
+      color: #fff;
+      text-align: center;
+      transition: all 0.3s;
+      font-size: 16px;
+      font-weight: bold;
+      min-width: 0;
+
+      &:first-child {
+        margin-left: 0;
+      }
+
+      &:last-child {
+        margin-right: 0;
+      }
+
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+
+  .section {
+    margin-bottom: 20px;
+    background: rgba(16, 42, 87, 0.5);
+    border: 1px solid rgba(64, 158, 255, 0.3);
+    box-shadow: 0 0 10px rgba(64, 158, 255, 0.1);
+
+    :deep(.el-card__header) {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(64, 158, 255, 0.2);
+      background: transparent;
+    }
+  }
+
+  .chart-card {
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 18px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .device-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(64, 158, 255, 0.1);
+  }
+
+  .device-name {
+    font-weight: 600;
+  }
+
+  .device-location {
+    font-size: 14px;
+    color: #909399;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .map-container {
+    position: relative;
+    height: 320px;
+    background: rgba(16, 42, 87, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(64, 158, 255, 0.2);
+  }
+
+  .device-marker {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.3s;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+
+  .device-marker:hover {
+    transform: scale(1.5);
+  }
+
+  .marker-online {
+    background: #67c23a;
+  }
+
+  .marker-offline {
+    background: #f56c6c;
+  }
+
+  .marker-warning {
+    background: #e6a23c;
+  }
+
+  .trend-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    background: rgba(16, 42, 87, 0.3);
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(64, 158, 255, 0.2);
+  }
+
+  .icon-wrapper {
+    flex-shrink: 0;
+  }
+
+  .data-wrapper {
+    flex: 1;
+  }
+
+  .data-value {
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  .unit {
+    font-size: 14px;
+    color: #909399;
+  }
+
+  .data-label {
+    font-size: 14px;
+    color: #c0c4cc;
+    margin-bottom: 4px;
+  }
+
+  .trend {
+    font-size: 14px;
+  }
+
+  .trend.up {
+    color: #f56c6c;
+  }
+
+  .trend.down {
+    color: #67c23a;
+  }
+
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .update-time {
+    margin-top: 10px;
+    text-align: right;
+    font-size: 12px;
+    color: #909399;
+  }
+
+  // 全屏按钮样式
+  .fullscreen-btn {
+    font-size: 25px;
+    color: #fff;
+    margin-left: 10px;
+
+    &:hover {
+      color: #409EFF;
+    }
+  }
 }
-.device-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #ebeef5;
+
+// 表格样式
+:deep(.data-table) {
+  --el-table-border-color: rgba(64, 158, 255, 0.1);
+  --el-table-header-text-color: #fff;
+  --el-table-text-color: #fff;
+  --el-table-row-hover-bg-color: rgba(64, 158, 255, 0.2);
+  --el-table-header-bg-color: rgba(16, 42, 87, 0.7);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+
+  background: transparent;
+
+  th {
+    background-color: rgba(16, 42, 87, 0.7) !important;
+  }
+
+  tr {
+    background-color: rgba(16, 42, 87, 0.3);
+
+    &:hover {
+      background-color: rgba(64, 158, 255, 0.2) !important;
+    }
+  }
+
+  td {
+    border-bottom: 1px solid rgba(64, 158, 255, 0.1);
+    background-color: transparent !important;
+  }
 }
-.device-name {
-  font-weight: 600;
+
+:deep(.el-table__empty-block) {
+  background: rgba(16, 42, 87, 0.3);
 }
-.device-location {
-  font-size: 14px;
-  color: #909399;
-}
-.map-container {
-  position: relative;
-  height: 320px;
-  background: #fafafa;
-  border-radius: 4px;
-  overflow: hidden;
-}
-.device-marker {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.3s;
-}
-.device-marker:hover {
-  transform: scale(1.5);
-}
-.marker-online {
-  background: #67c23a;
-}
-.marker-offline {
-  background: #f56c6c;
-}
-.marker-warning {
-  background: #e6a23c;
-}
-.trend-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-}
-.icon-wrapper {
-  flex-shrink: 0;
-}
-.data-wrapper {
-  flex: 1;
-}
-.data-value {
-  font-size: 28px;
-  font-weight: bold;
-}
-.unit {
-  font-size: 14px;
-  color: #909399;
-}
-.data-label {
-  font-size: 14px;
-  color: #606266;
-  margin-bottom: 4px;
-}
-.trend {
-  font-size: 14px;
-}
-.trend.up {
-  color: #f56c6c;
-}
-.trend.down {
-  color: #67c23a;
-}
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.update-time {
-  margin-top: 10px;
-  text-align: right;
-  font-size: 12px;
-  color: #909399;
+
+// 抽屉样式
+:deep(.custom-drawer) {
+  .el-drawer__header {
+    margin-bottom: 20px;
+    color: #fff;
+    background: #1a2b40;
+    padding: 16px;
+  }
+
+  .el-drawer__body {
+    background: #1a2b40;
+    color: #fff;
+    padding: 20px;
+
+    .el-checkbox-group {
+      .el-checkbox {
+        color: #fff;
+        margin-bottom: 10px;
+
+        .el-checkbox__label {
+          color: #fff;
+        }
+
+        .el-checkbox__inner {
+          background-color: rgba(16, 42, 87, 0.7);
+          border-color: rgba(64, 158, 255, 0.3);
+        }
+      }
+    }
+  }
 }
 </style>

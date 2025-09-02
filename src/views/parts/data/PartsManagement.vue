@@ -5,7 +5,7 @@
     <div class="navbar">
       <div class="nav-item">时间 {{ currentTime }}</div>
       <h1 class="title">设备与备件监控中心</h1>
-      <div class="nav-item">
+      <div class="nav-controls">
         <!-- 车间下拉框 -->
         <el-select
             v-model="filterForm.workshop"
@@ -52,167 +52,170 @@
       </div>
     </div>
 
-    <!-- 状态卡片 -->
-    <div class="status-cards">
-      <div class="card" style="background-color: #4F52D7FF;">设备总数 120</div>
-      <div class="card" style="background-color: #4CAF50;">运行中 82</div>
-      <div class="card" style="background-color: #E6A23C;">待机 20</div>
-      <div class="card" style="background-color: #D32F2F;">故障 8</div>
-      <div class="card" style="background-color: #9E9E9E;">离线 10</div>
-    </div>
-
-    <!-- 关键指标卡片区域 -->
-    <div class="metrics-cards">
-      <el-row :gutter="20">
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="metric-card" style="--color: #409EFF;">
-            <div class="card-icon">
-              <el-icon><Box /></el-icon>
-            </div>
-            <div class="card-content">
-              <div class="card-title">总备件数量</div>
-              <div class="card-value">256</div>
-              <div class="card-trend positive">
-                <el-icon><CaretTop /></el-icon>
-                5.2%
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="metric-card" style="--color: #67C23A;">
-            <div class="card-icon">
-              <el-icon><Money /></el-icon>
-            </div>
-            <div class="card-content">
-              <div class="card-title">库存总价值</div>
-              <div class="card-value">¥128,560</div>
-              <div class="card-trend positive">
-                <el-icon><CaretTop /></el-icon>
-                3.8%
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="metric-card" style="--color: #E6A23C;">
-            <div class="card-icon">
-              <el-icon><Warning /></el-icon>
-            </div>
-            <div class="card-content">
-              <div class="card-title">低库存项</div>
-              <div class="card-value">18</div>
-              <div class="card-trend negative">
-                <el-icon><CaretBottom /></el-icon>
-                2.4%
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="24" :sm="12" :lg="6">
-          <div class="metric-card" style="--color: #F56C6C;">
-            <div class="card-icon">
-              <el-icon><ShoppingCart /></el-icon>
-            </div>
-            <div class="card-content">
-              <div class="card-title">本月出库量</div>
-              <div class="card-value">342</div>
-              <div class="card-trend positive">
-                <el-icon><CaretTop /></el-icon>
-                7.1%
-              </div>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
-    </div>
-
-    <!-- 图表区域 -->
-    <el-row :gutter="16" class="chart-row">
-      <el-col :span="12">
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3><i class="el-icon-pie-chart"></i> 设备类型分布</h3>
-          </div>
-          <div class="chart-container">
-            <v-chart :option="typePieOption" autoresize style="height: 100%;" />
-          </div>
-        </div>
-      </el-col>
-      <el-col :span="12">
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3><i class="el-icon-data-line"></i> 稼动率分布</h3>
-          </div>
-          <div class="chart-container">
-            <v-chart :option="utilPieOption" autoresize style="height: 100%;" />
-          </div>
-        </div>
-      </el-col>
-    </el-row>
-
-    <!-- 第三行：稼动率趋势 + 停机排名 -->
-    <el-row :gutter="16" class="chart-row">
-      <el-col :span="12">
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3><i class="el-icon-trend-charts"></i> 本周稼动率趋势</h3>
-          </div>
-          <div class="trend-data-display">
-            <div v-for="(day, index) in lineOption.xAxis.data" :key="index" class="trend-item">
-              <div class="trend-day">{{ day }}：</div>
-              <div class="trend-value">{{ lineOption.series[0].data[index] }}%</div>
-            </div>
-          </div>
-          <div class="chart-container">
-            <v-chart :option="lineOption" autoresize style="height: 100%;" />
-          </div>
-        </div>
-      </el-col>
-      <el-col :span="12">
-        <div class="chart-card">
-          <div class="chart-header">
-            <h3><i class="el-icon-warning-outline"></i> 停机排名</h3>
-          </div>
-          <div class="table-container">
-            <el-table :data="stopRank" size="small" style="width: 100%; height: 100%;">
-              <el-table-column type="index" width="50" align="center" />
-              <el-table-column prop="name" label="设备名称" show-overflow-tooltip min-width="120" />
-              <el-table-column prop="duration" label="时长" width="150" align="center" />
-              <el-table-column prop="start" label="开始时间" width="140" align="center" />
-            </el-table>
-          </div>
-        </div>
-      </el-col>
-    </el-row>
-
-    <!-- 库存预警区域 -->
-    <div class="warning-section">
-      <div class="section-header">
-        <h2>库存预警管理</h2>
-        <span class="warning-count">共 {{ lowStockParts.length }} 项需要关注</span>
+    <!-- 主内容区容器 -->
+    <div class="main-content">
+      <!-- 状态卡片 -->
+      <div class="status-cards">
+        <div class="card" style="background-color: #4F52D7FF;">设备总数 120</div>
+        <div class="card" style="background-color: #4CAF50;">运行中 82</div>
+        <div class="card" style="background-color: #E6A23C;">待机 20</div>
+        <div class="card" style="background-color: #D32F2F;">故障 8</div>
+        <div class="card" style="background-color: #9E9E9E;">离线 10</div>
       </div>
-      <el-table :data="lowStockParts" style="width: 100%">
-        <el-table-column prop="name" label="备件名称" width="200" />
-        <el-table-column prop="category" label="分类" width="120">
-          <template #default="scope">
-            <el-tag
-                :type="getCategoryTagType(scope.row.category)"
-                size="small"
-            >
-              {{ getCategoryName(scope.row.category) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="currentStock" label="当前库存" width="100" />
-        <el-table-column prop="safetyStock" label="安全库存" width="100" />
-        <el-table-column prop="warehouse" label="存放仓库" width="150" />
-        <el-table-column prop="lastUpdated" label="最后更新" width="120">
-          <template #default="scope">
-            {{ formatDate(scope.row.lastUpdated) }}
-          </template>
-        </el-table-column>
-      </el-table>
+
+      <!-- 关键指标卡片区域 -->
+      <div class="metrics-cards">
+        <el-row :gutter="20">
+          <el-col :xs="24" :sm="12" :lg="6">
+            <div class="metric-card" style="--color: #409EFF;">
+              <div class="card-icon">
+                <el-icon><Box /></el-icon>
+              </div>
+              <div class="card-content">
+                <div class="card-title">总备件数量</div>
+                <div class="card-value">256</div>
+                <div class="card-trend positive">
+                  <el-icon><CaretTop /></el-icon>
+                  5.2%
+                </div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <div class="metric-card" style="--color: #67C23A;">
+              <div class="card-icon">
+                <el-icon><Money /></el-icon>
+              </div>
+              <div class="card-content">
+                <div class="card-title">库存总价值</div>
+                <div class="card-value">¥128,560</div>
+                <div class="card-trend positive">
+                  <el-icon><CaretTop /></el-icon>
+                  3.8%
+                </div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <div class="metric-card" style="--color: #E6A23C;">
+              <div class="card-icon">
+                <el-icon><Warning /></el-icon>
+              </div>
+              <div class="card-content">
+                <div class="card-title">低库存项</div>
+                <div class="card-value">18</div>
+                <div class="card-trend negative">
+                  <el-icon><CaretBottom /></el-icon>
+                  2.4%
+                </div>
+              </div>
+            </div>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <div class="metric-card" style="--color: #F56C6C;">
+              <div class="card-icon">
+                <el-icon><ShoppingCart /></el-icon>
+              </div>
+              <div class="card-content">
+                <div class="card-title">本月出库量</div>
+                <div class="card-value">342</div>
+                <div class="card-trend positive">
+                  <el-icon><CaretTop /></el-icon>
+                  7.1%
+                </div>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+
+      <!-- 图表区域 - 第一行 -->
+      <div class="chart-grid">
+        <div class="chart-item large">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="el-icon-pie-chart"></i> 设备类型分布</h3>
+            </div>
+            <div class="chart-container">
+              <v-chart :option="typePieOption" autoresize style="height: 100%;" />
+            </div>
+          </div>
+        </div>
+        <div class="chart-item large">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="el-icon-data-line"></i> 稼动率分布</h3>
+            </div>
+            <div class="chart-container">
+              <v-chart :option="utilPieOption" autoresize style="height: 100%;" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 图表区域 - 第二行 -->
+      <div class="chart-grid">
+        <div class="chart-item large">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="el-icon-trend-charts"></i> 本周稼动率趋势</h3>
+            </div>
+            <div class="trend-data-display">
+              <div v-for="(day, index) in lineOption.xAxis.data" :key="index" class="trend-item">
+                <div class="trend-day">{{ day }}：</div>
+                <div class="trend-value">{{ lineOption.series[0].data[index] }}%</div>
+              </div>
+            </div>
+            <div class="chart-container">
+              <v-chart :option="lineOption" autoresize style="height: 100%;" />
+            </div>
+          </div>
+        </div>
+        <div class="chart-item large">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3><i class="el-icon-warning-outline"></i> 停机排名</h3>
+            </div>
+            <div class="table-container">
+              <el-table :data="stopRank" size="small" style="width: 100%; height: 100%;">
+                <el-table-column type="index" width="50" align="center" />
+                <el-table-column prop="name" label="设备名称" show-overflow-tooltip min-width="120" />
+                <el-table-column prop="duration" label="时长" width="150" align="center" />
+                <el-table-column prop="start" label="开始时间" width="140" align="center" />
+              </el-table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 库存预警区域 -->
+      <div class="warning-section">
+        <div class="section-header">
+          <h2>库存预警管理</h2>
+          <span class="warning-count">共 {{ lowStockParts.length }} 项需要关注</span>
+        </div>
+        <el-table :data="lowStockParts" style="width: 100%">
+          <el-table-column prop="name" label="备件名称" width="200" />
+          <el-table-column prop="category" label="分类" width="120">
+            <template #default="scope">
+              <el-tag
+                  :type="getCategoryTagType(scope.row.category)"
+                  size="small"
+              >
+                {{ getCategoryName(scope.row.category) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="currentStock" label="当前库存" width="100" />
+          <el-table-column prop="safetyStock" label="安全库存" width="100" />
+          <el-table-column prop="warehouse" label="存放仓库" width="150" />
+          <el-table-column prop="lastUpdated" label="最后更新" width="120">
+            <template #default="scope">
+              {{ formatDate(scope.row.lastUpdated) }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </div>
   </div>
 </template>
@@ -274,20 +277,16 @@ onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
 })
 
-// 全屏相关逻辑
-const fullScreen = ref(false)
+// 修改全屏相关逻辑
+import { inject } from 'vue'
 
+// 注入全局全屏状态和方法
+const isFullScreen = inject('isFullScreen')
+const toggleFullScreen = inject('toggleFullScreen')
+
+// 移除原有的fullScreen变量和本地切换逻辑
 const handleFullScreenChange = () => {
-  fullScreen.value = !fullScreen.value
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(err => {
-      console.error(`全屏请求错误: ${err.message}`)
-    })
-  } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen()
-    }
-  }
+  toggleFullScreen() // 使用全局切换方法
 }
 
 // 筛选表单
@@ -552,70 +551,85 @@ onMounted(() => {
   height: 100vh;
   padding: 16px;
   background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-  display: flex;
-  flex-direction: column;
   color: #fff;
-  overflow: auto;
+  overflow: hidden;
+  box-sizing: border-box;
 
   .navbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 20px;
-    padding: 0 50px;
+    padding: 12px 20px;
     background-color: #1a2b40;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 
     .nav-item {
       font-size: 14px;
       color: #fff;
-      margin-right: 20px;
       display: flex;
       align-items: center;
     }
 
     .title {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: bold;
-      margin: 0 20px;
+      margin: 0;
+      flex: 1;
+      text-align: center;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: calc(100% - 70px);
+    overflow-y: auto;
+    padding-right: 8px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
     }
   }
 
   .status-cards {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
     width: 100%;
 
     .card {
-      flex: 1;
-      margin: 0 5px;
-      padding: 15px 10px;
+      padding: 20px 10px;
       border-radius: 8px;
       color: #fff;
       text-align: center;
       transition: all 0.3s;
       font-size: 16px;
       font-weight: bold;
-      min-width: 0;
-
-      &:first-child {
-        margin-left: 0;
-      }
-
-      &:last-child {
-        margin-right: 0;
-      }
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
       &:hover {
         transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
       }
     }
   }
 
   .metrics-cards {
-    margin-bottom: 20px;
+    width: 100%;
+    margin: 0;
 
     .metric-card {
       --color: #409EFF;
@@ -629,6 +643,7 @@ onMounted(() => {
       border: 1px solid rgba(66, 134, 244, 0.2);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
       height: 100%;
+      min-height: 120px;
 
       .card-icon {
         width: 60px;
@@ -675,10 +690,29 @@ onMounted(() => {
     }
   }
 
-  .chart-row {
-    flex: 1;
-    min-height: 0;
-    margin-bottom: 10px;
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    height: 350px;
+
+    @media (max-width: 992px) {
+      grid-template-columns: 1fr;
+      height: auto;
+      min-height: 350px;
+    }
+
+    .chart-item {
+      height: 100%;
+
+      &.large {
+        grid-column: span 1;
+      }
+
+      &.full {
+        grid-column: span 2;
+      }
+    }
 
     .chart-card {
       height: 100%;
@@ -690,7 +724,7 @@ onMounted(() => {
       flex-direction: column;
 
       .chart-header {
-        padding: 10px 16px;
+        padding: 12px 16px;
         border-bottom: 1px solid rgba(64, 158, 255, 0.2);
         display: flex;
         justify-content: space-between;
@@ -712,7 +746,7 @@ onMounted(() => {
 
       .chart-container {
         flex: 1;
-        padding: 10px;
+        padding: 15px;
         min-height: 200px;
       }
 
@@ -744,6 +778,7 @@ onMounted(() => {
       .table-container {
         flex: 1;
         padding: 10px;
+        overflow: hidden;
       }
     }
   }
@@ -754,7 +789,7 @@ onMounted(() => {
     padding: 20px;
     border: 1px solid rgba(64, 158, 255, 0.3);
     box-shadow: 0 0 10px rgba(64, 158, 255, 0.1);
-    margin-top: 10px;
+    margin-top: 0;
 
     .section-header {
       display: flex;
@@ -843,6 +878,29 @@ onMounted(() => {
 
   &:hover {
     color: #409EFF;
+  }
+}
+
+// 响应式调整
+@media (max-width: 768px) {
+  .dashboard-screen {
+    padding: 10px;
+
+    .navbar {
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px;
+
+      .title {
+        order: -1;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+    }
+
+    .status-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 }
 </style>
