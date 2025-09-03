@@ -64,14 +64,7 @@
             <i class="el-icon-s-grid"></i>
             产品型号管理
           </div>
-          <el-button
-              type="primary"
-              icon="plus"
-              @click="addProductModel"
-              :disabled="!currentDevice"
-          >
-            新增型号
-          </el-button>
+          <!-- 移除"新增型号"按钮 -->
         </div>
 
         <div class="panel-content">
@@ -98,12 +91,10 @@
                 </template>
               </el-table-column>
               <el-table-column prop="createTime" label="创建时间" width="180" sortable></el-table-column>
-              <el-table-column label="操作" width="280" fixed="right">
+              <el-table-column label="操作" width="120" fixed="right">
                 <template #default="{ row }">
-                  <el-button type="text" size="small" @click.stop="showParamConfigDialog(row)">参数配置</el-button>
+                  <!-- 只保留"点检计划"按钮，移除其他按钮 -->
                   <el-button type="text" size="small" @click.stop="showInspectionPlanDialog(row)">点检计划</el-button>
-                  <el-button type="text" size="small" @click.stop="editProductModel(row)">编辑</el-button>
-                  <el-button type="text" size="small" @click.stop="deleteProductModel(row)" style="color: #F56C6C">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -116,200 +107,6 @@
     <div class="footer">
       © 2023 设备配置管理系统 | Vue3 + Element Plus 实现
     </div>
-
-    <!-- 新增/编辑产品型号弹窗 -->
-    <el-dialog
-        v-model="productDialogVisible"
-        :title="isEditProduct ? '编辑产品型号' : '新增产品型号'"
-        width="500px"
-        :close-on-click-modal="false"
-    >
-      <el-form :model="productForm" label-width="100px" ref="productFormRef">
-        <el-form-item label="型号编码" prop="modelCode" required>
-          <el-input v-model="productForm.modelCode" placeholder="请输入型号编码" />
-        </el-form-item>
-        <el-form-item label="参数模板" prop="templateId" required>
-          <el-cascader
-              v-model="productForm.templateId"
-              :options="templateOptions"
-              :props="cascaderProps"
-              placeholder="请选择参数模板"
-              filterable
-              clearable
-              style="width: 100%"
-          />
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <el-button @click="productDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitProductModel">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 参数配置弹窗 -->
-    <el-dialog
-        v-model="paramDialogVisible"
-        :title="`${currentModel?.modelCode || ''} 重要参数配置`"
-        width="80%"
-        top="5vh"
-        :close-on-click-modal="false"
-    >
-      <div class="param-config-container">
-        <div class="param-tabs">
-          <el-button-group>
-            <el-button
-                :type="paramViewMode === 'list' ? 'primary' : ''"
-                @click="paramViewMode = 'list'"
-            >
-              列表视图
-            </el-button>
-            <el-button
-                :type="paramViewMode === 'json' ? 'primary' : ''"
-                @click="paramViewMode = 'json'"
-            >
-              JSON视图
-            </el-button>
-          </el-button-group>
-
-          <div class="param-actions">
-            <el-button type="primary" @click="addParam" :disabled="paramViewMode !== 'list'">
-              新增参数
-            </el-button>
-            <el-button
-                type="success"
-                @click="copyParamsToClipboard"
-                :disabled="!paramTable.length"
-            >
-              复制参数
-            </el-button>
-            <el-button
-                type="warning"
-                @click="pasteParamsFromClipboard"
-                :disabled="paramViewMode !== 'json'"
-            >
-              粘贴参数
-            </el-button>
-            <el-button type="danger" @click="save">保存配置</el-button>
-          </div>
-        </div>
-
-        <!-- 列表视图 -->
-        <div v-show="paramViewMode === 'list'" class="param-list-view">
-          <el-table
-              ref="tableRef"
-              :data="paramTable"
-              row-key="id"
-              border
-              v-loading="paramLoading"
-              style="width: 100%"
-          >
-            <!-- 拖拽手柄 -->
-            <el-table-column width="50" align="center">
-              <template #default>
-                <i class="drag-handle">⋮⋮</i>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="序号" width="60" type="index" align="center"></el-table-column>
-
-            <el-table-column label="参数名称" width="180">
-              <template #default="{ row }">
-                <el-input v-model="row.name" placeholder="请输入名称" />
-              </template>
-            </el-table-column>
-
-            <el-table-column label="参数类型" width="120">
-              <template #default="{ row }">
-                <el-select v-model="row.type">
-                  <el-option label="数值" value="number" />
-                  <el-option label="文本" value="text" />
-                  <el-option label="布尔" value="boolean" />
-                </el-select>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="寄存器地址" width="180">
-              <template #default="{ row }">
-                <el-input v-model="row.registerAddress" placeholder="0x0000" />
-              </template>
-            </el-table-column>
-
-            <el-table-column label="默认值" width="150">
-              <template #default="{ row }">
-                <el-input
-                    v-if="row.type === 'text'"
-                    v-model="row.default"
-                    placeholder="默认值"
-                />
-                <el-input-number
-                    v-else-if="row.type === 'number'"
-                    v-model="row.default"
-                    :min="0"
-                    :precision="2"
-                    style="width: 100%"
-                />
-                <el-switch v-else v-model="row.default" />
-              </template>
-            </el-table-column>
-
-            <el-table-column label="下限" width="120">
-              <template #default="{ row }">
-                <el-input-number
-                    v-if="row.type === 'number'"
-                    v-model="row.minValue"
-                    :min="0"
-                    :precision="2"
-                    style="width: 100%"
-                />
-                <span v-else>-</span>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="上限" width="120">
-              <template #default="{ row }">
-                <el-input-number
-                    v-if="row.type === 'number'"
-                    v-model="row.maxValue"
-                    :min="0"
-                    :precision="2"
-                    style="width: 100%"
-                />
-                <span v-else>-</span>
-              </template>
-            </el-table-column>
-
-            <el-table-column label="单位" width="100">
-              <template #default="{ row }">
-                <el-input v-model="row.unit" placeholder="单位" />
-              </template>
-            </el-table-column>
-
-            <el-table-column label="是否必填" width="90" align="center">
-              <template #default="{ row }">
-                <el-checkbox v-model="row.required" />
-              </template>
-            </el-table-column>
-
-            <el-table-column label="操作" width="90" align="center">
-              <template #default="{ $index }">
-                <el-button type="danger" link @click="removeParam($index)">删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-
-        <!-- JSON视图 -->
-        <div v-show="paramViewMode === 'json'" class="param-json-view">
-          <el-input
-              type="textarea"
-              :rows="20"
-              placeholder="请输入JSON格式的参数配置"
-              v-model="paramJson"
-          ></el-input>
-        </div>
-      </div>
-    </el-dialog>
 
     <!-- 点检计划配置弹窗 -->
     <el-dialog
@@ -398,14 +195,7 @@
         <div style="margin-top: 20px;">
           <el-tabs v-model="inspectionTab">
             <el-tab-pane label="自动点检项" name="auto">
-              <el-button
-                  type="primary"
-                  size="small"
-                  @click="addAutoInspectionItem"
-                  style="margin-bottom: 10px;"
-              >
-                添加自动点检项
-              </el-button>
+              <!-- 移除添加按钮，自动点检项不可新增 -->
               <el-table
                   :data="inspectionPlanForm.autoItems"
                   border
@@ -414,7 +204,8 @@
                 <el-table-column label="序号" type="index" width="60"></el-table-column>
                 <el-table-column label="参数选择" width="200">
                   <template #default="{ row }">
-                    <el-select v-model="row.paramId">
+                    <!-- 设置为禁用状态，不可修改 -->
+                    <el-select v-model="row.paramId" disabled>
                       <el-option
                           v-for="param in paramTable"
                           :key="param.id"
@@ -426,7 +217,8 @@
                 </el-table-column>
                 <el-table-column label="检查条件" width="200">
                   <template #default="{ row }">
-                    <el-select v-model="row.condition">
+                    <!-- 设置为禁用状态，不可修改 -->
+                    <el-select v-model="row.condition" disabled>
                       <el-option label="等于" value="eq" />
                       <el-option label="大于" value="gt" />
                       <el-option label="小于" value="lt" />
@@ -438,18 +230,12 @@
                 </el-table-column>
                 <el-table-column label="目标值" width="150">
                   <template #default="{ row }">
-                    <el-input v-model="row.targetValue" placeholder="输入目标值" />
+                    <!-- 设置为禁用状态，不可修改 -->
+                    <el-input v-model="row.targetValue" placeholder="输入目标值" disabled />
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="100">
-                  <template #default="{ $index }">
-                    <el-button
-                        type="danger"
-                        size="small"
-                        icon="delete"
-                        @click="removeAutoInspectionItem($index)"
-                    />
-                  </template>
+                  <!-- 移除删除按钮，自动点检项不可删除 -->
                 </el-table-column>
               </el-table>
             </el-tab-pane>
@@ -691,7 +477,7 @@ const inspectionPlanForm = reactive({
   manualItems: [] // 手动点检项
 })
 
-// 监听JSON视图变化，同步到表格数据
+// 监听JSON视图变化，同步到表格数据（仅保留必要部分）
 watch(paramJson, (newVal) => {
   try {
     if (newVal) {
@@ -704,13 +490,6 @@ watch(paramJson, (newVal) => {
     // JSON解析错误时不处理
   }
 })
-
-// 监听表格数据变化，同步到JSON视图
-watch(paramTable, (newVal) => {
-  if (paramViewMode.value === 'json') {
-    paramJson.value = JSON.stringify(newVal, null, 2)
-  }
-}, { deep: true })
 
 // 2. 核心方法
 // 初始化设备树
@@ -731,8 +510,8 @@ const initDeviceTree = () => {
               name: 'CFOG段',
               type: 'segment',
               children: [
-                { id: 1, name: '精密清洗设备', type: 'device', deviceCode: 'DEV-C2-31-CFOG-101', status: true },
-                { id: 2, name: '全自动COG机', type: 'device', deviceCode: 'DEV-C2-31-CFOG-102', status: true }
+                {id: 1, name: '精密清洗设备', type: 'device', deviceCode: 'DEV-C2-31-CFOG-101', status: true},
+                {id: 2, name: '全自动COG机', type: 'device', deviceCode: 'DEV-C2-31-CFOG-102', status: true}
               ]
             }
           ]
@@ -747,12 +526,12 @@ const initDeviceTree = () => {
               name: '贴合段',
               type: 'segment',
               children: [
-                { id: 3, name: '高精度FOG机', type: 'device', deviceCode: 'DEV-C2-32-TH-201', status: true }
+                {id: 3, name: '高精度FOG机', type: 'device', deviceCode: 'DEV-C2-32-TH-201', status: true}
               ]
             }
           ]
         },
-        { id: 4, name: '车间监控设备', type: 'device', deviceCode: 'DEV-C2-MON-001', status: true }
+        {id: 4, name: '车间监控设备', type: 'device', deviceCode: 'DEV-C2-MON-001', status: true}
       ]
     },
     {
@@ -770,16 +549,16 @@ const initDeviceTree = () => {
               name: '组装段',
               type: 'segment',
               children: [
-                { id: 5, name: '智能组装机', type: 'device', deviceCode: 'DEV-C3-41-ASM-301', status: true },
-                { id: 6, name: '视觉检测设备', type: 'device', deviceCode: 'DEV-C3-41-ASM-302', status: false }
+                {id: 5, name: '智能组装机', type: 'device', deviceCode: 'DEV-C3-41-ASM-301', status: true},
+                {id: 6, name: '视觉检测设备', type: 'device', deviceCode: 'DEV-C3-41-ASM-302', status: false}
               ]
             }
           ]
         },
-        { id: 7, name: '中央控制设备', type: 'device', deviceCode: 'DEV-C3-CTRL-001', status: true }
+        {id: 7, name: '中央控制设备', type: 'device', deviceCode: 'DEV-C3-CTRL-001', status: true}
       ]
     },
-    { id: 3001, name: '独立测试设备', type: 'device', deviceCode: 'DEV-IND-TEST-001', status: true }
+    {id: 3001, name: '独立测试设备', type: 'device', deviceCode: 'DEV-IND-TEST-001', status: true}
   ]
 }
 
@@ -840,43 +619,6 @@ const selectProductModel = (model) => {
   currentModel.value = model
 }
 
-// 显示参数配置弹窗
-const showParamConfigDialog = (model) => {
-  currentModel.value = model
-  paramLoading.value = true
-  paramDialogVisible.value = true
-
-  // 根据模板ID加载不同参数
-  setTimeout(() => {
-    switch (model.templateId) {
-      case '11':
-        paramTable.value = [
-          { id: 1, name: '清洗时间', type: 'number', registerAddress: '0x1001', default: 30, minValue: 10, maxValue: 60, unit: 's', required: true },
-          { id: 2, name: '清洗温度', type: 'number', registerAddress: '0x1002', default: 60, minValue: 40, maxValue: 80, unit: '℃', required: true },
-          { id: 3, name: '喷淋压力', type: 'number', registerAddress: '0x1003', default: 0.3, minValue: 0.1, maxValue: 0.5, unit: 'MPa', required: false }
-        ]
-        break
-      case '12':
-        paramTable.value = [
-          { id: 4, name: '清洗时间', type: 'number', registerAddress: '0x1001', default: 15, minValue: 5, maxValue: 30, unit: 's', required: true },
-          { id: 5, name: '清洗温度', type: 'number', registerAddress: '0x1002', default: 70, minValue: 50, maxValue: 85, unit: '℃', required: true },
-          { id: 6, name: '喷淋压力', type: 'number', registerAddress: '0x1003', default: 0.4, minValue: 0.2, maxValue: 0.6, unit: 'MPa', required: false },
-          { id: 7, name: '干燥时间', type: 'number', registerAddress: '0x1004', default: 10, minValue: 5, maxValue: 20, unit: 's', required: false }
-        ]
-        break
-      default:
-        paramTable.value = [
-          { id: 8, name: '压力参数', type: 'number', registerAddress: '0x2001', default: 15, minValue: 5, maxValue: 30, unit: 'kg', required: true },
-          { id: 9, name: '温度控制', type: 'number', registerAddress: '0x2002', default: 25, minValue: 15, maxValue: 35, unit: '℃', required: true },
-          { id: 10, name: '速度设置', type: 'number', registerAddress: '0x2003', default: 100, minValue: 50, maxValue: 200, unit: 'rpm', required: false }
-        ]
-    }
-    paramJson.value = JSON.stringify(paramTable.value, null, 2)
-    paramLoading.value = false
-    nextTick(initDrag) // 初始化拖拽
-  }, 800)
-}
-
 // 显示点检计划配置弹窗
 const showInspectionPlanDialog = (model) => {
   currentModel.value = model
@@ -934,7 +676,140 @@ const showInspectionPlanDialog = (model) => {
   }
 
   // 加载当前模型的参数以便在自动点检项中选择
-  showParamConfigDialog(model)
+  loadModelParams(model)
+}
+
+// 加载模型参数（替代原showParamConfigDialog方法，仅加载不显示弹窗）
+const loadModelParams = (model) => {
+  paramLoading.value = true
+
+  // 根据模板ID加载不同参数
+  setTimeout(() => {
+    switch (model.templateId) {
+      case '11':
+        paramTable.value = [
+          {
+            id: 1,
+            name: '清洗时间',
+            type: 'number',
+            registerAddress: '0x1001',
+            default: 30,
+            minValue: 10,
+            maxValue: 60,
+            unit: 's',
+            required: true
+          },
+          {
+            id: 2,
+            name: '清洗温度',
+            type: 'number',
+            registerAddress: '0x1002',
+            default: 60,
+            minValue: 40,
+            maxValue: 80,
+            unit: '℃',
+            required: true
+          },
+          {
+            id: 3,
+            name: '喷淋压力',
+            type: 'number',
+            registerAddress: '0x1003',
+            default: 0.3,
+            minValue: 0.1,
+            maxValue: 0.5,
+            unit: 'MPa',
+            required: false
+          }
+        ]
+        break
+      case '12':
+        paramTable.value = [
+          {
+            id: 4,
+            name: '清洗时间',
+            type: 'number',
+            registerAddress: '0x1001',
+            default: 15,
+            minValue: 5,
+            maxValue: 30,
+            unit: 's',
+            required: true
+          },
+          {
+            id: 5,
+            name: '清洗温度',
+            type: 'number',
+            registerAddress: '0x1002',
+            default: 70,
+            minValue: 50,
+            maxValue: 85,
+            unit: '℃',
+            required: true
+          },
+          {
+            id: 6,
+            name: '喷淋压力',
+            type: 'number',
+            registerAddress: '0x1003',
+            default: 0.4,
+            minValue: 0.2,
+            maxValue: 0.6,
+            unit: 'MPa',
+            required: false
+          },
+          {
+            id: 7,
+            name: '干燥时间',
+            type: 'number',
+            registerAddress: '0x1004',
+            default: 10,
+            minValue: 5,
+            maxValue: 20,
+            unit: 's',
+            required: false
+          }
+        ]
+        break
+      default:
+        paramTable.value = [
+          {
+            id: 8,
+            name: '压力参数',
+            type: 'number',
+            registerAddress: '0x2001',
+            default: 15,
+            minValue: 5,
+            maxValue: 30,
+            unit: 'kg',
+            required: true
+          },
+          {
+            id: 9,
+            name: '温度控制',
+            type: 'number',
+            registerAddress: '0x2002',
+            default: 25,
+            minValue: 15,
+            maxValue: 35,
+            unit: '℃',
+            required: true
+          },
+          {
+            id: 10,
+            name: '速度设置',
+            type: 'number',
+            registerAddress: '0x2003',
+            default: 100,
+            minValue: 50,
+            maxValue: 200,
+            unit: 'rpm',
+            required: false
+          }
+        ]
+    }
+    paramLoading.value = false
+  }, 800)
 }
 
 // 处理手动点检项值类型变化
@@ -946,185 +821,18 @@ const handleValueTypeChange = (row) => {
   }
 }
 
-// 新增产品型号
-const addProductModel = () => {
-  isEditProduct.value = false
-  productForm.id = null
-  productForm.modelCode = ''
-  productForm.templateId = null
-  productDialogVisible.value = true
-}
+// 移除产品型号相关方法（新增、编辑、删除等）
 
-// 编辑产品型号
-const editProductModel = (model) => {
-  isEditProduct.value = true
-  productForm.id = model.id
-  productForm.modelCode = model.modelCode
-  productForm.templateId = [model.templateId.substring(0, 1), model.templateId] // 级联选择器格式
-  productDialogVisible.value = true
-}
-
-// 删除产品型号
-const deleteProductModel = (model) => {
-  ElMessageBox.confirm(
-      `确定删除产品型号【${model.modelCode}】? 此操作不可恢复。`,
-      '删除确认',
-      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning', confirmButtonClass: 'el-button--danger' }
-  ).then(() => {
-    productModels.value = productModels.value.filter(p => p.id !== model.id)
-    if (currentModel.value?.id === model.id) {
-      currentModel.value = null
-      paramTable.value = []
-    }
-    ElMessage.success('产品型号删除成功')
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
-}
-
-// 提交产品型号（新增/编辑）
-const submitProductModel = () => {
-  if (!productForm.modelCode || !productForm.templateId) {
-    ElMessage.error('请填写完整信息')
-    return
-  }
-
-  // 匹配模板名称
-  let templateName = ''
-  for (const group of templateOptions.value) {
-    const match = group.children.find(t => t.value === productForm.templateId[1])
-    if (match) {
-      templateName = match.label
-      break
-    }
-  }
-
-  if (isEditProduct.value) {
-    // 编辑：更新现有数据
-    const index = productModels.value.findIndex(p => p.id === productForm.id)
-    if (index !== -1) {
-      productModels.value[index] = {
-        ...productModels.value[index],
-        modelCode: productForm.modelCode,
-        templateId: productForm.templateId[1],
-        templateName,
-        updateTime: new Date().toISOString().split('T')[0]
-      }
-    }
-  } else {
-    // 新增：添加新数据
-    productModels.value.push({
-      id: `PM${Date.now()}`,
-      modelCode: productForm.modelCode,
-      templateId: productForm.templateId[1],
-      templateName,
-      createTime: new Date().toISOString().split('T')[0],
-      updateTime: new Date().toISOString().split('T')[0],
-      inspectionPlan: false
-    })
-  }
-
-  productDialogVisible.value = false
-  ElMessage.success(`产品型号${isEditProduct.value ? '更新' : '添加'}成功`)
-}
-
-// 新增参数
-const addParam = () => {
-  paramTable.value.push({
-    id: Date.now(),
-    name: '',
-    type: 'text',
-    registerAddress: '',
-    default: '',
-    minValue: null,
-    maxValue: null,
-    unit: '',
-    required: false
-  })
-  nextTick(initDrag)
-}
-
-// 删除参数
-const removeParam = (index) => {
-  paramTable.value.splice(index, 1)
-  nextTick(initDrag)
-}
-
-// 保存参数配置
-const save = () => {
-  console.log('保存配置：', currentModel.value.modelCode, paramTable.value)
-  ElMessage.success('参数配置已保存！')
-  paramDialogVisible.value = false
-}
-
-// 复制参数到剪贴板
-const copyParamsToClipboard = async () => {
-  try {
-    const jsonStr = JSON.stringify(paramTable.value, null, 2)
-    await navigator.clipboard.writeText(jsonStr)
-    ElMessage.success('参数已复制到剪贴板')
-  } catch (err) {
-    ElMessage.error('复制失败: ' + err.message)
-  }
-}
-
-// 从剪贴板粘贴参数
-const pasteParamsFromClipboard = async () => {
-  try {
-    const text = await navigator.clipboard.readText()
-    const parsed = JSON.parse(text)
-    if (Array.isArray(parsed)) {
-      paramTable.value = parsed
-      paramJson.value = JSON.stringify(parsed, null, 2)
-      ElMessage.success('参数已从剪贴板粘贴')
-    } else {
-      ElMessage.error('剪贴板内容不是有效的参数数组')
-    }
-  } catch (err) {
-    ElMessage.error('粘贴失败: ' + err.message)
-  }
-}
-
-// 初始化表格拖拽
-const initDrag = () => {
-  const tbody = tableRef.value?.$el.querySelector('.el-table__body tbody')
-  if (!tbody) return
-  if (sortable) sortable.destroy() // 销毁旧实例
-
-  sortable = Sortable.create(tbody, {
-    handle: '.drag-handle',
-    animation: 150,
-    onEnd: ({ newIndex, oldIndex }) => {
-      // 调整参数数组顺序
-      const [target] = paramTable.value.splice(oldIndex, 1)
-      paramTable.value.splice(newIndex, 0, target)
-    }
-  })
-}
-
-// 点检计划相关方法
-const addAutoInspectionItem = () => {
-  inspectionPlanForm.autoItems.push({
-    id: Date.now(),
-    paramId: paramTable.value.length ? paramTable.value[0].id : null,
-    condition: 'eq',
-    targetValue: ''
-  })
-}
-
-const removeAutoInspectionItem = (index) => {
-  inspectionPlanForm.autoItems.splice(index, 1)
-}
-
+// 点检计划相关方法 - 移除自动点检项相关操作方法
 const addManualInspectionItem = () => {
   inspectionPlanForm.manualItems.push({
     id: Date.now(),
     name: '',
     content: '',
-    valueType: 'text', // 默认文本类型
+    valueType: 'text',
     minValue: null,
     maxValue: null,
-    requireImage: false // 默认不需要拍照
+    requireImage: false
   })
 }
 
@@ -1133,54 +841,22 @@ const removeManualInspectionItem = (index) => {
 }
 
 const saveInspectionPlan = () => {
-  if (!inspectionPlanForm.name) {
-    ElMessage.error('请输入计划名称')
-    return
-  }
-
-  if (!inspectionPlanForm.inspector || inspectionPlanForm.inspector.length === 0) {
-    ElMessage.error('请选择巡检人')
-    return
-  }
-
-  if (inspectionPlanForm.autoItems.length === 0 && inspectionPlanForm.manualItems.length === 0) {
-    ElMessage.error('请至少添加一个点检项')
-    return
-  }
-
-  // 验证手动点检项
-  for (const item of inspectionPlanForm.manualItems) {
-    if (item.valueType === 'number') {
-      if (item.minValue === null || item.maxValue === null) {
-        ElMessage.error(`请为【${item.name}】设置有效的上下限`)
-        return
-      }
-      if (item.minValue >= item.maxValue) {
-        ElMessage.error(`【${item.name}】的下限必须小于上限`)
-        return
-      }
+  console.log('保存点检计划：', inspectionPlanForm)
+  // 更新模型的点检计划状态
+  if (currentModel.value) {
+    const index = productModels.value.findIndex(m => m.id === currentModel.value.id)
+    if (index !== -1) {
+      productModels.value[index].inspectionPlan = true
     }
   }
-
-  // 保存点检计划到当前模型
-  const index = productModels.value.findIndex(p => p.id === currentModel.value.id)
-  if (index !== -1) {
-    productModels.value[index] = {
-      ...productModels.value[index],
-      inspectionPlan: true,
-      inspectionPlanData: { ...inspectionPlanForm }
-    }
-  }
-
-  ElMessage.success('点检计划已保存')
+  ElMessage.success('点检计划已保存！')
   inspectionPlanDialogVisible.value = false
 }
 
-const exportInspectionPlan = async () => {
+const exportInspectionPlan = () => {
   try {
     const jsonStr = JSON.stringify(inspectionPlanForm, null, 2)
-    console.log(jsonStr)
-    await navigator.clipboard.writeText(jsonStr)
+    navigator.clipboard.writeText(jsonStr)
     ElMessage.success('点检计划已导出到剪贴板')
   } catch (err) {
     ElMessage.error('导出失败: ' + err.message)
@@ -1194,11 +870,6 @@ const importInspectionPlan = () => {
 
 const confirmImportInspection = () => {
   try {
-    if (!importInspectionJson.value) {
-      ElMessage.error('请输入JSON内容')
-      return
-    }
-
     const planData = JSON.parse(importInspectionJson.value)
     Object.assign(inspectionPlanForm, planData)
     importInspectionDialogVisible.value = false
@@ -1208,9 +879,9 @@ const confirmImportInspection = () => {
   }
 }
 
-// 3. 生命周期钩子
+// 初始化
 onMounted(() => {
-  initDeviceTree() // 初始化设备树数据
+  initDeviceTree()
 })
 </script>
 

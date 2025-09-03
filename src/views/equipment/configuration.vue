@@ -13,10 +13,10 @@
         </div>
 
         <div class="selected-device" v-if="currentDevice">
-          当前设备: <strong>{{ currentDevice.name }}</strong>
-          <span v-if="currentDevice.workshop"> · {{ currentDevice.workshop }}车间</span>
-          <span v-if="currentDevice.line"> · {{ currentDevice.line }}产线</span>
-          <span v-if="currentDevice.segment"> · {{ currentDevice.segment }}</span>
+          当前设备: <strong>{{ currentDevice.mcName || currentDevice.name }}</strong>
+          <span v-if="currentDevice.workshopName"> · {{ currentDevice.workshopName }}车间</span>
+          <span v-if="currentDevice.lineName"> · {{ currentDevice.lineName }}产线</span>
+          <span v-if="currentDevice.sectionName"> · {{ currentDevice.sectionName }}</span>
         </div>
 
         <div class="panel-content">
@@ -30,16 +30,17 @@
                 :default-expand-all="true"
                 @current-change="handleDeviceChange"
                 style="width: 100%"
+                v-loading="deviceLoading"
             >
               <el-table-column prop="name" label="设备/段/产线/车间" min-width="300">
                 <template #default="{ row }">
                   <span v-if="row.type === 'workshop'">
                     <i class="el-icon-office-building workshop-icon"></i>
-                    <span>{{ row.name }}车间</span>
+                    <span>{{ row.name }}</span>
                   </span>
                   <span v-else-if="row.type === 'line'">
                     <i class="el-icon-set-up line-icon"></i>
-                    <span>{{ row.name }}产线</span>
+                    <span>{{ row.name }}</span>
                   </span>
                   <span v-else-if="row.type === 'segment'">
                     <i class="el-icon-s-operation segment-icon"></i>
@@ -47,11 +48,11 @@
                   </span>
                   <span v-else>
                     <i class="el-icon-cpu device-icon"></i>
-                    <span>{{ row.name }}</span>
-                    <span class="status-indicator" :class="row.status ? 'status-active' : 'status-inactive'"></span>
+                    <span>{{ row.mcName || row.name }}</span>
                   </span>
                 </template>
               </el-table-column>
+              <el-table-column prop="deviceCode" label="设备编码" width="150" v-if="false"></el-table-column>
             </el-table>
           </div>
         </div>
@@ -85,11 +86,6 @@
                 style="width: 100%"
             >
               <el-table-column prop="modelCode" label="型号编码" width="180" sortable></el-table-column>
-              <el-table-column prop="templateName" label="关联参数模板" min-width="200">
-                <template #default="{ row }">
-                  <el-tag type="info">{{ row.templateName }}</el-tag>
-                </template>
-              </el-table-column>
               <el-table-column prop="createTime" label="创建时间" width="180" sortable></el-table-column>
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="{ row }">
@@ -119,17 +115,6 @@
       <el-form :model="productForm" label-width="100px" ref="productFormRef">
         <el-form-item label="型号编码" prop="modelCode" required>
           <el-input v-model="productForm.modelCode" placeholder="请输入型号编码" />
-        </el-form-item>
-        <el-form-item label="参数模板" prop="templateId" required>
-          <el-cascader
-              v-model="productForm.templateId"
-              :options="templateOptions"
-              :props="cascaderProps"
-              placeholder="请选择参数模板"
-              filterable
-              clearable
-              style="width: 100%"
-          />
         </el-form-item>
       </el-form>
 
@@ -285,7 +270,7 @@
 
             <el-table-column label="操作" width="90" align="center">
               <template #default="{ $index }">
-                <el-button type="danger" link @click="removeParam($index)">删除</el-button>
+                <el-button type="danger, link" @click="removeParam($index)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -326,12 +311,20 @@ import {
   ElButton,
   ElButtonGroup
 } from 'element-plus'
-import Sortable from 'sortablejs' // 需安装：npm install sortablejs
+import Sortable from 'sortablejs'
+
+// 导入API
+import {
+  getAreaTree,
+  getChildAreas,
+  getDeviceTree
+} from '@/api/equipment/EquipmentLedger'
 
 // 1. 响应式变量定义
 // 设备树数据
 const tableData = ref([])
 const currentDevice = ref(null)
+const deviceLoading = ref(false)
 // 产品型号数据
 const productModels = ref([])
 const currentModel = ref(null)
@@ -342,63 +335,13 @@ const productDialogVisible = ref(false)
 const isEditProduct = ref(false)
 const productForm = reactive({
   id: null,
-  modelCode: '',
-  templateId: null
+  modelCode: ''
 })
 const productFormRef = ref(null)
 // 参数配置弹窗
 const paramDialogVisible = ref(false)
 const paramViewMode = ref('list') // 'list' 或 'json'
 const paramJson = ref('')
-// 参数模板选项
-const templateOptions = ref([
-  {
-    value: '1',
-    label: '产品型号1',
-    children: [
-      { value: '11', label: '模板1' },
-      { value: '12', label: '模板2' }
-    ]
-  },
-  {
-    value: '2',
-    label: '产品型号2',
-    children: [
-      { value: '21', label: '模板1' },
-      { value: '22', label: '模板2' }
-    ]
-  },
-  {
-    value: '3',
-    label: '产品型号3',
-    children: [
-      { value: '31', label: '模板1' },
-      { value: '32', label: '模板2' }
-    ]
-  },
-  {
-    value: '4',
-    label: '产品型号4',
-    children: [
-      { value: '41', label: '模板1' },
-      { value: '42', label: '模板2' }
-    ]
-  },
-  {
-    value: '5',
-    label: '产品型号5',
-    children: [
-      { value: '51', label: '模板1' },
-      { value: '52', label: '模板2' }
-    ]
-  }
-])
-const cascaderProps = {
-  expandTrigger: 'hover',
-  value: 'value',
-  label: 'label',
-  children: 'children'
-}
 // 参数表格相关
 const paramTable = ref([])
 const tableRef = ref(null)
@@ -426,74 +369,90 @@ watch(paramTable, (newVal) => {
 }, { deep: true })
 
 // 2. 核心方法
+// 将API返回的数据转换为树形表格数据
+const convertToTreeTableData = (data) => {
+  const convertNode = (node) => {
+    let type = ''
+    if (node.areaType === 'WORKSHOP') {
+      type = 'workshop'
+    } else if (node.areaType === 'LINE') {
+      type = 'line'
+    } else if (node.areaType === 'SECTION') {
+      type = 'segment'
+    }
+
+    const tableNode = {
+      id: node.id,
+      name: node.areaName,
+      type: type,
+      children: []
+    }
+
+    // 如果有设备，将设备添加到children中
+    if (node.devices && node.devices.length > 0) {
+      node.devices.forEach(device => {
+        // 确保设备节点没有children属性
+        const deviceNode = {
+          ...device,
+          type: 'device',
+          // 将设备字段映射到表格字段
+          name: device.mcName,
+          deviceCode: device.mcNumber,
+          workshopName: findAreaNameById(node.devices[0].areaId, 'WORKSHOP'),
+          lineName: findAreaNameById(node.devices[0].areaId, 'LINE'),
+          sectionName: findAreaNameById(node.devices[0].areaId, 'SECTION')
+        }
+
+        // 确保设备节点没有children属性
+        delete deviceNode.subNodes;
+        delete deviceNode.children;
+
+        tableNode.children.push(deviceNode)
+      })
+    }
+
+    // 递归处理子节点 - 只有组织节点可以有子节点
+    if (node.subNodes && node.subNodes.length > 0) {
+      node.subNodes.forEach(subNode => {
+        // 确保子节点是组织节点（车间、产线、段），而不是设备
+        if (subNode.areaType) {
+          tableNode.children.push(convertNode(subNode))
+        }
+      })
+    }
+
+    return tableNode
+  }
+
+  return data.map(node => convertNode(node))
+}
+
+// 根据区域ID查找区域名称（简化实现）
+const findAreaNameById = (areaId, areaType) => {
+  // 这里需要根据实际情况实现，可能需要额外的API调用或数据结构
+  return ''
+}
+
 // 初始化设备树
-const initDeviceTree = () => {
-  tableData.value = [
-    {
-      id: 1001,
-      name: 'C2',
-      type: 'workshop',
-      children: [
-        {
-          id: 1002,
-          name: '31',
-          type: 'line',
-          children: [
-            {
-              id: 1003,
-              name: 'CFOG段',
-              type: 'segment',
-              children: [
-                { id: 1, name: '精密清洗设备', type: 'device', deviceCode: 'DEV-C2-31-CFOG-101', status: true },
-                { id: 2, name: '全自动COG机', type: 'device', deviceCode: 'DEV-C2-31-CFOG-102', status: true }
-              ]
-            }
-          ]
-        },
-        {
-          id: 1004,
-          name: '32',
-          type: 'line',
-          children: [
-            {
-              id: 1005,
-              name: '贴合段',
-              type: 'segment',
-              children: [
-                { id: 3, name: '高精度FOG机', type: 'device', deviceCode: 'DEV-C2-32-TH-201', status: true }
-              ]
-            }
-          ]
-        },
-        { id: 4, name: '车间监控设备', type: 'device', deviceCode: 'DEV-C2-MON-001', status: true }
-      ]
-    },
-    {
-      id: 2001,
-      name: 'C3',
-      type: 'workshop',
-      children: [
-        {
-          id: 2002,
-          name: '41',
-          type: 'line',
-          children: [
-            {
-              id: 2003,
-              name: '组装段',
-              type: 'segment',
-              children: [
-                { id: 5, name: '智能组装机', type: 'device', deviceCode: 'DEV-C3-41-ASM-301', status: true },
-                { id: 6, name: '视觉检测设备', type: 'device', deviceCode: 'DEV-C3-41-ASM-302', status: false }
-              ]
-            }
-          ]
-        },
-        { id: 7, name: '中央控制设备', type: 'device', deviceCode: 'DEV-C3-CTRL-001', status: true }
-      ]
-    },
-    { id: 3001, name: '独立测试设备', type: 'device', deviceCode: 'DEV-IND-TEST-001', status: true }
-  ]
+const initDeviceTree = async () => {
+  deviceLoading.value = true
+  try {
+    // 构建请求参数
+    const params = {
+      currentNodeId: '',
+      mcNumber: '',
+      mcName: '',
+      manufacturer: '',
+      status: ''
+    }
+
+    const response = await getDeviceTree(params)
+    tableData.value = convertToTreeTableData(response.data.data)
+  } catch (error) {
+    ElMessage.error('加载设备数据失败: ' + error.message)
+  } finally {
+    deviceLoading.value = false
+  }
 }
 
 // 刷新数据
@@ -516,9 +475,9 @@ const loadProductModels = (deviceId) => {
   productLoading.value = true
   setTimeout(() => {
     productModels.value = [
-      { id: 'PM001', modelCode: 'MOD-001', templateId: '11', templateName: '标准清洗模板', createTime: '2023-06-01', updateTime: '2023-08-15' },
-      { id: 'PM002', modelCode: 'MOD-002', templateId: '12', templateName: '快速清洗模板', createTime: '2023-07-10', updateTime: '2023-08-10' },
-      { id: 'PM003', modelCode: 'MOD-003', templateId: '21', templateName: 'COG标准模板', createTime: '2023-07-15', updateTime: '2023-08-12' }
+      { id: 'PM001', modelCode: 'MOD-001', createTime: '2023-06-01', updateTime: '2023-08-15' },
+      { id: 'PM002', modelCode: 'MOD-002', createTime: '2023-07-10', updateTime: '2023-08-10' },
+      { id: 'PM003', modelCode: 'MOD-003', createTime: '2023-07-15', updateTime: '2023-08-12' }
     ]
     productLoading.value = false
   }, 500)
@@ -535,32 +494,10 @@ const showParamConfigDialog = (model) => {
   paramLoading.value = true
   paramDialogVisible.value = true
 
-  // 根据模板ID加载不同参数
+  // 默认空参数
   setTimeout(() => {
-    switch (model.templateId) {
-      case '11':
-        paramTable.value = [
-          { id: 1, name: '清洗时间', type: 'number', registerAddress: '0x1001', default: 30, minValue: 10, maxValue: 60, unit: 's', required: true },
-          { id: 2, name: '清洗温度', type: 'number', registerAddress: '0x1002', default: 60, minValue: 40, maxValue: 80, unit: '℃', required: true },
-          { id: 3, name: '喷淋压力', type: 'number', registerAddress: '0x1003', default: 0.3, minValue: 0.1, maxValue: 0.5, unit: 'MPa', required: false }
-        ]
-        break
-      case '12':
-        paramTable.value = [
-          { id: 4, name: '清洗时间', type: 'number', registerAddress: '0x1001', default: 15, minValue: 5, maxValue: 30, unit: 's', required: true },
-          { id: 5, name: '清洗温度', type: 'number', registerAddress: '0x1002', default: 70, minValue: 50, maxValue: 85, unit: '℃', required: true },
-          { id: 6, name: '喷淋压力', type: 'number', registerAddress: '0x1003', default: 0.4, minValue: 0.2, maxValue: 0.6, unit: 'MPa', required: false },
-          { id: 7, name: '干燥时间', type: 'number', registerAddress: '0x1004', default: 10, minValue: 5, maxValue: 20, unit: 's', required: false }
-        ]
-        break
-      default:
-        paramTable.value = [
-          { id: 8, name: '压力参数', type: 'number', registerAddress: '0x2001', default: 15, minValue: 5, maxValue: 30, unit: 'kg', required: true },
-          { id: 9, name: '温度控制', type: 'number', registerAddress: '0x2002', default: 25, minValue: 15, maxValue: 35, unit: '℃', required: true },
-          { id: 10, name: '速度设置', type: 'number', registerAddress: '0x2003', default: 100, minValue: 50, maxValue: 200, unit: 'rpm', required: false }
-        ]
-    }
-    paramJson.value = JSON.stringify(paramTable.value, null, 2)
+    paramTable.value = []
+    paramJson.value = JSON.stringify([], null, 2)
     paramLoading.value = false
     nextTick(initDrag) // 初始化拖拽
   }, 800)
@@ -571,7 +508,6 @@ const addProductModel = () => {
   isEditProduct.value = false
   productForm.id = null
   productForm.modelCode = ''
-  productForm.templateId = null
   productDialogVisible.value = true
 }
 
@@ -580,7 +516,6 @@ const editProductModel = (model) => {
   isEditProduct.value = true
   productForm.id = model.id
   productForm.modelCode = model.modelCode
-  productForm.templateId = [model.templateId.substring(0, 1), model.templateId] // 级联选择器格式
   productDialogVisible.value = true
 }
 
@@ -604,19 +539,9 @@ const deleteProductModel = (model) => {
 
 // 提交产品型号（新增/编辑）
 const submitProductModel = () => {
-  if (!productForm.modelCode || !productForm.templateId) {
-    ElMessage.error('请填写完整信息')
+  if (!productForm.modelCode) {
+    ElMessage.error('请填写型号编码')
     return
-  }
-
-  // 匹配模板名称
-  let templateName = ''
-  for (const group of templateOptions.value) {
-    const match = group.children.find(t => t.value === productForm.templateId[1])
-    if (match) {
-      templateName = match.label
-      break
-    }
   }
 
   if (isEditProduct.value) {
@@ -626,8 +551,6 @@ const submitProductModel = () => {
       productModels.value[index] = {
         ...productModels.value[index],
         modelCode: productForm.modelCode,
-        templateId: productForm.templateId[1],
-        templateName,
         updateTime: new Date().toISOString().split('T')[0]
       }
     }
@@ -636,8 +559,6 @@ const submitProductModel = () => {
     productModels.value.push({
       id: `PM${Date.now()}`,
       modelCode: productForm.modelCode,
-      templateId: productForm.templateId[1],
-      templateName,
       createTime: new Date().toISOString().split('T')[0],
       updateTime: new Date().toISOString().split('T')[0]
     })
@@ -820,22 +741,6 @@ onMounted(() => {
   color: #409EFF;
 }
 
-.status-indicator {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 8px;
-}
-
-.status-active {
-  background-color: #67c23a;
-}
-
-.status-inactive {
-  background-color: #f56c6c;
-}
-
 .selected-device {
   padding: 8px 16px;
   background-color: #f5f7fa;
@@ -865,8 +770,7 @@ onMounted(() => {
   gap: 8px;
 }
 
-.param-list-view,
-.param-json-view {
+.param-list-view, .param-json-view {
   flex: 1;
   overflow: auto;
 }
@@ -905,8 +809,7 @@ onMounted(() => {
     flex-direction: column;
   }
 
-  .device-panel,
-  .model-panel {
+  .device-panel, .model-panel {
     width: 100%;
     margin-right: 0;
     margin-bottom: 16px;
