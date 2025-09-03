@@ -28,19 +28,6 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="填写人" prop="reporter">
-              <el-input v-model="formData.reporter" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="手机号" prop="phone">
-              <el-input v-model="formData.phone" disabled />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
         <el-form-item label="故障类型" prop="faultType">
           <el-select v-model="formData.faultType" placeholder="请选择故障类型" style="width: 100%">
             <el-option label="机械故障" value="mechanical" />
@@ -48,6 +35,15 @@
             <el-option label="控制系统故障" value="control" />
             <el-option label="软件故障" value="software" />
             <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="严重程度" prop="priority">
+          <el-select v-model="formData.priority" placeholder="请选择严重程度" style="width: 100%">
+            <el-option label="紧急" value="URGENT" />
+            <el-option label="高" value="HIGH" />
+            <el-option label="中" value="MEDIUM" />
+            <el-option label="低" value="LOW" />
           </el-select>
         </el-form-item>
 
@@ -66,6 +62,7 @@
               list-type="picture-card"
               :auto-upload="false"
               :on-change="handleImageChange"
+              :on-remove="handleImageRemove"
               :file-list="fileList"
               :limit="3"
               multiple
@@ -90,7 +87,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import equipmentAPI from '@/api/equipment'
-import repairAPI from '@/api/repair'
+import repairAPI from '@/api/repair/repairAPI'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -100,31 +97,34 @@ const authStore = useAuthStore()
 const formRef = ref(null)
 const submitting = ref(false)
 const fileList = ref([])
+const selectedFiles = ref([])
 
 // 表单数据
 const formData = reactive({
   equipmentId: '',
   equipmentName: '',
   equipmentNumber: '',
-  reporter: authStore.user?.name || '张三',
-  phone: authStore.user?.phone || '13800138000',
   faultType: '',
+  priority: '',
   faultDescription: '',
-  images: [],
   status: 5 // 待维修状态
 })
 
 // 表单验证规则
 const formRules = {
   faultType: [{ required: true, message: '请选择故障类型', trigger: 'change' }],
+  priority: [{ required: true, message: '请选择严重程度', trigger: 'change' }],
   faultDescription: [{ required: true, message: '请输入故障描述', trigger: 'blur' }]
 }
 
 // 处理图片上传
-const handleImageChange = (file) => {
-  if (file.raw) {
-    formData.images.push(URL.createObjectURL(file.raw))
-  }
+const handleImageChange = (file, fileList) => {
+  selectedFiles.value = fileList.map(f => f.raw)
+}
+
+// 处理图片移除
+const handleImageRemove = (file, fileList) => {
+  selectedFiles.value = fileList.map(f => f.raw)
 }
 
 // 提交表单
@@ -134,27 +134,27 @@ const submitForm = async () => {
   submitting.value = true
   try {
     // 1. 更新设备状态为待维修
-    await equipmentAPI.updateEquipmentStatus(formData.equipmentId, 5)
+    // await equipmentAPI.updateEquipmentStatus(formData.equipmentId, 5)
 
-    // 2. 创建维修申请
-    const repairData = {
-      equipmentId: formData.equipmentId,
-      equipmentName: formData.equipmentName,
-      equipmentNumber: formData.equipmentNumber,
-      reporter: formData.reporter,
-      phone: formData.phone,
-      faultType: formData.faultType,
-      faultDescription: formData.faultDescription,
-      images: formData.images,
-      status: 'pending' // 待处理
+    // 2. 创建维修申请表单数据
+    const repairWorkOrder = {
+      repairDeviceNo: formData.equipmentNumber,
+      repairName: formData.equipmentName,
+      repairType: formData.faultType === 'mechanical' ? '机械故障' :
+          formData.faultType === 'electrical' ? '电气故障' :
+              formData.faultType === 'control' ? '控制系统故障' :
+                  formData.faultType === 'software' ? '软件故障' : '其他',
+      repairDesc: formData.faultDescription,
+      priority: formData.priority
     }
 
-    await repairAPI.createRepairOrder(repairData)
+    // 3. 提交维修申请
+    await repairAPI.createRepairWorkOrder(repairWorkOrder, selectedFiles.value)
 
     ElMessage.success('维修申请已提交，等待管理员处理')
     router.push('/equipment/EquipmentManage')
   } catch (error) {
-    ElMessage.error('提交失败: ' + error.message)
+    ElMessage.error('提交失败: ' + (error.message || '未知错误'))
   } finally {
     submitting.value = false
   }
