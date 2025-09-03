@@ -44,11 +44,11 @@ const router = useRouter()
 const modules = [
   { title: '资产管理',     path: '/asset/screen',       icon: HomeFilled },
   { title: '设备实时监控', path: '/equipment/screen',   icon: Monitor },
-  { title: '点巡检管理',   path: '/inspection/screen',  icon: List },
-  { title: '保养管理',     path: '/maintenance/screen', icon: Setting },
+  { title: '点巡检管理',   path: '/inspection',        icon: List },
+  { title: '保养管理',     path: '/maintenance',      icon: Setting },
   { title: '模具/治工具',  path: '/mold/manage',        icon: Tools },
   { title: '备件管理',     path: '/parts/screen',       icon: Coin },
-  { title: '维修管理',     path: '/repair/screen',      icon: EditPen },
+  { title: '维修管理',     path: '/repair',             icon: EditPen },
   { title: '系统管理',     path: '/system',             icon: Operation },
   // 新增审核管理模块
   { title: '审核管理',     path: '/check/list',         icon: DocumentChecked }
