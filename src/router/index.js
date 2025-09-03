@@ -236,12 +236,6 @@ const routes = [
     {
         path: '/inspection/configuration',
         name: 'inspection-configuration',
-        component: () => import('@/views/inspection/configuration.vue'),
-        meta: { title: '配置' },
-    },
-    {
-        path: '/inspection/configuration/PolicyConfig',
-        name: 'PolicyConfig',
         component: () => import('@/views/inspection/configuration/PolicyConfig.vue'),
         meta: { title: '点巡检配置' },
     },

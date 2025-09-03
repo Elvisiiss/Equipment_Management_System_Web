@@ -818,8 +818,7 @@ onMounted(() => {
 }
 </style>
 
-<style>
-/* 全局样式（无scoped，影响整个项目） */
+<style scoped>
 * {
   margin: 0;
   padding: 0;

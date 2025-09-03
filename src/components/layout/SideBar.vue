@@ -318,33 +318,6 @@ const menuItems = [
             name: 'TaskList',
             meta: {title: '任务列表'},
             permissionId: 1
-          },
-        ]
-      }, {
-        path: '/inspection/configuration',
-        name: 'configuration',
-        meta: {title: '配置'},
-        permissionId: 1,
-        children: [
-          {
-            path: '/inspection/configuration/PolicyConfig',
-            name: 'PolicyConfig',
-            meta: {title: '点巡检配置'},
-            permissionId: 1
-          }
-        ]
-      },
-      {
-        path: '/inspection/screen',
-        name: 'screen',
-        meta: {title: '大屏'},
-        permissionId: 1,
-        children: [
-          {
-            path: '/inspection/screen/Dashboard',
-            name: 'Dashboard',
-            meta: {title: '仪表盘'},
-            permissionId: 1
           }, {
             path: '/inspection/screen/EfficiencyAnalysis',
             name: 'EfficiencyAnalysis',
@@ -357,6 +330,11 @@ const menuItems = [
             permissionId: 1
           },
         ]
+      }, {
+        path: '/inspection/configuration',
+        name: 'configuration',
+        meta: {title: '点巡检配置'},
+        permissionId: 1
       }
     ]
   },
