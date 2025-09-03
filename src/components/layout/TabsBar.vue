@@ -15,7 +15,6 @@
           :name="tab.path"
           :closable="tab.path !== '/'"
       >
-        <router-view />
       </el-tab-pane>
     </el-tabs>
 
