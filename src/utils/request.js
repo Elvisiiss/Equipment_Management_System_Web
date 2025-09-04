@@ -5,7 +5,7 @@ const authStore = useAuthStore()
 // 创建axios实例
 const request = axios.create({
     baseURL: '/api', // 使用代理后的基础路径
-    timeout: 5000
+    timeout: 500000
 })
 
 // 请求拦截器
