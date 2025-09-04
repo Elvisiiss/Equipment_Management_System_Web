@@ -471,6 +471,12 @@ const menuItems = [
     permissionId: 1,
     children: [
       {
+        path: '/repair/reportForRepair',
+        name: 'report-for-repair',
+        meta: {title: '报修'},
+        permissionId: 1
+      },
+      {
         path: '/repair/manage',
         name: 'manage',
         meta: {title: '管理'},

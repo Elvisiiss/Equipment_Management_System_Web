@@ -509,6 +509,12 @@ const routes = [
         meta: { title: '维修管理', icon: HomeFilled },
     },
     {
+        path: '/repair/reportForRepair',
+        name: 'report-for-repair',
+        component: () => import('@/views/repair/reportForRepair.vue'),
+        meta: {title: '报修'},
+    },
+    {
         path: '/repair/form',
         name: 'RepairForm',
         component: () => import('@/views/repair/RepairForm.vue'),

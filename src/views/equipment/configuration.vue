@@ -14,9 +14,6 @@
 
         <div class="selected-device" v-if="currentDevice">
           当前设备: <strong>{{ currentDevice.mcName || currentDevice.name }}</strong>
-          <span v-if="currentDevice.workshopName"> · {{ currentDevice.workshopName }}车间</span>
-          <span v-if="currentDevice.lineName"> · {{ currentDevice.lineName }}产线</span>
-          <span v-if="currentDevice.sectionName"> · {{ currentDevice.sectionName }}</span>
         </div>
 
         <div class="panel-content">
