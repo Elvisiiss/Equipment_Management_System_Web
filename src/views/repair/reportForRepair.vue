@@ -363,9 +363,13 @@ const submitForm = async () => {
     }
 
     // 3. 提交维修申请
-    await repairAPI.createRepairWorkOrder(repairWorkOrder, selectedFiles.value)
-
-    ElMessage.success('维修申请已提交，等待管理员处理')
+    const res = await repairAPI.createRepairWorkOrder(repairWorkOrder, selectedFiles.value)
+    console.log(res)
+    if(res.data.code==='Error'){
+      ElMessage.error(res.data.msg)
+    }else{
+      ElMessage.success(res.data.msg)
+    }
     resetForm()
   } catch (error) {
     ElMessage.error('提交失败: ' + (error.message || '未知错误'))
