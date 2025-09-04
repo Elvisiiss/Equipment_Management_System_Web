@@ -47,7 +47,7 @@ const modules = [
   { title: '点巡检管理',   path: '/inspection',        icon: List },
   { title: '保养管理',     path: '/maintenance',      icon: Setting },
   { title: '模具/治工具',  path: '/mold/manage',        icon: Tools },
-  { title: '备件管理',     path: '/parts/screen',       icon: Coin },
+  { title: '备件管理',     path: '/parts/manage',       icon: Coin },
   { title: '维修管理',     path: '/repair',             icon: EditPen },
   { title: '系统管理',     path: '/system',             icon: Operation },
   // 新增审核管理模块

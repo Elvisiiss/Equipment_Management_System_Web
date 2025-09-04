@@ -521,12 +521,6 @@ const routes = [
         meta: { title: '维修申请' }
     },
     {
-        path: '/repair/admin/list',
-        name: 'RepairListAdmin',
-        component: () => import('@/views/repair/RepairListAdmin.vue'),
-        meta: { title: '待维修设备' }
-    },
-    {
         path: '/repair/worker/list',
         name: 'RepairListWorker',
         component: () => import('@/views/repair/RepairListWorker.vue'),
@@ -618,16 +612,10 @@ const routes = [
         meta: {title: '部门管理'},
     },
     {
-        path: '/system/manage/regionManagement',
-        name: 'regionManagement',
-        component: () => import('@/views/system/manage/regionManagement.vue'),
-        meta: { title: '区域管理' },
-    },
-    {
         path: '/system/data/region',
         name: 'region',
         component: () => import('@/views/system/data/Region.vue'),
-        meta: { title: '区域管理2' },
+        meta: { title: '区域管理' },
     },
     {
         path: '/system/data/product',

@@ -84,7 +84,7 @@
     <el-card class="filter-card" v-if="currentWarehouse">
       <el-form :inline="true" :model="filterForm" class="filter-form">
         <el-form-item label="备件类别:">
-          <el-select v-model="filterForm.category" placeholder="全部" clearable>
+          <el-select v-model="filterForm.category" placeholder="全部" clearable style="width: 200px">
             <el-option label="电子元件" value="electronic"></el-option>
             <el-option label="机械零件" value="mechanical"></el-option>
             <el-option label="耗材" value="consumable"></el-option>
@@ -92,7 +92,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="库存状态:">
-          <el-select v-model="filterForm.stockStatus" placeholder="全部" clearable>
+          <el-select v-model="filterForm.stockStatus" placeholder="全部" clearable style="width: 200px">
             <el-option label="正常" value="normal"></el-option>
             <el-option label="黄色警告" value="warning"></el-option>
             <el-option label="红色警告" value="danger"></el-option>
@@ -170,19 +170,19 @@
             <el-button
                 size="mini"
                 @click="handleEditPart(scope.row)"
-                icon="el-icon-edit"
+                icon="edit"
             >编辑</el-button>
             <el-button
                 size="mini"
                 type="warning"
                 @click="handleMovePart(scope.row)"
-                icon="el-icon-refresh-right"
+                icon="refresh-right"
             >移动</el-button>
             <el-button
                 size="mini"
                 type="danger"
                 @click="handleDeletePart(scope.row.id)"
-                icon="el-icon-delete"
+                icon="delete"
             >删除</el-button>
           </template>
         </el-table-column>

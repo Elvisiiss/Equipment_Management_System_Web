@@ -496,18 +496,10 @@ const menuItems = [
           }
         ]
       }, {
-        path: '/repair/configuration',
+        path: '/repair/configuration/RepairConfig',
         name: 'configuration',
-        meta: {title: '配置'},
-        permissionId: 1,
-        children: [
-          {
-            path: '/repair/configuration/RepairConfig',
-            name: 'RepairConfig',
-            meta: {title: '维修配置管理'},
-            permissionId: 1
-          }
-        ]
+        meta: {title: '维修配置管理'},
+        permissionId: 1
       },
       {
         path: '/repair/screen',
@@ -526,11 +518,6 @@ const menuItems = [
         path: '/repair/worker/list',
         name: 'repair-worker-list',
         meta: {title: '我的工单'},
-        permissionId: 1
-      }, {
-        path: '/repair/admin/list',
-        name: 'repair-admin-list',
-        meta: {title: '待维修设备'},
         permissionId: 1
       }
     ]
@@ -570,14 +557,7 @@ const menuItems = [
             name: 'department_management',
             meta: {title: '部门管理'},
             permissionId: 1
-          },
-          {
-            path: '/system/manage/regionManagement',
-            name: 'regionManagement',
-            meta: {title: '区域管理'},
-            permissionId: 1,
-          },
-
+          }
         ]
       },
       {
@@ -590,7 +570,7 @@ const menuItems = [
             path: '/system/data/region',
             name: 'region',
             component: () => import('@/views/system/data/Region.vue'),
-            meta: {title: '区域管理2'},
+            meta: {title: '区域管理'},
             permissionId: 1,
           },
           {

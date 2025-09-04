@@ -463,7 +463,6 @@ const initDeviceTree = async () => {
 // 刷新数据
 const refreshData = () => {
   initDeviceTree()
-  ElMessage.success('设备数据已刷新')
 }
 
 // 选择设备（仅设备类型有效）
