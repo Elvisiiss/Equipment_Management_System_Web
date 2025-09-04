@@ -31,6 +31,7 @@
                 @current-change="handleDeviceChange"
                 style="width: 100%"
                 v-loading="deviceLoading"
+                :row-class-name="setTableRowClass"
             >
               <el-table-column prop="name" label="设备/段/产线/车间" min-width="300">
                 <template #default="{ row }">
@@ -389,18 +390,17 @@ const convertToTreeTableData = (data) => {
     }
 
     // 如果有设备，将设备添加到children中
-    if (node.devices && node.devices.length > 0) {
-      node.devices.forEach(device => {
+    if (node.deviceVOS && node.deviceVOS.length > 0) {
+      node.deviceVOS.forEach(device => {
         // 确保设备节点没有children属性
         const deviceNode = {
           ...device,
           type: 'device',
-          // 将设备字段映射到表格字段
           name: device.mcName,
           deviceCode: device.mcNumber,
-          workshopName: findAreaNameById(node.devices[0].areaId, 'WORKSHOP'),
-          lineName: findAreaNameById(node.devices[0].areaId, 'LINE'),
-          sectionName: findAreaNameById(node.devices[0].areaId, 'SECTION')
+          workshopName: findAreaNameById(node.deviceVOS[0].areaId, 'WORKSHOP'),
+          lineName: findAreaNameById(node.deviceVOS[0].areaId, 'LINE'),
+          sectionName: findAreaNameById(node.deviceVOS[0].areaId, 'SECTION')
         }
 
         // 确保设备节点没有children属性
@@ -427,7 +427,15 @@ const convertToTreeTableData = (data) => {
   return data.map(node => convertNode(node))
 }
 
-// 根据区域ID查找区域名称（简化实现）
+// 设置表格行类名
+const setTableRowClass = ({row}) => {
+  if (row.type === 'device') {
+    return 'device-row'
+  }
+  return `${row.type}-row`
+}
+
+// 根据区域ID查找区域名称
 const findAreaNameById = (areaId, areaType) => {
   // 这里需要根据实际情况实现，可能需要额外的API调用或数据结构
   return ''
@@ -644,7 +652,8 @@ const initDrag = () => {
 
 // 3. 生命周期钩子
 onMounted(() => {
-  initDeviceTree() // 初始化设备树数据
+  initDeviceTree()
+  initDrag()
 })
 </script>
 
@@ -795,6 +804,51 @@ onMounted(() => {
 
 .el-table :deep(.el-table__row--current) > td {
   background-color: #ecf5ff !important;
+}
+
+/* 状态标签样式 */
+.status-tag {
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-accepted {
+  background: #e1f3d8;
+  color: #67c23a;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #e6a23c;
+}
+
+.status-sample {
+  background: #d1ecf1;
+  color: #409eff;
+}
+
+.status-idle {
+  background: #f8d7da;
+  color: #f56c6c;
+}
+
+/* 行样式控制 */
+:deep(.device-row) {
+  .el-table__expand-icon {
+    display: none !important;
+  }
+
+  .el-table__cell:first-child {
+    padding-left: 20px !important;
+  }
+}
+
+:deep(.workshop-row, .line-row, .segment-row) {
+  .el-table__expand-icon {
+    display: inline-block !important;
+  }
 }
 
 /* 响应式调整 */
