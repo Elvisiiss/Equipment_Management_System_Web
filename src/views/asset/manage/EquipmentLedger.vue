@@ -153,6 +153,7 @@
           :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
           :default-expand-all="true"
           style="width: 100%"
+          :row-class-name="setTableRowClass"
       >
         <el-table-column prop="name" label="设备/段/产线/车间" min-width="200">
           <template #default="{ row }">
@@ -788,8 +789,8 @@ const convertToTreeTableData = (data) => {
     }
 
     // 如果有设备，将设备添加到children中
-    if (node.devices && node.devices.length > 0) {
-      node.devices.forEach(device => {
+    if (node.deviceVOS && node.deviceVOS.length > 0) {
+      node.deviceVOS.forEach(device => {
         tableNode.children.push({
           ...device,
           type: 'device',
@@ -808,9 +809,9 @@ const convertToTreeTableData = (data) => {
           inCharge: '',
           acceptTime: '',
           acceptor: '',
-          workshopName: findAreaNameById(node.devices[0].areaId, 'WORKSHOP'),
-          lineName: findAreaNameById(node.devices[0].areaId, 'LINE'),
-          sectionName: findAreaNameById(node.devices[0].areaId, 'SECTION')
+          workshopName: findAreaNameById(node.deviceVOS[0].areaId, 'WORKSHOP'),
+          lineName: findAreaNameById(node.deviceVOS[0].areaId, 'LINE'),
+          sectionName: findAreaNameById(node.deviceVOS[0].areaId, 'SECTION')
         })
       })
     }
@@ -827,6 +828,21 @@ const convertToTreeTableData = (data) => {
 
   return data.map(node => convertNode(node))
 }
+
+// 在script setup中添加（可放在"事件处理函数"区域附近）
+/**
+ * 为表格行添加类名：设备节点添加"device-row"，区域节点添加对应类型类名
+ * @param {Object} param0 - 行数据对象
+ * @returns {string} 行类名字符串
+ */
+const setTableRowClass = ({row}) => {
+  // 设备节点添加"device-row"类
+  if (row.type === 'device') {
+    return 'device-row';
+  }
+  // 区域节点添加对应类型类名（可选，用于后续扩展）
+  return `${row.type}-row`;
+};
 
 // 根据区域ID查找区域名称（简化实现，实际应根据API响应数据结构调整）
 const findAreaNameById = (areaId, areaType) => {
@@ -942,7 +958,7 @@ const submitDevice = async () => {
     // 创建一个Blob对象，指定内容类型为application/json
     const deviceBlob = new Blob(
         [JSON.stringify(deviceData)],
-        { type: 'application/json' }
+        {type: 'application/json'}
     )
 
     // 添加device字段，使用Blob对象并指定文件名（某些后端需要）
@@ -1421,5 +1437,33 @@ body {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #EBEEF5;
+}
+
+/* 核心：隐藏设备节点的倒三角图标 */
+/* 1. 样式穿透：突破scoped限制，修改表格内部元素样式 */
+:deep(.el-table) {
+  /* 2. 匹配设备节点行（device-row类） */
+
+  .device-row {
+    /* 3. 隐藏倒三角图标 */
+
+    .el-table__expand-icon {
+      display: none !important;
+    }
+
+    /* 4. 调整设备节点缩进（可选，避免图标隐藏后留白） */
+
+    .el-table__cell:first-child {
+      padding-left: 20px !important; /* 与区域节点子级缩进对齐，可根据实际UI调整 */
+    }
+  }
+
+  /* 5. 确保区域节点倒三角正常显示（兜底，防止误隐藏） */
+
+  .workshop-row, .line-row, .segment-row {
+    .el-table__expand-icon {
+      display: inline-block !important;
+    }
+  }
 }
 </style>
