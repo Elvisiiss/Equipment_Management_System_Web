@@ -84,12 +84,12 @@
                 style="width: 100%"
             >
               <el-table-column prop="modelCode" label="型号编码" width="180" sortable></el-table-column>
-              <el-table-column prop="createTime" label="创建时间" width="180" sortable></el-table-column>
+              <el-table-column prop="modelName" label="型号名称" width="240" sortable></el-table-column>
               <el-table-column label="操作" width="180" fixed="right">
                 <template #default="{ row }">
                   <el-button type="text" size="small" @click.stop="showParamConfigDialog(row)">参数配置</el-button>
                   <el-button type="text" size="small" @click.stop="editProductModel(row)">编辑</el-button>
-                  <el-button type="text" size="small" @click.stop="deleteProductModel(row)" style="color: #F56C6C">删除</el-button>
+                  <el-button type="text" size="small" @click.stop="deleteProductModelHandler(row)" style="color: #F56C6C">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -113,6 +113,9 @@
       <el-form :model="productForm" label-width="100px" ref="productFormRef">
         <el-form-item label="型号编码" prop="modelCode" required>
           <el-input v-model="productForm.modelCode" placeholder="请输入型号编码" />
+        </el-form-item>
+        <el-form-item label="型号名称" prop="modelName" required>
+          <el-input v-model="productForm.modelName" placeholder="请输入型号名称" />
         </el-form-item>
       </el-form>
 
@@ -268,7 +271,7 @@
 
             <el-table-column label="操作" width="90" align="center">
               <template #default="{ $index }">
-                <el-button type="danger, link" @click="removeParam($index)">删除</el-button>
+                <el-button type="danger" link @click="removeParam($index)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -318,6 +321,14 @@ import {
   getDeviceTree
 } from '@/api/equipment/EquipmentLedger'
 
+// 导入API
+import {
+  getProductModelsByDevice,
+  createProductModel,
+  updateProductModel,
+  deleteProductModel
+} from '@/api/equipment/equipmentConfig.js'
+
 // 1. 响应式变量定义
 // 设备树数据
 const tableData = ref([])
@@ -333,7 +344,8 @@ const productDialogVisible = ref(false)
 const isEditProduct = ref(false)
 const productForm = reactive({
   id: null,
-  modelCode: ''
+  modelCode: '',
+  modelName: ''
 })
 const productFormRef = ref(null)
 // 参数配置弹窗
@@ -474,17 +486,23 @@ const handleDeviceChange = (device) => {
   loadProductModels(device.id) // 加载该设备的产品型号
 }
 
-// 加载产品型号（模拟接口）
-const loadProductModels = (deviceId) => {
+// 加载产品型号（真实API调用）
+const loadProductModels = async (deviceId) => {
   productLoading.value = true
-  setTimeout(() => {
-    productModels.value = [
-      { id: 'PM001', modelCode: 'MOD-001', createTime: '2023-06-01', updateTime: '2023-08-15' },
-      { id: 'PM002', modelCode: 'MOD-002', createTime: '2023-07-10', updateTime: '2023-08-10' },
-      { id: 'PM003', modelCode: 'MOD-003', createTime: '2023-07-15', updateTime: '2023-08-12' }
-    ]
+  try {
+    const response = await getProductModelsByDevice(deviceId)
+    if (response.data.code === 'success') {
+      productModels.value = response.data.data.productModels
+    } else {
+      ElMessage.error('获取产品型号失败: ' + response.data.msg)
+      productModels.value = []
+    }
+  } catch (error) {
+    ElMessage.error('加载产品型号失败: ' + error.message)
+    productModels.value = []
+  } finally {
     productLoading.value = false
-  }, 500)
+  }
 }
 
 // 选择产品型号（不再直接加载参数，改为点击按钮触发）
@@ -498,7 +516,7 @@ const showParamConfigDialog = (model) => {
   paramLoading.value = true
   paramDialogVisible.value = true
 
-  // 默认空参数
+  // 默认空参数（假数据）
   setTimeout(() => {
     paramTable.value = []
     paramJson.value = JSON.stringify([], null, 2)
@@ -512,6 +530,7 @@ const addProductModel = () => {
   isEditProduct.value = false
   productForm.id = null
   productForm.modelCode = ''
+  productForm.modelName = ''
   productDialogVisible.value = true
 }
 
@@ -520,56 +539,90 @@ const editProductModel = (model) => {
   isEditProduct.value = true
   productForm.id = model.id
   productForm.modelCode = model.modelCode
+  productForm.modelName = model.modelName
   productDialogVisible.value = true
 }
 
 // 删除产品型号
-const deleteProductModel = (model) => {
-  ElMessageBox.confirm(
-      `确定删除产品型号【${model.modelCode}】? 此操作不可恢复。`,
-      '删除确认',
-      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning', confirmButtonClass: 'el-button--danger' }
-  ).then(() => {
-    productModels.value = productModels.value.filter(p => p.id !== model.id)
-    if (currentModel.value?.id === model.id) {
-      currentModel.value = null
-      paramTable.value = []
+const deleteProductModelHandler = async (model) => {
+  try {
+    await ElMessageBox.confirm(
+        `确定删除产品型号【${model.modelCode}】? 此操作不可恢复。`,
+        '删除确认',
+        { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning', confirmButtonClass: 'el-button--danger' }
+    )
+
+    const response = await deleteProductModel(model.id)
+    if (response.data.code === 'success') {
+      productModels.value = productModels.value.filter(p => p.id !== model.id)
+      if (currentModel.value?.id === model.id) {
+        currentModel.value = null
+        paramTable.value = []
+      }
+      ElMessage.success('产品型号删除成功')
+    } else {
+      ElMessage.error('删除失败: ' + response.data.msg)
     }
-    ElMessage.success('产品型号删除成功')
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败: ' + error.message)
+    } else {
+      ElMessage.info('已取消删除')
+    }
+  }
 }
 
 // 提交产品型号（新增/编辑）
-const submitProductModel = () => {
+const submitProductModel = async () => {
   if (!productForm.modelCode) {
     ElMessage.error('请填写型号编码')
     return
   }
 
-  if (isEditProduct.value) {
-    // 编辑：更新现有数据
-    const index = productModels.value.findIndex(p => p.id === productForm.id)
-    if (index !== -1) {
-      productModels.value[index] = {
-        ...productModels.value[index],
-        modelCode: productForm.modelCode,
-        updateTime: new Date().toISOString().split('T')[0]
-      }
-    }
-  } else {
-    // 新增：添加新数据
-    productModels.value.push({
-      id: `PM${Date.now()}`,
-      modelCode: productForm.modelCode,
-      createTime: new Date().toISOString().split('T')[0],
-      updateTime: new Date().toISOString().split('T')[0]
-    })
+  if (!productForm.modelName) {
+    ElMessage.error('请填写型号名称')
+    return
   }
 
-  productDialogVisible.value = false
-  ElMessage.success(`产品型号${isEditProduct.value ? '更新' : '添加'}成功`)
+  try {
+    const requestData = {
+      modelCode: productForm.modelCode,
+      modelName: productForm.modelName,
+      deviceId: currentDevice.value.id
+    }
+
+    if (isEditProduct.value) {
+      // 编辑：更新现有数据
+      const response = await updateProductModel(productForm.id, requestData)
+      if (response.data.code === 'success') {
+        const index = productModels.value.findIndex(p => p.id === productForm.id)
+        if (index !== -1) {
+          productModels.value[index] = {
+            ...productModels.value[index],
+            modelCode: productForm.modelCode,
+            modelName: productForm.modelName
+          }
+        }
+        ElMessage.success('产品型号更新成功')
+      } else {
+        ElMessage.error('更新失败: ' + response.data.msg)
+      }
+    } else {
+      // 新增：添加新数据
+      const response = await createProductModel(requestData)
+      if (response.data.code === 'success') {
+        // 重新加载产品型号列表
+        await loadProductModels(currentDevice.value.id)
+        ElMessage.success('产品型号添加成功')
+      } else {
+        ElMessage.error('添加失败: ' + response.data.msg)
+      }
+    }
+
+    productDialogVisible.value = false
+  } catch (error) {
+    ElMessage.error(`操作失败: ${error.message}`)
+  }
 }
 
 // 新增参数
