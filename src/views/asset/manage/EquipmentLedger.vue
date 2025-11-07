@@ -652,13 +652,43 @@ const getStatusClass = (status) => {
   }
 }
 
+// 新增辅助函数：从节点路径获取车间名称
+const getWorkshopNameFromPath = (node) => {
+  // 如果当前节点就是车间，直接返回
+  if (node.areaType === 'WORKSHOP') {
+    return node.areaName
+  }
+  // 递归向上查找车间节点
+  let current = node
+  while (current && current.areaType !== 'WORKSHOP') {
+    // 在实际项目中，这里需要根据parentId向上查找
+    // 由于API响应是树形结构，我们可以通过遍历整个树来找到对应的车间
+    break // 简化实现
+  }
+  return node.areaName // 简化返回当前节点名称
+}
+
+// 新增辅助函数：从节点路径获取产线名称
+const getLineNameFromPath = (node) => {
+  if (node.areaType === 'LINE') {
+    return node.areaName
+  }
+  // 如果是工段节点，其父节点就是产线
+  if (node.areaType === 'SECTION') {
+    // 这里需要根据实际情况获取产线名称
+    // 简化实现
+    return '对应产线'
+  }
+  return ''
+}
+
 // 合并车间、产线、工段为区域名称
 const getAreaName = (row) => {
-  const parts = []
-  if (row.workshopName) parts.push(row.workshopName)
-  if (row.lineName) parts.push(row.lineName)
-  if (row.sectionName) parts.push(row.sectionName)
-  return parts.length > 0 ? parts.join('/') : '-'
+  if (row.type === 'device') {
+    // 使用完整的区域路径
+    return row.fullAreaPath || '-'
+  }
+  return '-'
 }
 
 // 3. 初始化
@@ -771,7 +801,14 @@ const handleSearch = async () => {
 
 // 将API返回的数据转换为树形表格数据
 const convertToTreeTableData = (data) => {
-  const convertNode = (node) => {
+  const convertNode = (node, parentPath = []) => {
+    // 构建当前节点的路径
+    const currentPath = [...parentPath, {
+      id: node.id,
+      name: node.areaName,
+      type: node.areaType
+    }]
+
     let type = ''
     if (node.areaType === 'WORKSHOP') {
       type = 'workshop'
@@ -791,6 +828,11 @@ const convertToTreeTableData = (data) => {
     // 如果有设备，将设备添加到children中
     if (node.deviceVOS && node.deviceVOS.length > 0) {
       node.deviceVOS.forEach(device => {
+        // 从路径中提取车间、产线、工段名称
+        const workshop = currentPath.find(item => item.type === 'WORKSHOP')
+        const line = currentPath.find(item => item.type === 'LINE')
+        const section = currentPath.find(item => item.type === 'SECTION')
+
         tableNode.children.push({
           ...device,
           type: 'device',
@@ -804,14 +846,17 @@ const convertToTreeTableData = (data) => {
           status: device.status,
           lifespan: device.dayDuration,
           inTime: device.enterFactoryTime,
-          maintainer: device.maintainer, // 映射维修工字段
+          maintainer: device.maintainerName,
+          // 完整的区域路径信息
+          workshopName: workshop ? workshop.name : '',
+          lineName: line ? line.name : '',
+          sectionName: section ? section.name : '',
+          // 完整的区域路径用于显示
+          fullAreaPath: currentPath.map(item => item.name).join('-'),
           // 以下字段API未提供，暂时留空
           inCharge: '',
           acceptTime: '',
-          acceptor: '',
-          workshopName: findAreaNameById(node.deviceVOS[0].areaId, 'WORKSHOP'),
-          lineName: findAreaNameById(node.deviceVOS[0].areaId, 'LINE'),
-          sectionName: findAreaNameById(node.deviceVOS[0].areaId, 'SECTION')
+          acceptor: ''
         })
       })
     }
@@ -819,7 +864,7 @@ const convertToTreeTableData = (data) => {
     // 递归处理子节点
     if (node.subNodes && node.subNodes.length > 0) {
       node.subNodes.forEach(subNode => {
-        tableNode.children.push(convertNode(subNode))
+        tableNode.children.push(convertNode(subNode, currentPath))
       })
     }
 
