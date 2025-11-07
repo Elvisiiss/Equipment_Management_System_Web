@@ -33,36 +33,40 @@
           v-loading="loading"
       >
         <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="taskType" label="任务类型" width="100" />
-        <el-table-column prop="auditType" label="审核类型" width="120">
+        <el-table-column prop="taskType" label="任务类型" width="100">
           <template #default="{ row }">
-            {{ row.auditType || '设备审核' }}
+            {{ getTaskTypeText(row.taskType) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="menuType" label="菜单类型" width="120">
+          <template #default="{ row }">
+            {{ row.menuType || '设备管理' }}
           </template>
         </el-table-column>
         <el-table-column prop="deviceCode" label="设备编码" width="120" />
         <el-table-column prop="deviceName" label="设备名称" />
         <el-table-column prop="taskName" label="任务名称" />
         <el-table-column
-            prop="status"
+            prop="approvalStatus"
             label="状态"
             width="100"
         >
           <template #default="{ row }">
             <el-tag
-                :type="row.status === '待审核' ? 'warning' : (row.status === '审核通过' ? 'success' : 'danger')"
+                :type="row.approvalStatus === 0 ? 'warning' : (row.approvalStatus === 1 ? 'success' : 'danger')"
             >
-              {{ row.status }}
+              {{ getStatusText(row.approvalStatus) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column
-            prop="createTime"
+            prop="createtime"
             label="创建时间"
             width="180"
             sortable
         />
         <el-table-column
-            prop="initiator"
+            prop="applicantName"
             label="申请人"
             width="100"
         />
@@ -79,7 +83,7 @@
               查看详情
             </el-button>
             <el-button
-                v-if="row.status === '待审核'"
+                v-if="row.approvalStatus === 0"
                 size="small"
                 type="primary"
                 @click.stop="openAuditDialog(row)"
@@ -87,7 +91,7 @@
               审核
             </el-button>
             <el-button
-                v-if="row.status === '审核拒绝'"
+                v-if="row.approvalStatus === 2"
                 size="small"
                 type="warning"
                 @click.stop="handleResubmit(row)"
@@ -116,41 +120,49 @@
     <el-dialog
         v-model="detailVisible"
         title="任务详情"
-        width="600px"
+        width="700px"
     >
       <el-descriptions column="1" border>
         <el-descriptions-item label="任务ID">{{ currentTask.id }}</el-descriptions-item>
-        <el-descriptions-item label="任务类型">{{ currentTask.taskType }}</el-descriptions-item>
-        <el-descriptions-item label="审核类型">{{ currentTask.auditType || '设备审核' }}</el-descriptions-item>
+        <el-descriptions-item label="任务类型">{{ getTaskTypeText(currentTask.taskType) }}</el-descriptions-item>
+        <el-descriptions-item label="菜单类型">{{ currentTask.menuType || '设备管理' }}</el-descriptions-item>
         <el-descriptions-item label="任务名称">{{ currentTask.taskName }}</el-descriptions-item>
         <el-descriptions-item label="设备编码">{{ currentTask.deviceCode }}</el-descriptions-item>
         <el-descriptions-item label="设备名称">{{ currentTask.deviceName }}</el-descriptions-item>
-        <el-descriptions-item label="申请人">{{ currentTask.initiator }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ formatDate(currentTask.createTime) }}</el-descriptions-item>
+        <el-descriptions-item label="申请人">{{ currentTask.applicantName }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDate(currentTask.createtime) }}</el-descriptions-item>
+        <el-descriptions-item label="申请原因">{{ currentTask.applyReason }}</el-descriptions-item>
 
-        <!-- 根据任务类型显示不同内容 -->
-        <template v-if="currentTask.taskType === '验收'">
-          <el-descriptions-item label="验收结果">{{ currentTask.result }}</el-descriptions-item>
-          <el-descriptions-item label="验收意见">{{ currentTask.opinion }}</el-descriptions-item>
-          <el-descriptions-item label="验收日期">{{ currentTask.date }}</el-descriptions-item>
+        <!-- 设备转移任务显示目标区域 -->
+        <el-descriptions-item v-if="currentTask.taskType === 2" label="目标区域">
+          {{ currentTask.targetArea }}
+        </el-descriptions-item>
+
+        <!-- 审批信息 -->
+        <el-descriptions-item label="审批流程">{{ currentTask.processName }}</el-descriptions-item>
+        <el-descriptions-item label="审批规则">{{ currentTask.approvalRuleDesc }}</el-descriptions-item>
+        <el-descriptions-item label="审核状态">{{ getStatusText(currentTask.approvalStatus) }}</el-descriptions-item>
+
+        <template v-if="currentTask.approvalStatus !== 0">
+          <el-descriptions-item label="审核人">{{ currentTask.approverName }}</el-descriptions-item>
+          <el-descriptions-item label="审核时间">{{ formatDate(currentTask.approvalTime) }}</el-descriptions-item>
+          <el-descriptions-item label="审核意见">{{ currentTask.approvalComment || '无' }}</el-descriptions-item>
         </template>
 
-        <template v-if="currentTask.taskType === '转移'">
-          <el-descriptions-item label="目标区域">{{ currentTask.targetArea }}</el-descriptions-item>
-          <el-descriptions-item label="转移原因">{{ currentTask.reason }}</el-descriptions-item>
-        </template>
-
-        <template v-if="currentTask.taskType === '闲置' || currentTask.taskType === '报废'">
-          <el-descriptions-item label="申请说明">{{ currentTask.description }}</el-descriptions-item>
-        </template>
-
-        <!-- 审核信息 -->
-        <el-descriptions-item label="审核状态">{{ currentTask.status }}</el-descriptions-item>
-        <template v-if="currentTask.status !== '待审核'">
-          <el-descriptions-item label="审核人">{{ currentTask.approver || '管理员' }}</el-descriptions-item>
-          <el-descriptions-item label="审核时间">{{ formatDate(currentTask.approveTime) }}</el-descriptions-item>
-          <el-descriptions-item label="审核意见">{{ currentTask.remark || '无' }}</el-descriptions-item>
-        </template>
+        <!-- 审核人列表 -->
+        <el-descriptions-item label="审核人列表">
+          <div v-if="currentTask.approvers && currentTask.approvers.length">
+            <el-tag
+                v-for="approver in currentTask.approvers"
+                :key="approver.id"
+                size="small"
+                style="margin-right: 8px; margin-bottom: 4px;"
+            >
+              {{ approver.realName }}
+            </el-tag>
+          </div>
+          <span v-else>无</span>
+        </el-descriptions-item>
       </el-descriptions>
 
       <!-- 附件列表 -->
@@ -159,19 +171,19 @@
           <h4>附件列表：</h4>
           <div class="attachment-container">
             <div v-for="(file, index) in currentTask.attachments" :key="index" class="attachment-item">
-              <div v-if="isImage(file.name)" class="image-preview">
+              <div v-if="isImage(file.fileName)" class="image-preview">
                 <el-image
-                    :src="file.url"
-                    :preview-src-list="[file.url]"
+                    :src="getFileUrl(file.fileId)"
+                    :preview-src-list="[getFileUrl(file.fileId)]"
                     fit="cover"
                     :initial-index="0"
                     hide-on-click-modal
                 />
-                <span class="file-name">{{ file.name }}</span>
+                <span class="file-name">{{ file.fileName }}</span>
               </div>
               <div v-else class="file-item">
                 <el-icon class="file-icon"><Document /></el-icon>
-                <el-link :href="file.url" target="_blank">{{ file.name }}</el-link>
+                <el-link @click="downloadAttachment(file)">{{ file.fileName }}</el-link>
               </div>
             </div>
           </div>
@@ -190,14 +202,9 @@
         <div class="submit-info">
           <h4>发起人提交意见：</h4>
           <div class="submit-content">
-            <template v-if="currentAuditTask.taskType === '验收'">
-              <p><strong>验收意见：</strong>{{ currentAuditTask.opinion || '无' }}</p>
-            </template>
-            <template v-else-if="currentAuditTask.taskType === '转移'">
-              <p><strong>转移原因：</strong>{{ currentAuditTask.reason || '无' }}</p>
-            </template>
-            <template v-else>
-              <p><strong>申请说明：</strong>{{ currentAuditTask.description || '无' }}</p>
+            <p><strong>申请原因：</strong>{{ currentAuditTask.applyReason || '无' }}</p>
+            <template v-if="currentAuditTask.taskType === 2">
+              <p><strong>目标区域：</strong>{{ currentAuditTask.targetArea || '无' }}</p>
             </template>
           </div>
         </div>
@@ -207,19 +214,19 @@
           <h4>附件：</h4>
           <div class="attachment-list">
             <div v-for="(file, index) in currentAuditTask.attachments" :key="index" class="attachment-item">
-              <div v-if="isImage(file.name)" class="image-preview">
+              <div v-if="isImage(file.fileName)" class="image-preview">
                 <el-image
-                    :src="file.url"
-                    :preview-src-list="[file.url]"
+                    :src="getFileUrl(file.fileId)"
+                    :preview-src-list="[getFileUrl(file.fileId)]"
                     fit="cover"
                     :initial-index="0"
                     hide-on-click-modal
                 />
-                <span class="file-name">{{ file.name }}</span>
+                <span class="file-name">{{ file.fileName }}</span>
               </div>
               <div v-else class="file-item">
                 <el-icon class="file-icon"><Document /></el-icon>
-                <el-link :href="file.url" target="_blank">{{ file.name }}</el-link>
+                <el-link @click="downloadAttachment(file)">{{ file.fileName }}</el-link>
               </div>
             </div>
           </div>
@@ -464,9 +471,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Document } from '@element-plus/icons-vue'
+import {ref, reactive, onMounted} from 'vue'
+import {ElMessage} from 'element-plus'
+import {Document} from '@element-plus/icons-vue'
+import {
+  getApprovalTasksPage,
+  getApprovalTaskDetail,
+  approveTask,
+  getTaskAttachments,
+  downloadTaskAttachment,
+  createApprovalTaskWithAttachments,
+  getCurrentUser,
+  TASK_TYPE_MAP,
+  STATUS_MAP,
+  REVERSE_STATUS_MAP,
+  REVERSE_TASK_TYPE_MAP
+} from '@/api/asset/CheckList.js'
 
 // 筛选条件
 const filterForm = reactive({
@@ -475,81 +495,14 @@ const filterForm = reactive({
 })
 
 // 任务列表数据
-const taskList = ref([
-  {
-    id: 'T20230818001',
-    taskType: '验收',
-    auditType: '设备验收',
-    deviceCode: 'DEV2023001',
-    deviceName: '高精度数控机床',
-    taskName: '新设备验收申请',
-    status: '待审核',
-    createTime: '2023-08-18 10:30:25',
-    initiator: '张工',
-    opinion: '设备安装调试完成，各项参数符合要求，申请验收',
-    attachments: [
-      { name: '验收报告.pdf', url: '#' },
-      { name: '设备照片.jpg', url: 'https://via.placeholder.com/150' }
-    ]
-  },
-  {
-    id: 'T20230818002',
-    taskType: '转移',
-    auditType: '设备转移',
-    deviceCode: 'DEV2022012',
-    deviceName: '激光切割机',
-    taskName: '设备转移申请',
-    status: '待审核',
-    createTime: '2023-08-18 09:15:42',
-    initiator: '李工',
-    reason: '因生产车间调整，需将设备转移至B区',
-    attachments: [
-      { name: '转移方案.docx', url: '#' }
-    ]
-  },
-  {
-    id: 'T20230817005',
-    taskType: '闲置',
-    auditType: '设备管理',
-    deviceCode: 'DEV2019056',
-    deviceName: '注塑机',
-    taskName: '闲置设备申请',
-    status: '审核拒绝',
-    createTime: '2023-08-17 14:20:33',
-    initiator: '王工',
-    description: '设备已超过3个月未使用，申请闲置处理',
-    approver: '管理员',
-    approveTime: '2023-08-18 11:05:17',
-    remark: '请提供设备状态评估报告后再申请'
-  },
-  {
-    id: 'T20230816003',
-    taskType: '报废',
-    auditType: '设备报废',
-    deviceCode: 'DEV2018007',
-    deviceName: '老化测试仪',
-    taskName: '设备报废申请',
-    status: '审核通过',
-    createTime: '2023-08-16 16:45:12',
-    initiator: '赵工',
-    description: '设备已使用超过10年，维修成本过高，申请报废',
-    approver: '管理员',
-    approveTime: '2023-08-17 09:30:45',
-    remark: '同意报废申请，请按流程处理',
-    attachments: [
-      { name: '设备评估报告.pdf', url: '#' },
-      { name: '维修记录.xlsx', url: '#' }
-    ]
-  }
-])
-
+const taskList = ref([])
 const loading = ref(false)
 
 // 分页信息
 const pagination = reactive({
   page: 1,
   pageSize: 10,
-  total: 4
+  total: 0
 })
 
 // 详情弹窗
@@ -586,17 +539,62 @@ const resubmitForm = reactive({
 })
 const fileList = ref([])
 
+// 获取任务类型文本
+const getTaskTypeText = (taskType) => {
+  return REVERSE_TASK_TYPE_MAP[taskType] || '未知类型'
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  return REVERSE_STATUS_MAP[status] || '未知状态'
+}
+
 // 获取审核任务列表
 async function fetchAuditTasks() {
   try {
     loading.value = true
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800))
-    loading.value = false
+
+    const queryParams = {
+      pageNum: pagination.page,
+      pageSize: pagination.pageSize,
+      keyword: filterForm.keyword || '',
+      applicantId: filterForm.applicantId || '',
+      status: filterForm.status ? STATUS_MAP[filterForm.status] : '',
+      taskType: filterForm.taskType ? TASK_TYPE_MAP[filterForm.taskType] : ''
+    }
+
+    const response = await getApprovalTasksPage(queryParams)
+
+    console.log(response.data)
+    if (response.data.code === 'success') {
+      taskList.value = response.data.data.records || []
+      pagination.total = response.data.data.total || 0
+
+      // 为每个任务加载附件信息
+      for (let task of taskList.value) {
+        await loadTaskAttachments(task)
+      }
+    } else {
+      ElMessage.error(response.message || '获取审核任务失败')
+    }
   } catch (error) {
     ElMessage.error('获取审核任务失败')
     console.error(error)
+  } finally {
     loading.value = false
+  }
+}
+
+// 加载任务附件
+async function loadTaskAttachments(task) {
+  try {
+    const response = await getTaskAttachments(task.id)
+    if (response.data.code === 'success') {
+      task.attachments = response.data.data || []
+    }
+  } catch (error) {
+    console.error('加载附件失败:', error)
+    task.attachments = []
   }
 }
 
@@ -621,23 +619,56 @@ function handleCurrentChange(page) {
 }
 
 // 查看详情
-function handleViewDetail(task) {
-  currentTask.value = { ...task }
-  detailVisible.value = true
+async function handleViewDetail(task) {
+  try {
+    loading.value = true
+    const response = await getApprovalTaskDetail(task.id)
+    if (response.data.code === 'success') {
+      currentTask.value = response.data.data
+      // 加载附件
+      const attachmentResponse = await getTaskAttachments(task.id)
+      if (attachmentResponse.data.code === 'success') {
+        currentTask.value.attachments = attachmentResponse.data.data || []
+      }
+      detailVisible.value = true
+    } else {
+      ElMessage.error(response.data.message || '获取任务详情失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取任务详情失败')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
 }
 
 // 打开审核弹窗
-function openAuditDialog(task) {
-  currentAuditTask.value = { ...task }
-  auditRemark.value = ''
-  auditDialogVisible.value = true
+async function openAuditDialog(task) {
+  try {
+    const response = await getApprovalTaskDetail(task.id)
+    if (response.data.code === 'success') {
+      currentAuditTask.value = response.data.data
+      // 加载附件
+      const attachmentResponse = await getTaskAttachments(task.id)
+      if (attachmentResponse.data.code === 'success') {
+        currentAuditTask.value.attachments = attachmentResponse.data.data || []
+      }
+      auditRemark.value = ''
+      auditDialogVisible.value = true
+    } else {
+      ElMessage.error(response.message || '获取任务详情失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取任务详情失败')
+    console.error(error)
+  }
 }
 
 // 处理重新提交
 function handleResubmit(task) {
   // 重置表单
   Object.assign(resubmitForm, {
-    taskType: task.taskType,
+    taskType: getTaskTypeText(task.taskType),
     deviceCode: task.deviceCode,
     deviceName: task.deviceName,
     date: task.date || '',
@@ -654,13 +685,14 @@ function handleResubmit(task) {
   })
 
   // 根据任务类型打开对应的弹窗
-  if (task.taskType === '验收') {
+  const taskTypeText = getTaskTypeText(task.taskType)
+  if (taskTypeText === '验收') {
     resubmitDialogVisible.acceptance = true
-  } else if (task.taskType === '转移') {
+  } else if (taskTypeText === '转移') {
     resubmitDialogVisible.transfer = true
-  } else if (task.taskType === '闲置') {
+  } else if (taskTypeText === '闲置') {
     resubmitDialogVisible.idle = true
-  } else if (task.taskType === '报废') {
+  } else if (taskTypeText === '报废') {
     resubmitDialogVisible.scrap = true
   }
 
@@ -673,47 +705,59 @@ function handleFileChange(file) {
 }
 
 // 提交重新提交的表单
-function submitResubmit(type) {
-  ElMessage.success('重新提交成功！')
+async function submitResubmit(type) {
+  try {
+    const formData = new FormData()
+    // const currentUser = await getCurrentUser()
 
-  // 关闭对应的弹窗
-  resubmitDialogVisible[type] = false
+    let taskData = {
+      menuType: "设备管理",
+      deviceCode: resubmitForm.deviceCode,
+      deviceName: resubmitForm.deviceName,
+      applicantId: 2
+    }
 
-  // 更新任务状态为待审核
-  const index = taskList.value.findIndex(t =>
-      t.deviceCode === resubmitForm.deviceCode &&
-      t.taskType === resubmitForm.taskType
-  )
-
-  if (index !== -1) {
-    taskList.value[index].status = '待审核'
-    taskList.value[index].approver = ''
-    taskList.value[index].approveTime = ''
-    taskList.value[index].remark = ''
-
-    // 更新任务信息
+    // 根据类型设置不同的任务数据
     if (type === 'acceptance') {
-      taskList.value[index].date = resubmitForm.date
-      taskList.value[index].result = resubmitForm.result
-      taskList.value[index].opinion = resubmitForm.opinion
+      taskData.taskType = 4 // 设备采购对应验收
+      taskData.taskName = `设备验收申请 - ${resubmitForm.deviceCode}`
+      taskData.applyReason = resubmitForm.opinion
     } else if (type === 'transfer') {
-      taskList.value[index].targetArea = resubmitForm.targetArea
-      taskList.value[index].reason = resubmitForm.reason
-      taskList.value[index].transferDate = resubmitForm.transferDate
-    } else {
-      taskList.value[index].description = resubmitForm.description
-      taskList.value[index].duration = resubmitForm.duration
-      taskList.value[index].years = resubmitForm.years
-      taskList.value[index].status = resubmitForm.status
+      taskData.taskType = 2 // 设备转移
+      taskData.taskName = `设备转移申请 - ${resubmitForm.deviceCode}`
+      taskData.applyReason = resubmitForm.reason
+      taskData.targetArea = resubmitForm.targetArea
+    } else if (type === 'idle') {
+      taskData.taskType = 0 // 设备闲置
+      taskData.taskName = `设备闲置申请 - ${resubmitForm.deviceCode}`
+      taskData.applyReason = resubmitForm.description
+    } else if (type === 'scrap') {
+      taskData.taskType = 1 // 设备报废
+      taskData.taskName = `设备报废申请 - ${resubmitForm.deviceCode}`
+      taskData.applyReason = resubmitForm.description
     }
 
-    // 更新附件
+    formData.append('task', JSON.stringify(taskData))
+
+    // 添加附件
     if (fileList.value.length > 0) {
-      taskList.value[index].attachments = fileList.value.map(file => ({
-        name: file.name,
-        url: URL.createObjectURL(file.raw)
-      }))
+      fileList.value.forEach(file => {
+        formData.append('attachments', file.raw)
+      })
     }
+
+    const response = await createApprovalTaskWithAttachments(formData)
+
+    if (response.data.code === 'success') {
+      ElMessage.success('重新提交成功！')
+      resubmitDialogVisible[type] = false
+      fetchAuditTasks() // 刷新列表
+    } else {
+      ElMessage.error(response.data.message || '重新提交失败')
+    }
+  } catch (error) {
+    ElMessage.error('重新提交失败')
+    console.error(error)
   }
 }
 
@@ -726,20 +770,21 @@ async function confirmAudit(result) {
 
   try {
     loading.value = true
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 800))
 
-    // 更新任务状态
-    const index = taskList.value.findIndex(t => t.id === currentAuditTask.value.id)
-    if (index !== -1) {
-      const newStatus = result ? '审核通过' : '审核拒绝'
-      taskList.value[index].status = newStatus
-      taskList.value[index].approver = '管理员'
-      taskList.value[index].approveTime = new Date().toISOString()
-      taskList.value[index].remark = auditRemark.value
+    const params = {
+      id: currentAuditTask.value.id,
+      status: result ? 1 : 2, // 1: 已通过, 2: 已驳回
+      comment: auditRemark.value
+    }
 
+    const response = await approveTask(params)
+
+    if (response.data.code === 'success') {
       ElMessage.success(`审核${result ? '通过' : '驳回'}成功`)
       auditDialogVisible.value = false
+      fetchAuditTasks() // 刷新列表
+    } else {
+      ElMessage.error(response.data.message || '审核操作失败')
     }
   } catch (error) {
     ElMessage.error('审核操作失败')
@@ -747,6 +792,35 @@ async function confirmAudit(result) {
   } finally {
     loading.value = false
   }
+}
+
+// 下载附件
+async function downloadAttachment(file) {
+  try {
+    const response = await downloadTaskAttachment({
+      taskId: currentTask.value.id || currentAuditTask.value.id,
+      fileId: file.fileId
+    })
+
+    // 创建下载链接
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', file.fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    ElMessage.error('下载附件失败')
+    console.error(error)
+  }
+}
+
+// 获取文件URL
+function getFileUrl(fileId) {
+  // 这里需要根据实际的文件服务地址来构建URL
+  return `/api/approval-tasks/${currentTask.value.id}/attachments/${fileId}/download`
 }
 
 // 格式化日期

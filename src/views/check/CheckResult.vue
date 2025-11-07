@@ -224,23 +224,23 @@
 import {ref, reactive, onMounted} from 'vue'
 import {ElMessage} from 'element-plus'
 
-import {
-  getAreaTree,
-  getChildAreas
-} from '@/api/equipment/EquipmentLedger'
-
-// 保留其他需要的导入
+// 从新的CheckResult.js导入所有API方法
 import {
   getApprovalProcesses,
   createApprovalProcess,
   updateApprovalProcess,
   deleteApprovalProcess,
+  toggleApprovalProcessStatus,
   getAllUsers,
   getWorkshopList,
   getLineListByWorkshop,
   getSegmentListByLine,
-  searchDevicesApi
-} from '@/api/eqAPI'
+  searchDevicesApi,
+  getAreaTree,
+  getChildAreas,
+  getEnabledApprovalProcesses,
+  getApplicableApprovalProcess
+} from '@/api/asset/CheckResult.js'
 
 // 用户数据
 const allUsers = ref([])
@@ -582,7 +582,7 @@ const handleDelete = async (id) => {
 // 启用/禁用流程
 const toggleStatus = async (row) => {
   try {
-    await updateApprovalProcess(row.id, { enabled: !row.enabled })
+    await toggleApprovalProcessStatus(row.id, !row.enabled)
     ElMessage.success(row.enabled ? '已禁用' : '已启用')
     loadTableData()
   } catch (error) {

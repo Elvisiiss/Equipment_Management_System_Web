@@ -410,7 +410,18 @@ import {ElMessage} from 'element-plus'
 import {
   Document, Picture, ArrowUp, ArrowDown
 } from '@element-plus/icons-vue'
-import {getDeviceDetail, getFileInfo} from '@/api/equipment/EquipmentDetail'
+import {
+  getDeviceDetail,
+  getFileInfo,
+  submitAcceptApplication,
+  submitTransferApplication,
+  submitIdleApplication,
+  submitScrapApplication,
+  submitTransferApplicationWithAttachments,
+  submitIdleApplicationWithAttachments,
+  submitScrapApplicationWithAttachments,
+  getCurrentUser
+} from '@/api/equipment/EquipmentDetail'
 
 const router = useRouter()
 const route = useRoute()
@@ -763,28 +774,188 @@ function openScrapDialog() {
 }
 
 /* 提交表单方法 */
-function submitAccept() {
-  // 验收提交逻辑
-  ElMessage.success('验收申请已提交')
-  acceptVisible.value = false
+async function submitAccept() {
+  try {
+    const response = await submitAcceptApplication({
+      deviceCode: device.code,
+      deviceName: device.name,
+      result: acceptForm.result,
+      opinion: acceptForm.opinion,
+      initiator: acceptForm.initiator,
+      date: acceptForm.date,
+      attachments: acceptForm.attachments
+    });
+
+    if (response.data.code === 200) {
+      ElMessage.success('验收申请已提交');
+      acceptVisible.value = false;
+    } else {
+      ElMessage.error('验收申请提交失败: ' + response.data.message);
+    }
+  } catch (error) {
+    ElMessage.error('验收申请提交失败');
+    console.error(error);
+  }
 }
 
-function submitTransfer() {
-  // 转移提交逻辑
-  ElMessage.success('转移申请已提交')
-  transferVisible.value = false
+
+async function submitTransfer() {
+  // 获取当前用户ID
+  let applicantId;
+  try {
+    const userResponse = await getCurrentUser();
+    if (userResponse.data.code === 200) {
+      applicantId = userResponse.data.data.id;
+    } else {
+      ElMessage.error('获取用户信息失败');
+      return;
+    }
+  } catch (error) {
+    ElMessage.error('获取用户信息失败');
+    console.error(error);
+    return;
+  }
+
+  // 构建目标区域字符串
+  const targetArea = transferForm.targetArea.join(' - ');
+
+  try {
+    let response;
+
+    if (transferForm.attachments && transferForm.attachments.length > 0) {
+      // 带附件的提交
+      response = await submitTransferApplicationWithAttachments({
+        deviceCode: device.code,
+        deviceName: device.name,
+        reason: transferForm.reason,
+        applicantId: applicantId,
+        targetArea: targetArea,
+        attachments: transferForm.attachments
+      });
+    } else {
+      // 不带附件的提交
+      response = await submitTransferApplication({
+        deviceCode: device.code,
+        deviceName: device.name,
+        reason: transferForm.reason,
+        applicantId: applicantId,
+        targetArea: targetArea
+      });
+    }
+
+    if (response.data.code === 200) {
+      ElMessage.success('转移申请已提交');
+      transferVisible.value = false;
+    } else {
+      ElMessage.error('转移申请提交失败: ' + response.data.message);
+    }
+  } catch (error) {
+    ElMessage.error('转移申请提交失败');
+    console.error(error);
+  }
 }
 
-function submitIdle() {
-  // 闲置提交逻辑
-  ElMessage.success('闲置申请已提交')
-  idleVisible.value = false
+async function submitIdle() {
+  // 获取当前用户ID
+  let applicantId;
+  try {
+    const userResponse = await getCurrentUser();
+    if (userResponse.data.code === 200) {
+      applicantId = userResponse.data.data.id;
+    } else {
+      ElMessage.error('获取用户信息失败');
+      return;
+    }
+  } catch (error) {
+    ElMessage.error('获取用户信息失败');
+    console.error(error);
+    return;
+  }
+
+  try {
+    let response;
+
+    if (idleForm.attachments && idleForm.attachments.length > 0) {
+      // 带附件的提交
+      response = await submitIdleApplicationWithAttachments({
+        deviceCode: device.code,
+        deviceName: device.name,
+        description: idleForm.description,
+        applicantId: applicantId,
+        attachments: idleForm.attachments
+      });
+    } else {
+      // 不带附件的提交
+      response = await submitIdleApplication({
+        deviceCode: device.code,
+        deviceName: device.name,
+        description: idleForm.description,
+        applicantId: applicantId
+      });
+    }
+
+    if (response.data.code === 200) {
+      ElMessage.success('闲置申请已提交');
+      idleVisible.value = false;
+    } else {
+      ElMessage.error('闲置申请提交失败: ' + response.data.message);
+    }
+  } catch (error) {
+    ElMessage.error('闲置申请提交失败');
+    console.error(error);
+  }
 }
 
-function submitScrap() {
-  // 报废提交逻辑
-  ElMessage.success('报废申请已提交')
-  scrapVisible.value = false
+
+async function submitScrap() {
+  // 获取当前用户ID
+  let applicantId;
+  try {
+    const userResponse = await getCurrentUser();
+    if (userResponse.data.code === 200) {
+      applicantId = userResponse.data.data.id;
+    } else {
+      ElMessage.error('获取用户信息失败');
+      return;
+    }
+  } catch (error) {
+    ElMessage.error('获取用户信息失败');
+    console.error(error);
+    return;
+  }
+
+  try {
+    let response;
+
+    if (scrapForm.attachments && scrapForm.attachments.length > 0) {
+      // 带附件的提交
+      response = await submitScrapApplicationWithAttachments({
+        deviceCode: device.code,
+        deviceName: device.name,
+        description: scrapForm.description,
+        applicantId: applicantId,
+        attachments: scrapForm.attachments
+      });
+    } else {
+      // 不带附件的提交
+      response = await submitScrapApplication({
+        deviceCode: device.code,
+        deviceName: device.name,
+        description: scrapForm.description,
+        applicantId: applicantId
+      });
+    }
+
+    if (response.data.code === 200) {
+      ElMessage.success('报废申请已提交');
+      scrapVisible.value = false;
+    } else {
+      ElMessage.error('报废申请提交失败: ' + response.data.message);
+    }
+  } catch (error) {
+    ElMessage.error('报废申请提交失败');
+    console.error(error);
+  }
 }
 
 /* 其他方法 */

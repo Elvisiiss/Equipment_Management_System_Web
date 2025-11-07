@@ -28,12 +28,77 @@ export function submitAcceptApplication(data) {
 }
 
 /**
+ * 创建审批任务（用于转移、闲置、报废）
+ * @param {Object} data - 审批任务数据
+ * @returns {Promise} - 请求Promise对象
+ */
+export function createApprovalTask(data) {
+    return request.post('/approval-tasks', data);
+}
+
+/**
+ * 创建带附件的审批任务
+ * @param {Object} formData - FormData对象，包含任务数据和附件
+ * @returns {Promise} - 请求Promise对象
+ */
+export function createApprovalTaskWithAttachments(formData) {
+    return request.post('/approval-tasks/with-attachments', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
+}
+
+/**
  * 提交设备转移申请
  * @param {Object} data - 转移申请数据
  * @returns {Promise} - 请求Promise对象
  */
 export function submitTransferApplication(data) {
-    return request.post('/equipment/transfer', data);
+    // 设备转移对应taskType=2
+    const approvalData = {
+        menuType: "设备管理",
+        taskType: 2, // 设备转移
+        deviceCode: data.deviceCode,
+        deviceName: data.deviceName,
+        taskName: `设备转移申请 - ${data.deviceCode}`,
+        applyReason: data.reason,
+        applicantId: data.applicantId,
+        targetArea: data.targetArea // 必填字段
+    };
+
+    return createApprovalTask(approvalData);
+}
+
+/**
+ * 提交带附件的设备转移申请
+ * @param {Object} data - 转移申请数据（包含附件）
+ * @returns {Promise} - 请求Promise对象
+ */
+export function submitTransferApplicationWithAttachments(data) {
+    const formData = new FormData();
+
+    const taskData = {
+        menuType: "设备管理",
+        taskType: 2, // 设备转移
+        deviceCode: data.deviceCode,
+        deviceName: data.deviceName,
+        taskName: `设备转移申请 - ${data.deviceCode}`,
+        applyReason: data.reason,
+        applicantId: data.applicantId,
+        targetArea: data.targetArea
+    };
+
+    formData.append('task', JSON.stringify(taskData));
+
+    // 添加附件
+    if (data.attachments && data.attachments.length > 0) {
+        data.attachments.forEach(file => {
+            formData.append('attachments', file.raw || file);
+        });
+    }
+
+    return createApprovalTaskWithAttachments(formData);
 }
 
 /**
@@ -42,7 +107,49 @@ export function submitTransferApplication(data) {
  * @returns {Promise} - 请求Promise对象
  */
 export function submitIdleApplication(data) {
-    return request.post('/equipment/idle', data);
+    // 设备闲置对应taskType=0
+    const approvalData = {
+        menuType: "设备管理",
+        taskType: 0, // 设备闲置
+        deviceCode: data.deviceCode,
+        deviceName: data.deviceName,
+        taskName: `设备闲置申请 - ${data.deviceCode}`,
+        applyReason: data.description,
+        applicantId: data.applicantId
+        // 不需要targetArea
+    };
+
+    return createApprovalTask(approvalData);
+}
+
+/**
+ * 提交带附件的设备闲置申请
+ * @param {Object} data - 闲置申请数据（包含附件）
+ * @returns {Promise} - 请求Promise对象
+ */
+export function submitIdleApplicationWithAttachments(data) {
+    const formData = new FormData();
+
+    const taskData = {
+        menuType: "设备管理",
+        taskType: 0, // 设备闲置
+        deviceCode: data.deviceCode,
+        deviceName: data.deviceName,
+        taskName: `设备闲置申请 - ${data.deviceCode}`,
+        applyReason: data.description,
+        applicantId: data.applicantId
+    };
+
+    formData.append('task', JSON.stringify(taskData));
+
+    // 添加附件
+    if (data.attachments && data.attachments.length > 0) {
+        data.attachments.forEach(file => {
+            formData.append('attachments', file.raw || file);
+        });
+    }
+
+    return createApprovalTaskWithAttachments(formData);
 }
 
 /**
@@ -51,5 +158,55 @@ export function submitIdleApplication(data) {
  * @returns {Promise} - 请求Promise对象
  */
 export function submitScrapApplication(data) {
-    return request.post('/equipment/scrap', data);
+    // 设备报废对应taskType=1
+    const approvalData = {
+        menuType: "设备管理",
+        taskType: 1, // 设备报废
+        deviceCode: data.deviceCode,
+        deviceName: data.deviceName,
+        taskName: `设备报废申请 - ${data.deviceCode}`,
+        applyReason: data.description,
+        applicantId: data.applicantId
+        // 不需要targetArea
+    };
+
+    return createApprovalTask(approvalData);
+}
+
+/**
+ * 提交带附件的设备报废申请
+ * @param {Object} data - 报废申请数据（包含附件）
+ * @returns {Promise} - 请求Promise对象
+ */
+export function submitScrapApplicationWithAttachments(data) {
+    const formData = new FormData();
+
+    const taskData = {
+        menuType: "设备管理",
+        taskType: 1, // 设备报废
+        deviceCode: data.deviceCode,
+        deviceName: data.deviceName,
+        taskName: `设备报废申请 - ${data.deviceCode}`,
+        applyReason: data.description,
+        applicantId: data.applicantId
+    };
+
+    formData.append('task', JSON.stringify(taskData));
+
+    // 添加附件
+    if (data.attachments && data.attachments.length > 0) {
+        data.attachments.forEach(file => {
+            formData.append('attachments', file.raw || file);
+        });
+    }
+
+    return createApprovalTaskWithAttachments(formData);
+}
+
+/**
+ * 获取当前用户信息（用于获取applicantId）
+ * @returns {Promise} - 请求Promise对象
+ */
+export function getCurrentUser() {
+    return request.get('/user/current');
 }
