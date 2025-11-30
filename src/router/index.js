@@ -31,25 +31,33 @@ const iconMap = {
 
 // 动态导入组件 - 处理嵌套路径
 async function loadComponent(filePath) {
-    console.log(0)
     try {
-        console.log("filePath",filePath)
-        console.log(1)
-        // if (!filePath || filePath === '@/views/index.vue') {
-        //     console.log(2)
+        // 处理空路径或默认路径
+        // if (!filePath || filePath === '@' || filePath === '@/views/index.vue') {
         //     return () => import('@/views/index.vue')
         // }
-        console.log(3)
 
-        // 移除 @ 符号并转换路径
-        const relativePath = filePath.replace('@/', '../')
-        console.log("relativePath",relativePath)
+        // 转换路径格式
+        let relativePath = filePath.replace('@/', '../')
+
+        // 确保路径以 .vue 结尾
+        if (!relativePath.endsWith('.vue')) {
+            relativePath += '.vue'
+        }
+
+        // 移除可能的多余的 @ 符号
+        relativePath = relativePath.replace('@', '')
+
+        console.log('Loading component from:', relativePath)
+
         const component = await import(/* @vite-ignore */ relativePath)
-        console.log("component",component)
         return component.default || component
     } catch (error) {
         console.error(`加载组件失败: ${filePath}`, error)
-        return () => import('@/views/Error/NotFound.vue')
+        // 返回一个空的组件作为降级
+        return {
+            template: '<div>组件加载失败</div>'
+        }
     }
 }
 
@@ -64,17 +72,23 @@ function transformMenuToRoute(menu) {
         }
     }
 
-    // 动态设置组件
-    if (menu.filePath) {
+    // 只有叶子节点（没有children或children为空）才设置具体组件
+    // 非叶子节点使用布局组件
+    if ((!menu.children || menu.children.length === 0) && menu.filePath) {
         route.component = () => loadComponent(menu.filePath)
     } else {
-        // 如果没有指定文件路径，使用默认布局组件
-        route.component = () => import('@/views/index.vue')
-    }
+        // 非叶子节点使用布局组件，在其中使用 <router-view> 来渲染子路由
+        route.component = () => import('@/components/layout/RouterViewLayout.vue')
 
-    // 递归处理子菜单
-    if (menu.children && menu.children.length > 0) {
-        route.children = menu.children.map(transformMenuToRoute)
+        // 如果有子菜单，递归处理
+        if (menu.children && menu.children.length > 0) {
+            route.children = menu.children.map(transformMenuToRoute)
+
+            // 为非叶子节点添加默认重定向到第一个子路由
+            if (menu.children.length > 0 && menu.children[0].path) {
+                route.redirect = menu.children[0].path
+            }
+        }
     }
 
     return route
@@ -89,30 +103,21 @@ export function addDynamicRoutes() {
     }
 
     try {
-        // 添加首页路由（如果后端返回了首页）
-        const homeMenu = authStore.menus.find(menu => menu.path === '/')
-        if (homeMenu) {
-            const homeRoute = transformMenuToRoute(homeMenu)
-            router.addRoute(homeRoute)
-        }
-
-        // 添加其他路由
-        authStore.menus.forEach(menu => {
-            if (menu.path !== '/') { // 首页已单独处理
-                const route = transformMenuToRoute(menu)
-                router.addRoute(route)
-            }
-        })
-
-        // 添加404兜底路由（必须在最后添加）
+        // 先添加404路由，但设置较低优先级
         router.addRoute({
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
             component: () => import('@/views/Error/NotFound.vue')
         })
 
+        // 添加所有菜单路由
+        authStore.menus.forEach(menu => {
+            const route = transformMenuToRoute(menu)
+            router.addRoute(route)
+        })
+
         authStore.setDynamicRoutesAdded(true)
-        console.log('动态路由添加完成')
+        console.log('动态路由添加完成，当前路由表:', router.getRoutes())
     } catch (error) {
         console.error('添加动态路由失败:', error)
     }
@@ -138,7 +143,7 @@ router.beforeEach(async (to, from, next) => {
     if (authStore.isAuthenticated && authStore.menus && authStore.menus.length > 0 && !authStore.dynamicRoutesAdded) {
         await addDynamicRoutes()
         // 路由添加后重新导航到目标页面
-        next(to.path)
+        next(to.fullPath)
         return
     }
 
