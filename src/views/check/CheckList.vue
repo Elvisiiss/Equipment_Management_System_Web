@@ -558,7 +558,6 @@ async function fetchAuditTasks() {
       pageNum: pagination.page,
       pageSize: pagination.pageSize,
       keyword: filterForm.keyword || '',
-      applicantId: filterForm.applicantId || '',
       status: filterForm.status ? STATUS_MAP[filterForm.status] : '',
       taskType: filterForm.taskType ? TASK_TYPE_MAP[filterForm.taskType] : ''
     }
@@ -707,17 +706,15 @@ function handleFileChange(file) {
 // 提交重新提交的表单
 async function submitResubmit(type) {
   try {
-    const formData = new FormData()
-    // const currentUser = await getCurrentUser()
+    const formData = new FormData();
 
     let taskData = {
       menuType: "设备管理",
       deviceCode: resubmitForm.deviceCode,
       deviceName: resubmitForm.deviceName,
-      applicantId: 2
     }
 
-    // 根据类型设置不同的任务数据
+// 根据类型设置不同的任务数据
     if (type === 'acceptance') {
       taskData.taskType = 4 // 设备采购对应验收
       taskData.taskName = `设备验收申请 - ${resubmitForm.deviceCode}`

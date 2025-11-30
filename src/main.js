@@ -1,21 +1,20 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
+import {createApp} from 'vue'
+import {createPinia} from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import zhCn from 'element-plus/dist/locale/zh-cn.mjs' // 导入中文语言包
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import {useAuthStore} from "@/stores/auth.js";
-import './assets/css/reset.css' // 导入全局重置样式
+import './assets/css/reset.css'
 
 const app = createApp(App)
 const pinia = createPinia()
 
-// 注册 Element Plus 并设置中文
 app.use(ElementPlus, {
-    locale: zhCn, // 设置全局中文语言包
-    size: 'default' // 可选：设置组件默认尺寸
+    locale: zhCn,
+    size: 'default'
 })
 
 // 注册所有图标
