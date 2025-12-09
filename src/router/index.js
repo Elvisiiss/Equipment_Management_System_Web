@@ -33,9 +33,9 @@ const iconMap = {
 async function loadComponent(filePath) {
     try {
         // 处理空路径或默认路径
-        // if (!filePath || filePath === '@' || filePath === '@/views/index.vue') {
-        //     return () => import('@/views/index.vue')
-        // }
+        if (!filePath || filePath === '@' || filePath === '@/views/index.vue') {
+            return () => import('@/views/index.vue')
+        }
 
         // 转换路径格式
         let relativePath = filePath.replace('@/', '../')
@@ -72,23 +72,21 @@ function transformMenuToRoute(menu) {
         }
     }
 
-    // 只有叶子节点（没有children或children为空）才设置具体组件
-    // 非叶子节点使用布局组件
-    if ((!menu.children || menu.children.length === 0) && menu.filePath) {
+    // 如果菜单有文件路径，就加载对应的组件
+    if (menu.filePath) {
         route.component = () => loadComponent(menu.filePath)
     } else {
-        // 非叶子节点使用布局组件，在其中使用 <router-view> 来渲染子路由
+        // 如果没有文件路径，使用默认布局组件
         route.component = () => import('@/components/layout/RouterViewLayout.vue')
+    }
 
-        // 如果有子菜单，递归处理
-        if (menu.children && menu.children.length > 0) {
-            route.children = menu.children.map(transformMenuToRoute)
+    // 如果有子菜单，递归处理
+    if (menu.children && menu.children.length > 0) {
+        route.children = menu.children.map(transformMenuToRoute)
 
-            // 为非叶子节点添加默认重定向到第一个子路由
-            if (menu.children.length > 0 && menu.children[0].path) {
-                route.redirect = menu.children[0].path
-            }
-        }
+        // 重要：不再设置自动重定向到第一个子路由！
+        // 这样父菜单可以独立打开，用户点击父菜单时会打开父菜单页面
+        // 用户可以在父菜单页面内通过导航访问子菜单
     }
 
     return route
